@@ -67,6 +67,8 @@ Started: 2026-03-24
 - HomeView toolbar leading button is gear icon for Settings (replaced person icon); auth is now accessed through Settings > Account section
 - OnboardingViewModel seeds template items for selected categories on completion via `CategoryTemplates.templates(for:)` and direct SwiftData insert
 - Use `@ObservationIgnored` on `@AppStorage` properties inside `@Observable` classes to avoid observation conflicts
+- TrackerDetailView in Views/Detail/ — navigated via NavigationLink from HomeView rows; uses TrackerDetailViewModel for data
+- Highest pbxproj IDs: A1...0026 (BuildFile), A2...0022 (FileRef)
 ---
 
 ## 2026-03-24 - US-001
@@ -458,4 +460,21 @@ Started: 2026-03-24
   - ShareLink in SwiftUI works well for data export — generates share sheet with JSON string content
   - `modelContext.delete(model: Type.self)` is the SwiftData batch delete API for clearing all records of a type
   - Link(destination:) with mailto: URLs opens the default mail client — used for support email
+---
+
+## 2026-03-24 - US-024
+- What was implemented: Completion history view per tracker item with free tier enforcement
+- Files changed:
+  - LastLogged/ViewModels/TrackerDetailViewModel.swift (added fetchCompletionLogs, totalLogCount, category computed property)
+  - LastLogged/Views/Detail/TrackerDetailView.swift (NEW - detail view with header, completion history list, free tier upgrade prompt)
+  - LastLogged/Views/Home/HomeView.swift (wrapped TrackerRowView in NavigationLink to TrackerDetailView)
+  - LastLogged.xcodeproj/project.pbxproj (added TrackerDetailView.swift to project)
+  - prd.json (marked US-024 passes: true)
+- **Learnings for future iterations:**
+  - TrackerDetailView uses NavigationLink in HomeView's list — swipe actions and context menus still work on NavigationLink rows
+  - EditTrackerSheet helper struct wraps HomeViewModel creation for edit-from-detail flow — HomeViewModel is needed by AddTrackerView
+  - Free tier history limit uses FreeTierLimits.maxHistoryPerItem (10) and RevenueCatService.shared.isPremium check
+  - Color(hex:) extension on Color is defined in HomeView.swift — reusable from any view in the main target
+  - FetchDescriptor with #Predicate requires capturing UUID into a local let before the closure
+  - TrackerDetailViewModel.category is a computed property that fetches on access — avoids stale category data
 ---

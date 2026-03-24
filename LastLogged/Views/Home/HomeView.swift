@@ -136,8 +136,12 @@ struct HomeView: View {
             ForEach(viewModel.itemsByCategory, id: \.category.id) { group in
                 Section {
                     ForEach(group.items, id: \.id) { item in
-                        TrackerRowView(item: item) {
-                            logItem(item)
+                        NavigationLink {
+                            TrackerDetailView(item: item)
+                        } label: {
+                            TrackerRowView(item: item) {
+                                logItem(item)
+                            }
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
