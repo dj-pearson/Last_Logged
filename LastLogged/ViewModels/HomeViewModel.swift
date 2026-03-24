@@ -94,6 +94,7 @@ final class HomeViewModel {
         modelContext.insert(item)
         save()
         fetchItems()
+        scheduleNotifications()
     }
 
     // MARK: - Archive
@@ -102,6 +103,7 @@ final class HomeViewModel {
         item.isArchived = true
         save()
         fetchItems()
+        scheduleNotifications()
     }
 
     // MARK: - Log Completion
@@ -119,6 +121,7 @@ final class HomeViewModel {
         item.lastCompletedAt = log.completedAt
         save()
         fetchItems()
+        scheduleNotifications()
         return LogUndoInfo(completionLog: log, previousLastCompletedAt: previousDate, item: item)
     }
 
@@ -127,6 +130,7 @@ final class HomeViewModel {
         info.item.lastCompletedAt = info.previousLastCompletedAt
         save()
         fetchItems()
+        scheduleNotifications()
     }
 
     // MARK: - Update Item
@@ -144,6 +148,7 @@ final class HomeViewModel {
         item.iconName = iconName
         save()
         fetchItems()
+        scheduleNotifications()
     }
 
     // MARK: - Update Sort Order
@@ -152,6 +157,15 @@ final class HomeViewModel {
         item.sortOrder = newOrder
         save()
         fetchItems()
+    }
+
+    // MARK: - Notifications
+
+    private func scheduleNotifications() {
+        let context = modelContext
+        Task {
+            await NotificationService.shared.rescheduleAllNotifications(modelContext: context)
+        }
     }
 
     // MARK: - Persistence

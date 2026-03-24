@@ -24,6 +24,7 @@
 		A1000000000000000000000F /* TrackerDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000F /* TrackerDetailViewModel.swift */; };
 		A10000000000000000000010 /* CategoryTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* CategoryTemplates.swift */; };
 		A10000000000000000000011 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* TemplatePickerView.swift */; };
+		A10000000000000000000012 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* NotificationService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +45,7 @@
 		A2000000000000000000000F /* TrackerDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerDetailViewModel.swift; sourceTree = "<group>"; };
 		A20000000000000000000010 /* CategoryTemplates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryTemplates.swift; sourceTree = "<group>"; };
 		A20000000000000000000011 /* TemplatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatePickerView.swift; sourceTree = "<group>"; };
+		A20000000000000000000012 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -160,6 +162,7 @@
 		A3000000000000000000000B /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A20000000000000000000012 /* NotificationService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -287,6 +290,7 @@
 				A1000000000000000000000F /* TrackerDetailViewModel.swift in Sources */,
 				A10000000000000000000010 /* CategoryTemplates.swift in Sources */,
 				A10000000000000000000011 /* TemplatePickerView.swift in Sources */,
+				A10000000000000000000012 /* NotificationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
