@@ -112,3 +112,15 @@ Started: 2026-03-24
   - No new files were added, so no pbxproj changes needed for this story
   - Highest pbxproj IDs unchanged: A1...000D (BuildFile), A2...000D (FileRef)
 ---
+
+## 2026-03-24 - US-007
+- What was implemented: Elapsed time display with color-coded urgency in TrackerRowView. Replaced the "—" placeholder with actual elapsed time using RelativeDateTimeFormatter. Added urgency color coding: green (<75% of reminder interval), yellow (75-100%), red (>100% / overdue). "Never logged" shown for items with no completion history. Items with no reminder interval use neutral .secondary color. Never-logged items with a reminder interval show red (overdue).
+- Files changed:
+  - LastLogged/Views/Home/HomeView.swift (updated TrackerRowView with elapsedTimeText and urgencyColor computed properties, static RelativeDateTimeFormatter)
+- **Learnings for future iterations:**
+  - Use a static RelativeDateTimeFormatter on the view struct to avoid repeated allocations — it produces localized strings like "3 days ago", "2 weeks ago"
+  - Urgency color logic: ratio = elapsed / (intervalDays * 86400); green < 0.75, yellow 0.75–1.0, red > 1.0
+  - Elapsed time auto-updates because fetchItems() is called on .onAppear and after logCompletion/undoLog — no additional timer needed for MVP
+  - No new files added, no pbxproj changes needed
+  - Highest pbxproj IDs unchanged: A1...000D (BuildFile), A2...000D (FileRef)
+---
