@@ -42,6 +42,8 @@
 		A10000000000000000000021 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* AuthView.swift */; };
 		A10000000000000000000022 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* OnboardingViewModel.swift */; };
 		A10000000000000000000023 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* OnboardingView.swift */; };
+		A10000000000000000000024 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* SettingsViewModel.swift */; };
+		A10000000000000000000025 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -100,6 +102,8 @@
 		A2000000000000000000001D /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		A2000000000000000000001E /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
 		A2000000000000000000001F /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		A20000000000000000000020 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		A20000000000000000000021 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -169,6 +173,7 @@
 				A2000000000000000000000F /* TrackerDetailViewModel.swift */,
 				A2000000000000000000001C /* AuthViewModel.swift */,
 				A2000000000000000000001E /* OnboardingViewModel.swift */,
+				A20000000000000000000020 /* SettingsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -214,6 +219,7 @@
 			isa = PBXGroup;
 			children = (
 				A2000000000000000000001D /* AuthView.swift */,
+				A20000000000000000000021 /* SettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -411,6 +417,8 @@
 				A10000000000000000000013 /* WidgetDataProvider.swift in Sources */,
 				A10000000000000000000022 /* OnboardingViewModel.swift in Sources */,
 				A10000000000000000000023 /* OnboardingView.swift in Sources */,
+				A10000000000000000000024 /* SettingsViewModel.swift in Sources */,
+				A10000000000000000000025 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

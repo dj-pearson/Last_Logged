@@ -13,7 +13,7 @@ struct HomeView: View {
     @State private var showArchiveConfirmation = false
     @State private var toastInfo: HomeViewModel.LogUndoInfo?
     @State private var toastDismissTask: Task<Void, Never>?
-    @State private var showingAuth = false
+    @State private var showingSettings = false
 
     var body: some View {
         NavigationStack {
@@ -32,11 +32,9 @@ struct HomeView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        showingAuth = true
+                        showingSettings = true
                     } label: {
-                        Image(systemName: SupabaseService.shared.isSignedIn
-                            ? "person.crop.circle.fill"
-                            : "person.crop.circle")
+                        Image(systemName: "gearshape")
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
@@ -88,8 +86,8 @@ struct HomeView: View {
         .sheet(isPresented: $showingPaywall) {
             PaywallView(isHardPaywall: true)
         }
-        .sheet(isPresented: $showingAuth) {
-            AuthView()
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
         }
         .confirmationDialog("Archive Tracker?", isPresented: $showArchiveConfirmation, presenting: itemToArchive) { item in
             Button("Archive", role: .destructive) {

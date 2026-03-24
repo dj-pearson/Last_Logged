@@ -18,7 +18,7 @@ Started: 2026-03-24
 - ViewModels are @Observable classes that take ModelContext in init; views pass modelContext from SwiftUI environment
 - Color(hex:) extension on Color lives in Views/Home/HomeView.swift — converts "#RRGGBB" hex strings to SwiftUI Color
 - ContentView is a thin wrapper that renders HomeView; new top-level navigation goes through HomeView
-- Highest pbxproj IDs: A1...000D (BuildFile), A2...000D (FileRef)
+- Highest pbxproj IDs: A1...0025 (BuildFile), A2...0021 (FileRef)
 - TrackerRowView takes `onLog: () -> Void` closure — must be provided when constructing the row
 - `import UIKit` needed for haptic feedback (UIImpactFeedbackGenerator) — SwiftUI alone doesn't expose it
 - AddTrackerView takes HomeViewModel (not ModelContext) and uses its createItem method; present as .sheet from HomeView
@@ -62,6 +62,9 @@ Started: 2026-03-24
 - Export endpoint authenticates via Supabase JWT in `Authorization: Bearer <token>` header; maps auth.uid() → internal user_id for data queries
 - REVENUECAT_WEBHOOK_SECRET env var needed for webhook signature validation
 - ContentView gates onboarding vs main app via `@AppStorage("onboardingCompleted")` — conditional flows belong here
+- SettingsView in Views/Settings/ — accessed from HomeView toolbar gear icon; contains Account, Notifications, Data, About sections
+- SettingsViewModel uses `@ObservationIgnored` for UserDefaults-backed properties (remindersEnabled, defaultReminderHour/Minute)
+- HomeView toolbar leading button is gear icon for Settings (replaced person icon); auth is now accessed through Settings > Account section
 - OnboardingViewModel seeds template items for selected categories on completion via `CategoryTemplates.templates(for:)` and direct SwiftData insert
 - Use `@ObservationIgnored` on `@AppStorage` properties inside `@Observable` classes to avoid observation conflicts
 ---
@@ -438,4 +441,21 @@ Started: 2026-03-24
   - Category selection uses Set<UUID> for tracking selected categories — efficient for toggle and membership checks
   - Soft paywall shown via `.sheet(isPresented:)` after completeOnboarding() — completeOnboarding sets @AppStorage so dismissing paywall reveals HomeView
   - Highest pbxproj IDs: A1...0023 (BuildFile), A2...001F (FileRef)
+---
+
+## 2026-03-24 - US-023
+- What was implemented: Settings screen with Account, Notifications, Data, and About sections; SettingsViewModel managing settings state; gear icon in HomeView toolbar for navigation
+- Files changed:
+  - LastLogged/ViewModels/SettingsViewModel.swift (new — @Observable class with account, notification, data, and app info state)
+  - LastLogged/Views/Settings/SettingsView.swift (new — Form-based settings with 4 sections)
+  - LastLogged/Views/Home/HomeView.swift (replaced person icon with gearshape icon, opens SettingsView instead of AuthView)
+  - LastLogged.xcodeproj/project.pbxproj (added SettingsViewModel.swift and SettingsView.swift to project)
+  - prd.json (marked US-023 passes: true)
+- **Learnings for future iterations:**
+  - Settings screen embeds AuthView and PaywallView as sub-sheets — reuses existing auth/paywall components
+  - SettingsViewModel reads subscription/auth state directly from RevenueCatService.shared and SupabaseService.shared — no duplication
+  - UserDefaults-backed properties in @Observable classes need @ObservationIgnored to avoid observation conflicts (same pattern as OnboardingViewModel)
+  - ShareLink in SwiftUI works well for data export — generates share sheet with JSON string content
+  - `modelContext.delete(model: Type.self)` is the SwiftData batch delete API for clearing all records of a type
+  - Link(destination:) with mailto: URLs opens the default mail client — used for support email
 ---
