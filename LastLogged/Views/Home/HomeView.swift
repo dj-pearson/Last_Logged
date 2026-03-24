@@ -14,6 +14,8 @@ struct HomeView: View {
     @State private var toastInfo: HomeViewModel.LogUndoInfo?
     @State private var toastDismissTask: Task<Void, Never>?
     @State private var showingSettings = false
+    @State private var showingWidgetPrompt = false
+    @AppStorage("widgetPromptDismissed") private var widgetPromptDismissed = false
 
     var body: some View {
         NavigationStack {
@@ -93,6 +95,9 @@ struct HomeView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
+        .sheet(isPresented: $showingWidgetPrompt) {
+            WidgetPromptView()
+        }
         .confirmationDialog("Archive Tracker?", isPresented: $showArchiveConfirmation, presenting: itemToArchive) { item in
             Button("Archive", role: .destructive) {
                 viewModel?.archiveItem(item)
@@ -107,6 +112,15 @@ struct HomeView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: toastInfo != nil)
+        .onChange(of: viewModel?.trackerItems.count) { oldCount, newCount in
+            if let newCount, newCount >= 3, !widgetPromptDismissed {
+                // Small delay so the add-tracker sheet dismisses first
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(0.5))
+                    showingWidgetPrompt = true
+                }
+            }
+        }
     }
 
     // MARK: - Empty State

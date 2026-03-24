@@ -1,0 +1,48 @@
+name: Deploy Edge Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'edge-functions/**'
+  workflow_dispatch:
+
+env:
+  EDGE_FUNCTIONS_DIR: edge-functions
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ${{ env.EDGE_FUNCTIONS_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.EDGE_FUNCTIONS_DIR }}
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: ${{ env.EDGE_FUNCTIONS_DIR }}
+        run: npm run typecheck
+
+  deploy:
+    name: Deploy to Coolify
+    needs: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via Coolify webhook
+        run: |
+          curl -f -X POST "${{ secrets.COOLIFY_WEBHOOK_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"force": true}'
+
+          echo "### Edge Functions Deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "Triggered Coolify rebuild for edge-functions service." >> "$GITHUB_STEP_SUMMARY"

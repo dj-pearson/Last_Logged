@@ -73,6 +73,7 @@ final class SettingsViewModel {
 
     var showingPaywall = false
     var showingAuth = false
+    var showingCancellation = false
 
     // MARK: - App Info
 

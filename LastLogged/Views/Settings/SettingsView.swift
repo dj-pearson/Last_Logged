@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -39,6 +40,17 @@ struct SettingsView: View {
             set: { viewModel?.showingPaywall = $0 }
         )) {
             PaywallView()
+        }
+        .sheet(isPresented: Binding(
+            get: { viewModel?.showingCancellation ?? false },
+            set: { viewModel?.showingCancellation = $0 }
+        )) {
+            CancellationView {
+                // User confirmed cancellation — open Apple subscription management
+                if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                    UIApplication.shared.open(url)
+                }
+            }
         }
     }
 
@@ -88,7 +100,7 @@ struct SettingsView: View {
                     }
                 } else {
                     Button {
-                        viewModel.showingPaywall = true
+                        viewModel.showingCancellation = true
                     } label: {
                         Label("Manage Subscription", systemImage: "creditcard")
                     }
