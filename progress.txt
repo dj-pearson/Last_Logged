@@ -1,3 +1,28 @@
 # Ralph Progress Log
 Started: 2026-03-24
+
+## Codebase Patterns
+- Xcode project uses MVVM folder structure: Models/, ViewModels/, Views/{Home,Detail,Onboarding,Settings,Components}/, Services/, Widget/, Utilities/
+- SPM dependencies declared in project.pbxproj via XCRemoteSwiftPackageReference (supabase-swift, purchases-ios, TelemetryDeck SwiftClient)
+- App Group identifier: group.com.pearsonmedia.lastlogged (configured in LastLogged.entitlements)
+- Bundle identifier: com.pearsonmedia.lastlogged
+- iOS 17+ deployment target, SwiftUI lifecycle
+- Empty directories use .gitkeep files for git tracking
+---
+
+## 2026-03-24 - US-001
+- What was implemented: Xcode project scaffolding with MVVM folder structure, SPM dependencies, App Group capability, and placeholder ContentView
+- Files changed:
+  - LastLogged.xcodeproj/project.pbxproj (full Xcode project with build settings, SPM deps, entitlements)
+  - LastLogged/LastLoggedApp.swift (SwiftUI @main app entry point)
+  - LastLogged/ContentView.swift (placeholder view with app branding)
+  - LastLogged/Info.plist (minimal, using GENERATE_INFOPLIST_FILE)
+  - LastLogged/LastLogged.entitlements (App Group: group.com.pearsonmedia.lastlogged)
+  - LastLogged/Assets.xcassets/ (AccentColor, AppIcon placeholders)
+  - .gitkeep files in all MVVM subdirectories
+- **Learnings for future iterations:**
+  - pbxproj uses 24-char hex IDs with prefix pattern: A1=BuildFile, A2=FileRef, A3=Group, A4=BuildPhase, A5=Target, A6=Project, A7=BuildConfig, A8=ConfigList, A9=PackageRef, AA=PackageDep
+  - When adding new Swift files, must add PBXFileReference + PBXBuildFile + add to parent PBXGroup children
+  - Project is on Windows — cannot run xcodebuild for typecheck verification; structure verified manually
+  - GENERATE_INFOPLIST_FILE = YES means most Info.plist keys come from build settings (INFOPLIST_KEY_* prefix)
 ---
