@@ -104,6 +104,31 @@ final class HomeViewModel {
         fetchItems()
     }
 
+    // MARK: - Log Completion
+
+    struct LogUndoInfo {
+        let completionLog: CompletionLog
+        let previousLastCompletedAt: Date?
+        let item: TrackerItem
+    }
+
+    func logCompletion(for item: TrackerItem) -> LogUndoInfo {
+        let previousDate = item.lastCompletedAt
+        let log = CompletionLog(trackerItemId: item.id)
+        modelContext.insert(log)
+        item.lastCompletedAt = log.completedAt
+        save()
+        fetchItems()
+        return LogUndoInfo(completionLog: log, previousLastCompletedAt: previousDate, item: item)
+    }
+
+    func undoLog(_ info: LogUndoInfo) {
+        modelContext.delete(info.completionLog)
+        info.item.lastCompletedAt = info.previousLastCompletedAt
+        save()
+        fetchItems()
+    }
+
     // MARK: - Update Sort Order
 
     func updateSortOrder(for item: TrackerItem, newOrder: Int) {

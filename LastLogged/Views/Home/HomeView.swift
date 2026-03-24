@@ -1,10 +1,13 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: HomeViewModel?
     @State private var showingAddTracker = false
+    @State private var toastInfo: HomeViewModel.LogUndoInfo?
+    @State private var toastDismissTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -35,6 +38,13 @@ struct HomeView: View {
                 viewModel = HomeViewModel(modelContext: modelContext)
             }
         }
+        .overlay(alignment: .bottom) {
+            if toastInfo != nil {
+                toastView
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: toastInfo != nil)
     }
 
     // MARK: - Empty State
@@ -61,7 +71,9 @@ struct HomeView: View {
             ForEach(viewModel.itemsByCategory, id: \.category.id) { group in
                 Section {
                     ForEach(group.items, id: \.id) { item in
-                        TrackerRowView(item: item)
+                        TrackerRowView(item: item) {
+                            logItem(item)
+                        }
                     }
                 } header: {
                     Label(group.category.name, systemImage: group.category.iconName)
@@ -72,12 +84,65 @@ struct HomeView: View {
         }
         .listStyle(.insetGrouped)
     }
+
+    // MARK: - Log & Undo
+
+    private func logItem(_ item: TrackerItem) {
+        guard let viewModel else { return }
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        let info = viewModel.logCompletion(for: item)
+        showToast(info: info)
+    }
+
+    private func showToast(info: HomeViewModel.LogUndoInfo) {
+        toastDismissTask?.cancel()
+        withAnimation {
+            toastInfo = info
+        }
+        toastDismissTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(4))
+            if !Task.isCancelled {
+                dismissToast()
+            }
+        }
+    }
+
+    private func dismissToast() {
+        withAnimation {
+            toastInfo = nil
+        }
+        toastDismissTask?.cancel()
+        toastDismissTask = nil
+    }
+
+    // MARK: - Toast View
+
+    private var toastView: some View {
+        HStack(spacing: 12) {
+            Text("Logged!")
+                .fontWeight(.medium)
+            Button("Undo") {
+                if let toastInfo {
+                    viewModel?.undoLog(toastInfo)
+                }
+                dismissToast()
+            }
+            .fontWeight(.semibold)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .shadow(radius: 4, y: 2)
+        .padding(.bottom, 16)
+    }
 }
 
 // MARK: - Tracker Row
 
 struct TrackerRowView: View {
     let item: TrackerItem
+    let onLog: () -> Void
 
     var body: some View {
         HStack {
@@ -92,6 +157,15 @@ struct TrackerRowView: View {
             Text("—")
                 .foregroundStyle(.secondary)
                 .font(.subheadline)
+
+            Button {
+                onLog()
+            } label: {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.green)
+            }
+            .buttonStyle(.plain)
         }
     }
 }
