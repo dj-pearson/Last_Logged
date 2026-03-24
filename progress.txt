@@ -58,6 +58,9 @@ Started: 2026-03-24
 - Edge functions in `edge-functions/` — Hono + TypeScript on Node.js 20; use `@hono/node-server` for `serve()`; Dockerfile uses multi-stage build
 - Edge function routes are modular Hono instances merged via `app.route("/", routeModule)` in index.ts
 - Supabase service role key in edge functions bypasses RLS — for server-side cross-user queries
+- RevenueCat webhook validates signature via HMAC-SHA256 on raw body using `X-RevenueCat-Signature` header
+- Export endpoint authenticates via Supabase JWT in `Authorization: Bearer <token>` header; maps auth.uid() → internal user_id for data queries
+- REVENUECAT_WEBHOOK_SECRET env var needed for webhook signature validation
 ---
 
 ## 2026-03-24 - US-001
@@ -395,5 +398,23 @@ Started: 2026-03-24
   - `node-cron` schedule format: "0 8 * * *" = daily at 8:00 AM
   - Dockerfile uses multi-stage build: builder stage compiles TS, production stage only has dist + production deps
   - No pbxproj changes — this is a standalone Node.js project, not part of the Xcode build
+  - Highest pbxproj IDs unchanged: A1...0021 (BuildFile), A2...001D (FileRef)
+---
+
+## 2026-03-24 - US-021
+- What was implemented: RevenueCat subscription webhook and data export endpoints added to the Hono edge functions sidecar. POST /webhooks/revenuecat validates webhook signature via HMAC-SHA256 (using X-RevenueCat-Signature header and REVENUECAT_WEBHOOK_SECRET env var), then updates users.subscription_tier based on event type (INITIAL_PURCHASE/RENEWAL → premium or lifetime, CANCELLATION/EXPIRATION → free). POST /export-data accepts authenticated requests (Supabase JWT in Authorization header), fetches all user's tracker_categories, tracker_items, and completion_logs, and returns JSON by default or CSV via ?format=csv query parameter. Both endpoints return appropriate HTTP status codes and error messages. Routes mounted alongside the reminder digest in index.ts.
+- Files changed:
+  - edge-functions/src/revenuecat-webhook.ts (new - webhook signature validation, event type → tier mapping, users table update)
+  - edge-functions/src/export-data.ts (new - JWT auth, data fetch, JSON/CSV export with proper Content-Type headers)
+  - edge-functions/src/index.ts (updated - imported and mounted revenuecatWebhook and exportData routes)
+  - edge-functions/.env.example (updated - added REVENUECAT_WEBHOOK_SECRET documentation)
+  - prd.json (updated - US-021 passes: true)
+- **Learnings for future iterations:**
+  - RevenueCat sends event type + app_user_id in webhook payload — app_user_id maps to auth_id in users table
+  - HMAC-SHA256 signature validation uses `crypto.timingSafeEqual` to prevent timing attacks — must wrap in try/catch since it throws if buffer lengths differ
+  - Export endpoint uses `supabase.auth.getUser(token)` to validate JWT and extract user ID — then maps to internal user_id via users table lookup
+  - CSV export uses section headers (# table_name) to separate multiple tables in a single file — fields with commas/quotes/newlines are properly escaped
+  - `tierFromEvent` handles PRODUCT_CHANGE and UNCANCELLATION in addition to the basic events for robust subscription lifecycle management
+  - No pbxproj changes — edge functions are a standalone Node.js project
   - Highest pbxproj IDs unchanged: A1...0021 (BuildFile), A2...001D (FileRef)
 ---
