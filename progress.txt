@@ -550,5 +550,20 @@ Started: 2026-03-24
   - JSON-LD `<script>` tags in Astro use `set:html={JSON.stringify(jsonLd)}` pattern — produces a hint (not error) about `is:inline`
   - Global CSS vars defined in BaseLayout.astro: --color-primary (#4f46e5), --color-accent (#10b981), --color-bg-alt (#f8f9fa), etc.
   - wrangler.toml uses `[site] bucket = "./dist"` for Cloudflare Pages static deployment
-  - Privacy/Terms pages at /privacy and /terms are linked from footer but not yet created (US-028)
+  - Legal pages (privacy.astro, terms.astro) use `.legal` class wrapper for prose content; reuse same header/footer pattern as index.astro
+  - Header nav links on subpages use `/#features` and `/#pricing` (leading slash) to link back to landing page sections
+---
+
+## 2026-03-24 - US-028
+- What was implemented: Privacy Policy page at /privacy and Terms of Service page at /terms for the lastlogged.com Astro website
+- Files changed:
+  - website/src/pages/privacy.astro (new — full privacy policy with sections: Data Collection, Analytics, Data Storage, Third-Party Services, Data Deletion, Children's Privacy, Changes, Contact)
+  - website/src/pages/terms.astro (new — full terms of service with sections: Acceptance of Terms, Subscription Terms, User Responsibilities, Intellectual Property, Limitation of Liability, Termination, Governing Law, Contact)
+  - prd.json (US-028 passes: true)
+- **Learnings for future iterations:**
+  - Legal pages reuse the same header/footer pattern from index.astro — use `.legal` class wrapper for prose content styling
+  - Header nav links on subpages use `/#features` and `/#pricing` (with leading slash) to link back to landing page sections
+  - Both pages are already linked from the app's SettingsView and PaywallView at `https://lastlogged.com/privacy` and `https://lastlogged.com/terms`
+  - Author is Pearson Media LLC — consistent across footer copyright and legal page contact sections
+  - Astro typecheck produces 0 errors for the new pages; the existing `is:inline` hint in BaseLayout is pre-existing and benign
 ---

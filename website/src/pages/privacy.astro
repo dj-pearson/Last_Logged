@@ -1,0 +1,317 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'Privacy Policy — Last Logged';
+const description =
+  'Privacy policy for Last Logged. Learn how we handle your data with a privacy-first approach.';
+---
+
+<BaseLayout title={title} description={description}>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <a href="/" class="logo">Last Logged</a>
+      <nav>
+        <a href="/#features">Features</a>
+        <a href="/#pricing">Pricing</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="legal">
+    <div class="container">
+      <h1>Privacy Policy</h1>
+      <p class="last-updated">Last updated: March 24, 2026</p>
+
+      <p>
+        Pearson Media LLC (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) operates the
+        Last Logged mobile application and the lastlogged.com website. This Privacy Policy explains
+        how we collect, use, and protect your information when you use our services.
+      </p>
+      <p>
+        We are committed to a <strong>privacy-first approach</strong>. Last Logged is designed to
+        work fully offline, and we collect as little data as possible.
+      </p>
+
+      <h2>Data Collection</h2>
+      <p>
+        Last Logged collects <strong>minimal data</strong>. Your tracker items, completion logs, and
+        categories are stored locally on your device using Apple&rsquo;s SwiftData framework. We do
+        not have access to this data unless you explicitly opt in to cloud sync.
+      </p>
+      <h3>Analytics</h3>
+      <p>
+        We use <a href="https://telemetrydeck.com">TelemetryDeck</a> for privacy-first analytics.
+        TelemetryDeck does not collect personally identifiable information (PII). We track anonymous,
+        aggregated events such as:
+      </p>
+      <ul>
+        <li>Tracker items created</li>
+        <li>Completions logged</li>
+        <li>Widget interactions</li>
+        <li>Onboarding completion</li>
+        <li>Paywall impressions</li>
+      </ul>
+      <p>
+        These events contain no names, email addresses, or device identifiers that could identify you
+        personally.
+      </p>
+
+      <h2>Data Storage</h2>
+      <h3>Local Storage</h3>
+      <p>
+        By default, all your data is stored locally on your device using SwiftData. This data never
+        leaves your device unless you enable cloud sync by signing in to an account.
+      </p>
+      <h3>Cloud Sync (Optional)</h3>
+      <p>
+        If you choose to sign in with Apple or email, your data is synced to our cloud database
+        hosted on <a href="https://supabase.com">Supabase</a>. Supabase provides secure,
+        encrypted storage with Row Level Security (RLS) policies that ensure only you can access your
+        data. Cloud sync is entirely optional &mdash; the app is fully functional without it.
+      </p>
+
+      <h2>Third-Party Services</h2>
+      <p>Last Logged integrates with the following third-party services:</p>
+      <ul>
+        <li>
+          <strong>RevenueCat</strong> &mdash; Manages in-app subscriptions and purchases. RevenueCat
+          processes transaction data as required by Apple. See the
+          <a href="https://www.revenuecat.com/privacy/">RevenueCat Privacy Policy</a>.
+        </li>
+        <li>
+          <strong>TelemetryDeck</strong> &mdash; Privacy-first analytics. No PII collected. See the
+          <a href="https://telemetrydeck.com/privacy/">TelemetryDeck Privacy Policy</a>.
+        </li>
+        <li>
+          <strong>Supabase</strong> &mdash; Cloud database and authentication (only if you opt in to
+          sync). See the
+          <a href="https://supabase.com/privacy">Supabase Privacy Policy</a>.
+        </li>
+        <li>
+          <strong>Apple Sign In</strong> &mdash; Authentication service (only if you choose to sign
+          in). Governed by
+          <a href="https://www.apple.com/legal/privacy/">Apple&rsquo;s Privacy Policy</a>.
+        </li>
+      </ul>
+
+      <h2>Data Deletion</h2>
+      <p>You have full control over your data:</p>
+      <ul>
+        <li>
+          <strong>Local data:</strong> You can clear all local data at any time from
+          Settings &gt; Data &gt; Clear All Data within the app.
+        </li>
+        <li>
+          <strong>Cloud data:</strong> If you have cloud sync enabled, you can request deletion of
+          your cloud data by contacting us at
+          <a href="mailto:support@lastlogged.com">support@lastlogged.com</a>. We will delete your
+          account and all associated data within 30 days.
+        </li>
+        <li>
+          <strong>Data export:</strong> You can export all your data in JSON or CSV format from the
+          app&rsquo;s Settings screen before deleting it.
+        </li>
+      </ul>
+
+      <h2>Children&rsquo;s Privacy</h2>
+      <p>
+        Last Logged is not directed at children under 13. We do not knowingly collect information
+        from children under 13. If you believe we have inadvertently collected such information,
+        please contact us so we can promptly remove it.
+      </p>
+
+      <h2>Changes to This Policy</h2>
+      <p>
+        We may update this Privacy Policy from time to time. We will notify you of any material
+        changes by updating the &ldquo;Last updated&rdquo; date at the top of this page. Your
+        continued use of the app after changes constitutes acceptance of the updated policy.
+      </p>
+
+      <h2>Contact Us</h2>
+      <p>
+        If you have any questions about this Privacy Policy, please contact us at:
+      </p>
+      <p>
+        <strong>Pearson Media LLC</strong><br />
+        Email: <a href="mailto:support@lastlogged.com">support@lastlogged.com</a>
+      </p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="logo">Last Logged</span>
+        <p>&copy; {new Date().getFullYear()} Pearson Media LLC</p>
+      </div>
+      <nav class="footer-links">
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+        <a href="mailto:support@lastlogged.com">Contact</a>
+      </nav>
+    </div>
+  </footer>
+</BaseLayout>
+
+<style>
+  /* Header */
+  .header {
+    position: sticky;
+    top: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--color-border);
+    z-index: 100;
+  }
+
+  .header .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .logo:hover {
+    text-decoration: none;
+  }
+
+  .header nav {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .header nav a {
+    color: var(--color-text-muted);
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  .header nav a:hover {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  /* Container */
+  .container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* Legal Content */
+  .legal {
+    padding: 4rem 0;
+  }
+
+  .legal h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+
+  .last-updated {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .legal h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .legal h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .legal p {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    max-width: 720px;
+  }
+
+  .legal ul {
+    margin: 0.5rem 0 1.5rem 1.5rem;
+    max-width: 720px;
+  }
+
+  .legal li {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    padding: 0.2rem 0;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 2.5rem 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-brand p {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-links a {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  .footer-links a:hover {
+    color: var(--color-primary);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .legal h1 {
+      font-size: 2rem;
+    }
+
+    .footer-inner {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .legal {
+      padding: 2.5rem 0;
+    }
+
+    .legal h1 {
+      font-size: 1.75rem;
+    }
+  }
+</style>
