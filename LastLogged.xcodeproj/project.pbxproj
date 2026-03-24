@@ -13,6 +13,10 @@
 		A10000000000000000000004 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000001 /* Supabase */; };
 		A10000000000000000000005 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000002 /* RevenueCat */; };
 		A10000000000000000000006 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000003 /* TelemetryDeck */; };
+		A10000000000000000000007 /* SyncStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* SyncStatus.swift */; };
+		A10000000000000000000008 /* TrackerItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* TrackerItem.swift */; };
+		A10000000000000000000009 /* CompletionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* CompletionLog.swift */; };
+		A1000000000000000000000A /* TrackerCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* TrackerCategory.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +26,10 @@
 		A20000000000000000000004 /* LastLogged.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LastLogged.entitlements; sourceTree = "<group>"; };
 		A20000000000000000000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000006 /* LastLogged.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LastLogged.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000007 /* SyncStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatus.swift; sourceTree = "<group>"; };
+		A20000000000000000000008 /* TrackerItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerItem.swift; sourceTree = "<group>"; };
+		A20000000000000000000009 /* CompletionLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionLog.swift; sourceTree = "<group>"; };
+		A2000000000000000000000A /* TrackerCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerCategory.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +76,10 @@
 		A30000000000000000000003 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				A20000000000000000000007 /* SyncStatus.swift */,
+				A20000000000000000000008 /* TrackerItem.swift */,
+				A20000000000000000000009 /* CompletionLog.swift */,
+				A2000000000000000000000A /* TrackerCategory.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -243,6 +255,10 @@
 			files = (
 				A10000000000000000000001 /* LastLoggedApp.swift in Sources */,
 				A10000000000000000000002 /* ContentView.swift in Sources */,
+				A10000000000000000000007 /* SyncStatus.swift in Sources */,
+				A10000000000000000000008 /* TrackerItem.swift in Sources */,
+				A10000000000000000000009 /* CompletionLog.swift in Sources */,
+				A1000000000000000000000A /* TrackerCategory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -8,6 +8,11 @@ Started: 2026-03-24
 - Bundle identifier: com.pearsonmedia.lastlogged
 - iOS 17+ deployment target, SwiftUI lifecycle
 - Empty directories use .gitkeep files for git tracking
+- SwiftData models: TrackerItem, CompletionLog, TrackerCategory in Models/ folder
+- SyncStatus enum (synced/pending/conflict) in Models/SyncStatus.swift — used by TrackerItem
+- ModelContainer configured with App Group shared store in LastLoggedApp.swift (URL: appGroupURL/LastLogged.sqlite)
+- TrackerItem links to TrackerCategory via categoryId (UUID), not a SwiftData @Relationship
+- CompletionLog links to TrackerItem via trackerItemId (UUID), not a SwiftData @Relationship
 ---
 
 ## 2026-03-24 - US-001
@@ -25,4 +30,21 @@ Started: 2026-03-24
   - When adding new Swift files, must add PBXFileReference + PBXBuildFile + add to parent PBXGroup children
   - Project is on Windows — cannot run xcodebuild for typecheck verification; structure verified manually
   - GENERATE_INFOPLIST_FILE = YES means most Info.plist keys come from build settings (INFOPLIST_KEY_* prefix)
+---
+
+## 2026-03-24 - US-002
+- What was implemented: SwiftData @Model classes for TrackerItem, CompletionLog, and TrackerCategory, plus SyncStatus enum. ModelContainer configured in app entry point with App Group shared store.
+- Files changed:
+  - LastLogged/Models/SyncStatus.swift (new - SyncStatus enum with synced/pending/conflict cases)
+  - LastLogged/Models/TrackerItem.swift (new - @Model with all required fields)
+  - LastLogged/Models/CompletionLog.swift (new - @Model with id, trackerItemId, completedAt, notes)
+  - LastLogged/Models/TrackerCategory.swift (new - @Model with id, name, iconName, colorHex, sortOrder, isDefault)
+  - LastLogged/LastLoggedApp.swift (updated - ModelContainer with Schema and App Group container URL)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added 4 new source files to project)
+  - LastLogged/Models/.gitkeep (removed - no longer needed)
+- **Learnings for future iterations:**
+  - Models use UUID-based foreign keys (categoryId, trackerItemId) instead of @Relationship — keeps it simple for sync
+  - SyncStatus is a separate file since it's an enum used by TrackerItem (not a @Model itself)
+  - ModelContainer fallback: if App Group URL is nil, uses default ModelConfiguration
+  - Highest pbxproj IDs after this story: A1...000A (BuildFile), A2...000A (FileRef)
 ---
