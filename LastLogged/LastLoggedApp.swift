@@ -34,6 +34,11 @@ struct LastLoggedApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear {
+                    DataSeeder.seedDefaultCategoriesIfNeeded(
+                        modelContext: modelContainer.mainContext
+                    )
+                }
         }
         .modelContainer(modelContainer)
     }
