@@ -6,6 +6,7 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: HomeViewModel?
     @State private var showingAddTracker = false
+    @State private var showingTemplatePicker = false
     @State private var editingItem: TrackerItem?
     @State private var itemToArchive: TrackerItem?
     @State private var showArchiveConfirmation = false
@@ -28,8 +29,17 @@ struct HomeView: View {
             .navigationTitle("Last Logged")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showingAddTracker = true
+                    Menu {
+                        Button {
+                            showingAddTracker = true
+                        } label: {
+                            Label("New Tracker", systemImage: "plus")
+                        }
+                        Button {
+                            showingTemplatePicker = true
+                        } label: {
+                            Label("Add from Templates", systemImage: "list.bullet.rectangle")
+                        }
                     } label: {
                         Image(systemName: "plus")
                     }
@@ -49,6 +59,11 @@ struct HomeView: View {
         .sheet(item: $editingItem) { item in
             if let viewModel {
                 AddTrackerView(viewModel: viewModel, editingItem: item)
+            }
+        }
+        .sheet(isPresented: $showingTemplatePicker) {
+            if let viewModel {
+                TemplatePickerView(viewModel: viewModel)
             }
         }
         .confirmationDialog("Archive Tracker?", isPresented: $showArchiveConfirmation, presenting: itemToArchive) { item in
@@ -81,6 +96,13 @@ struct HomeView: View {
                 Text("Add Your First Tracker")
             }
             .buttonStyle(.borderedProminent)
+
+            Button {
+                showingTemplatePicker = true
+            } label: {
+                Text("Browse Templates")
+            }
+            .buttonStyle(.bordered)
         }
     }
 
