@@ -4,6 +4,7 @@ import RevenueCat
 
 @main
 struct LastLoggedApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     let modelContainer: ModelContainer
 
     init() {
@@ -43,5 +44,12 @@ struct LastLoggedApp: App {
                 }
         }
         .modelContainer(modelContainer)
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                SupabaseService.shared.syncOnForeground(
+                    modelContext: modelContainer.mainContext
+                )
+            }
+        }
     }
 }

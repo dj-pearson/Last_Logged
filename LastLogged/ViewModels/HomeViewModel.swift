@@ -101,15 +101,18 @@ final class HomeViewModel {
         save()
         fetchItems()
         scheduleNotifications()
+        triggerSync()
     }
 
     // MARK: - Archive
 
     func archiveItem(_ item: TrackerItem) {
         item.isArchived = true
+        item.syncStatus = .pending
         save()
         fetchItems()
         scheduleNotifications()
+        triggerSync()
     }
 
     // MARK: - Log Completion
@@ -125,18 +128,22 @@ final class HomeViewModel {
         let log = CompletionLog(trackerItemId: item.id)
         modelContext.insert(log)
         item.lastCompletedAt = log.completedAt
+        item.syncStatus = .pending
         save()
         fetchItems()
         scheduleNotifications()
+        triggerSync()
         return LogUndoInfo(completionLog: log, previousLastCompletedAt: previousDate, item: item)
     }
 
     func undoLog(_ info: LogUndoInfo) {
         modelContext.delete(info.completionLog)
         info.item.lastCompletedAt = info.previousLastCompletedAt
+        info.item.syncStatus = .pending
         save()
         fetchItems()
         scheduleNotifications()
+        triggerSync()
     }
 
     // MARK: - Update Item
@@ -152,9 +159,11 @@ final class HomeViewModel {
         item.categoryId = categoryId
         item.reminderIntervalDays = reminderIntervalDays
         item.iconName = iconName
+        item.syncStatus = .pending
         save()
         fetchItems()
         scheduleNotifications()
+        triggerSync()
     }
 
     // MARK: - Update Sort Order
@@ -172,6 +181,12 @@ final class HomeViewModel {
         Task {
             await NotificationService.shared.rescheduleAllNotifications(modelContext: context)
         }
+    }
+
+    // MARK: - Sync
+
+    private func triggerSync() {
+        SupabaseService.shared.scheduleSyncAfterWrite(modelContext: modelContext)
     }
 
     // MARK: - Persistence

@@ -46,6 +46,11 @@ Started: 2026-03-24
 - PaywallView in Views/Components/ — shared between hard paywall (isHardPaywall: true, non-dismissible) and soft paywall (default, has Close button)
 - FreeTierLimits enum in PaywallView.swift — maxTrackers=5, maxHistoryPerItem=10, maxWidgetStyles=1; check via `RevenueCatService.shared.isPremium` before enforcing
 - HomeViewModel.canCreateTracker checks isPremium OR count < maxTrackers — gate tracker creation on this property
+- Supabase schema in `supabase/migrations/` — users table has auth_id (auth.users FK), all data tables use internal user_id FK; RLS uses `get_user_id()` helper to map auth.uid() → user_id
+- SupabaseService.shared is the singleton for cloud sync — @Observable, wraps supabase-swift client; call `scheduleSyncAfterWrite(modelContext:)` after local mutations and `syncOnForeground(modelContext:)` on app activation
+- Sync DTOs (TrackerCategoryRow, TrackerItemRow, CompletionLogRow) use CodingKeys to map Swift camelCase to Postgres snake_case column names
+- Push only syncs TrackerItems with `syncStatus != .synced`; categories and logs push all (upsert on conflict); pull uses lastSyncTimestamp for incremental fetch
+- After local mutations in HomeViewModel, set `item.syncStatus = .pending` before calling `triggerSync()` to mark items for push
 ---
 
 ## 2026-03-24 - US-001
@@ -301,4 +306,40 @@ Started: 2026-03-24
   - PaywallView uses `packageFor(_ tier:)` helper to match RevenueCat packages by `storeProduct.productIdentifier`
   - `.interactiveDismissDisabled(isHardPaywall)` prevents swipe-to-dismiss on hard paywall sheets
   - Highest pbxproj IDs after this story: A1...001E (BuildFile), A2...001A (FileRef)
+---
+
+## 2026-03-24 - US-017
+- What was implemented: Supabase PostgreSQL schema with RLS policies. Created self-contained SQL migration file at `supabase/migrations/20260324000001_initial_schema.sql`. Defines custom enum types (sync_status, subscription_tier). Creates 4 tables: users (with auth_id FK to auth.users), tracker_categories, tracker_items (mirrors SwiftData model), and completion_logs — all with user_id foreign keys for multi-tenancy. RLS enabled on all tables with per-operation policies (SELECT, INSERT, UPDATE, DELETE). Helper function `get_user_id()` maps auth.uid() to internal user ID. Indexes on tracker_items(user_id, is_archived), tracker_items(user_id, last_completed_at), completion_logs(tracker_item_id, completed_at DESC), completion_logs(user_id, completed_at DESC). Auto-updating `updated_at` trigger on tables with that column.
+- Files changed:
+  - supabase/migrations/20260324000001_initial_schema.sql (new - full schema, indexes, RLS policies, triggers)
+  - prd.json (updated - US-017 passes: true)
+- **Learnings for future iterations:**
+  - Supabase migrations live in `supabase/migrations/` with timestamp-prefixed filenames (YYYYMMDDHHMMSS_name.sql)
+  - Users table uses `auth_id UUID REFERENCES auth.users(id)` to link to Supabase Auth — all other tables use internal `user_id` FK
+  - RLS policies use a `get_user_id()` helper function (SECURITY DEFINER) to map auth.uid() → internal user ID, since data tables reference internal user_id not auth_id
+  - `sync_status` and `subscription_tier` are PostgreSQL enum types — map to Swift enums by name
+  - tracker_items has `updated_at` column (not in SwiftData model) for last-write-wins conflict resolution in US-018
+  - `IF NOT EXISTS` on all CREATE TABLE/INDEX for idempotent migration
+  - No Swift files changed — no pbxproj updates needed
+  - Highest pbxproj IDs unchanged: A1...001E (BuildFile), A2...001A (FileRef)
+---
+
+## 2026-03-24 - US-018
+- What was implemented: SupabaseService singleton class wrapping supabase-swift client with offline-first data sync. Initializes SupabaseClient with URL and anon key placeholders. Push method uploads all TrackerCategories (full upsert), pending TrackerItems (syncStatus != .synced), and all CompletionLogs to Supabase via upsert. Pull method fetches remote changes since last sync timestamp (stored in UserDefaults) and merges into SwiftData using last-write-wins strategy. Sync triggers on: app foreground (via scenePhase .active in LastLoggedApp), and after local writes (debounced 2s via HomeViewModel.triggerSync). All local CRUD operations remain fully functional without network. SyncStatus on TrackerItems updates to .synced after successful push.
+- Files changed:
+  - LastLogged/Services/SupabaseService.swift (new - @Observable singleton with push/pull/sync for categories, items, and logs; Codable DTOs with snake_case CodingKeys)
+  - LastLogged/LastLoggedApp.swift (updated - added scenePhase observer, triggers syncOnForeground on .active)
+  - LastLogged/ViewModels/HomeViewModel.swift (updated - added triggerSync() method, calls scheduleSyncAfterWrite after create/archive/log/undo/update; sets syncStatus = .pending on mutations)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added SupabaseService.swift to Services group and Sources phase)
+  - prd.json (updated - US-018 passes: true)
+- **Learnings for future iterations:**
+  - SupabaseService.shared is @Observable so views can react to isSyncing/lastSyncedAt state
+  - Push uses upsert with `onConflict: "id"` for idempotent server writes — safe to re-push the same record
+  - Pull uses `gte("updated_at", ...)` for incremental fetch — only downloads records changed since last sync
+  - Sync DTOs (TrackerCategoryRow, TrackerItemRow, CompletionLogRow) use CodingKeys to map camelCase ↔ snake_case; these are internal to SupabaseService.swift
+  - `currentUserId` queries the users table to map auth.uid() → internal user ID (same pattern as RLS get_user_id())
+  - Debounced sync (2s) prevents excessive network calls during rapid local writes
+  - CompletionLog doesn't have syncStatus — push all logs and upsert on conflict; pull only inserts missing logs by ID
+  - LastLoggedApp uses `onChange(of: scenePhase)` to trigger sync when app returns to foreground — covers network recovery scenario too
+  - Highest pbxproj IDs after this story: A1...001F (BuildFile), A2...001B (FileRef)
 ---

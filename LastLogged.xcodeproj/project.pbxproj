@@ -37,6 +37,7 @@
 		A1000000000000000000001C /* LogCompletionIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* LogCompletionIntent.swift */; };
 		A1000000000000000000001D /* RevenueCatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* RevenueCatService.swift */; };
 		A1000000000000000000001E /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* PaywallView.swift */; };
+		A1000000000000000000001F /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* SupabaseService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +91,7 @@
 		A20000000000000000000018 /* LogCompletionIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogCompletionIntent.swift; sourceTree = "<group>"; };
 		A20000000000000000000019 /* RevenueCatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueCatService.swift; sourceTree = "<group>"; };
 		A2000000000000000000001A /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		A2000000000000000000001B /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -217,6 +219,7 @@
 			children = (
 				A20000000000000000000012 /* NotificationService.swift */,
 				A20000000000000000000019 /* RevenueCatService.swift */,
+				A2000000000000000000001B /* SupabaseService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -390,6 +393,7 @@
 				A10000000000000000000012 /* NotificationService.swift in Sources */,
 				A1000000000000000000001D /* RevenueCatService.swift in Sources */,
 				A1000000000000000000001E /* PaywallView.swift in Sources */,
+				A1000000000000000000001F /* SupabaseService.swift in Sources */,
 				A10000000000000000000013 /* WidgetDataProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
