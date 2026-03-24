@@ -35,6 +35,8 @@ Started: 2026-03-24
 - WidgetDataProvider.shared in LastLogged/Widget/ — creates its own ModelContainer from App Group URL; compiled in both targets
 - OverdueItem struct + UrgencyLevel enum live in WidgetDataProvider.swift — use for widget display data
 - Widget extension files are in LastLoggedWidget/ directory (sibling to LastLogged/)
+- Use `@Environment(\.widgetFamily)` to switch widget layouts by size; `containerBackground(.fill.tertiary, for: .widget)` for iOS 17+ backgrounds
+- OverdueItem.sampleItems provides placeholder/preview data for widget gallery — use `context.isPreview` in getSnapshot
 ---
 
 ## 2026-03-24 - US-001
@@ -224,4 +226,19 @@ Started: 2026-03-24
   - PBXCopyFilesBuildPhase with dstSubfolderSpec = 13 is used for "Embed App Extensions"
   - PBXContainerItemProxy + PBXTargetDependency link widget extension as dependency of main app
   - Highest pbxproj IDs after this story: A1...001B (BuildFile), A2...0017 (FileRef)
+---
+
+## 2026-03-24 - US-013
+- What was implemented: Small and medium home screen widgets with proper size-differentiated views. Small widget (2x2) shows the single most overdue item with name, elapsed time, icon, and urgency color indicator dot. Medium widget (4x2) shows top 3 most overdue items in a list with urgency dots, icons, names, and elapsed time. Added empty state with app icon and "Open Last Logged to start tracking" message. Used `.containerBackground(.fill.tertiary, for: .widget)` for iOS 17+ widget background. Added sample data for widget gallery placeholders and previews. Removed `.systemLarge` from supported families (US-014 will add it back). Used `StaticConfiguration` (no intent needed for MVP).
+- Files changed:
+  - LastLoggedWidget/LastLoggedWidget.swift (rewritten - SmallWidgetView, MediumWidgetView, MediumWidgetRowView, urgency helpers, sample data extension on OverdueItem)
+  - prd.json (updated - US-013 passes: true)
+- **Learnings for future iterations:**
+  - Use `@Environment(\.widgetFamily)` in the entry view to switch between widget size layouts
+  - `containerBackground(.fill.tertiary, for: .widget)` is the iOS 17+ way to set widget backgrounds — replaces the older `.background()` approach
+  - `context.isPreview` in getSnapshot tells you if the widget is shown in the gallery — return sample data for better UX
+  - Private free functions (not methods) work fine for shared utility logic across widget view structs
+  - Widget supportedFamilies should only list sizes with proper implementations — add `.systemLarge` when US-014 is done
+  - No new files added, no pbxproj changes needed — only modified existing LastLoggedWidget.swift
+  - Highest pbxproj IDs unchanged: A1...001B (BuildFile), A2...0017 (FileRef)
 ---
