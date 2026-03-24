@@ -61,6 +61,9 @@ Started: 2026-03-24
 - RevenueCat webhook validates signature via HMAC-SHA256 on raw body using `X-RevenueCat-Signature` header
 - Export endpoint authenticates via Supabase JWT in `Authorization: Bearer <token>` header; maps auth.uid() → internal user_id for data queries
 - REVENUECAT_WEBHOOK_SECRET env var needed for webhook signature validation
+- ContentView gates onboarding vs main app via `@AppStorage("onboardingCompleted")` — conditional flows belong here
+- OnboardingViewModel seeds template items for selected categories on completion via `CategoryTemplates.templates(for:)` and direct SwiftData insert
+- Use `@ObservationIgnored` on `@AppStorage` properties inside `@Observable` classes to avoid observation conflicts
 ---
 
 ## 2026-03-24 - US-001
@@ -417,4 +420,22 @@ Started: 2026-03-24
   - `tierFromEvent` handles PRODUCT_CHANGE and UNCANCELLATION in addition to the basic events for robust subscription lifecycle management
   - No pbxproj changes — edge functions are a standalone Node.js project
   - Highest pbxproj IDs unchanged: A1...0021 (BuildFile), A2...001D (FileRef)
+---
+
+## 2026-03-24 - US-022
+- What was implemented: Onboarding walkthrough with 3-screen TabView (welcome, category selection, widget prompt), OnboardingViewModel with @AppStorage persistence, soft paywall presentation after onboarding, template item seeding for selected categories
+- Files changed:
+  - LastLogged/ViewModels/OnboardingViewModel.swift (new - @Observable class managing onboarding state, category selection, and template seeding)
+  - LastLogged/Views/Onboarding/OnboardingView.swift (new - 3-screen TabView with page indicators, category checkboxes, widget instructions)
+  - LastLogged/ContentView.swift (updated - conditionally shows OnboardingView or HomeView based on @AppStorage)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added 2 new source files)
+  - LastLogged/Views/Onboarding/.gitkeep (removed - replaced by real file)
+- **Learnings for future iterations:**
+  - OnboardingViewModel uses @ObservationIgnored on @AppStorage property to avoid conflicts with @Observable — @AppStorage and @Observable don't compose directly
+  - ContentView is the gating point for onboarding vs main app — future conditional flows (e.g., auth prompts) should follow this pattern
+  - OnboardingView passes viewModel explicitly to child functions rather than using @Environment — keeps it simple for a non-shared ViewModel
+  - `Bindable(viewModel).currentPage` syntax needed to create a two-way binding from @Observable property for TabView selection
+  - Category selection uses Set<UUID> for tracking selected categories — efficient for toggle and membership checks
+  - Soft paywall shown via `.sheet(isPresented:)` after completeOnboarding() — completeOnboarding sets @AppStorage so dismissing paywall reveals HomeView
+  - Highest pbxproj IDs: A1...0023 (BuildFile), A2...001F (FileRef)
 ---
