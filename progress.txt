@@ -22,6 +22,11 @@ Started: 2026-03-24
 - TrackerRowView takes `onLog: () -> Void` closure — must be provided when constructing the row
 - `import UIKit` needed for haptic feedback (UIImpactFeedbackGenerator) — SwiftUI alone doesn't expose it
 - AddTrackerView takes HomeViewModel (not ModelContext) and uses its createItem method; present as .sheet from HomeView
+- AddTrackerView supports edit mode via optional `editingItem: TrackerItem?` parameter — pre-populates all fields from existing item
+- TrackerDetailViewModel is @Observable, takes ModelContext + TrackerItem — prep for US-024 (completion history)
+- Use `.sheet(item:)` with TrackerItem for edit sheet — @Model classes conform to Identifiable via PersistentModel
+- Swipe actions use `.swipeActions(edge: .trailing, allowsFullSwipe: false)` for non-destructive-by-default archive
+- Context menu on rows: `.contextMenu` with Edit and Archive options
 ---
 
 ## 2026-03-24 - US-001
@@ -139,4 +144,21 @@ Started: 2026-03-24
   - Category Picker uses `Optional(category.id)` as tag to match `@State private var selectedCategoryId: UUID?`
   - The form is presented as a sheet from HomeView — the viewModel is passed through, so new items appear immediately on dismiss
   - Highest pbxproj IDs after this story: A1...000E (BuildFile), A2...000E (FileRef)
+---
+
+## 2026-03-24 - US-009
+- What was implemented: Edit and archive tracker functionality. Added swipe-to-archive gesture with destructive style and confirmation dialog on tracker rows. Added context menu (long-press) with Edit and Archive options. Modified AddTrackerView to support edit mode via optional `editingItem` parameter — pre-populates name, category, reminder interval, and icon from existing TrackerItem. Added `updateItem` method to HomeViewModel. Created TrackerDetailViewModel as @Observable class managing single item state. Edit sheet presented via `.sheet(item:)` on HomeView.
+- Files changed:
+  - LastLogged/ViewModels/HomeViewModel.swift (added updateItem method)
+  - LastLogged/ViewModels/TrackerDetailViewModel.swift (new - @Observable class with archiveItem, updateItem, save)
+  - LastLogged/Views/Home/AddTrackerView.swift (refactored to support edit mode with pre-populated fields, custom init with State initializers, reverse reminder unit conversion)
+  - LastLogged/Views/Home/HomeView.swift (added swipe-to-archive, context menu, edit sheet, archive confirmation dialog)
+  - LastLogged.xcodeproj/project.pbxproj (added TrackerDetailViewModel.swift to ViewModels group and Sources phase)
+- **Learnings for future iterations:**
+  - Use `State(initialValue:)` in custom init to pre-populate @State vars from passed data — works because sheet creates fresh view instances
+  - Reverse reminder unit: `days % 30 == 0` → months, `days % 7 == 0` → weeks, else days
+  - `.confirmationDialog(presenting:)` pattern is cleaner than manual Binding for optional-driven alerts
+  - `.sheet(item:)` works with @Model classes since PersistentModel conforms to Identifiable
+  - Multiple `.sheet` modifiers on same view work in iOS 17+ when triggered by different bindings
+  - Highest pbxproj IDs after this story: A1...000F (BuildFile), A2...000F (FileRef)
 ---
