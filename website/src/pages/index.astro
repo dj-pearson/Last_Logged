@@ -1,0 +1,498 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'Last Logged — When did I last...?';
+const description =
+  'Track recurring life events with one-tap logging, smart reminders, and home screen widgets. Never forget when you last changed the HVAC filter, got a haircut, or called your parents.';
+---
+
+<BaseLayout title={title} description={description}>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <a href="/" class="logo">Last Logged</a>
+      <nav>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-text">
+        <h1>When did I last&hellip;?</h1>
+        <p class="hero-tagline">
+          Track recurring life events with one tap. Get smart reminders so you
+          never forget the things that matter.
+        </p>
+        <a href="#" class="app-store-badge" aria-label="Download on the App Store">
+          <img
+            src="/app-store-badge.svg"
+            alt="Download on the App Store"
+            width="180"
+            height="60"
+          />
+        </a>
+      </div>
+      <div class="hero-image">
+        <div class="screenshot-placeholder">
+          <span>App Screenshot</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="features">
+    <div class="container">
+      <h2>Everything you need to stay on track</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">&#x2714;&#xFE0F;</div>
+          <h3>One-Tap Logging</h3>
+          <p>
+            Log any event with a single tap. No forms, no friction &mdash; just
+            tap and it&rsquo;s recorded with a satisfying haptic confirmation.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">&#x23F1;&#xFE0F;</div>
+          <h3>Elapsed Time Display</h3>
+          <p>
+            See exactly how long it&rsquo;s been since each task at a glance,
+            with color-coded urgency so you know what needs attention first.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">&#x1F514;</div>
+          <h3>Smart Reminders</h3>
+          <p>
+            Set custom intervals and get notified when items are due. Never miss
+            an oil change, dental cleaning, or vet checkup again.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">&#x1F4F1;</div>
+          <h3>Home Screen Widgets</h3>
+          <p>
+            Check your most overdue items without opening the app. Interactive
+            widgets let you log completions right from your home screen.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" class="pricing">
+    <div class="container">
+      <h2>Simple, honest pricing</h2>
+      <p class="pricing-subtitle">
+        Start free with up to 5 trackers. Upgrade when you&rsquo;re ready.
+      </p>
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <h3>Free</h3>
+          <div class="price">$0</div>
+          <ul>
+            <li>Up to 5 trackers</li>
+            <li>One-tap logging</li>
+            <li>Smart reminders</li>
+            <li>1 widget style</li>
+            <li>Last 10 history entries</li>
+          </ul>
+        </div>
+        <div class="pricing-card">
+          <h3>Monthly</h3>
+          <div class="price">$3.99<span>/mo</span></div>
+          <p class="trial-badge">7-day free trial</p>
+          <ul>
+            <li>Unlimited trackers</li>
+            <li>Full completion history</li>
+            <li>All widget styles</li>
+            <li>Cloud sync</li>
+            <li>Data export</li>
+          </ul>
+        </div>
+        <div class="pricing-card featured">
+          <div class="popular-badge">Best Value</div>
+          <h3>Annual</h3>
+          <div class="price">$24.99<span>/yr</span></div>
+          <p class="trial-badge">7-day free trial &middot; Save 48%</p>
+          <ul>
+            <li>Unlimited trackers</li>
+            <li>Full completion history</li>
+            <li>All widget styles</li>
+            <li>Cloud sync</li>
+            <li>Data export</li>
+          </ul>
+        </div>
+        <div class="pricing-card">
+          <h3>Lifetime</h3>
+          <div class="price">$59.99</div>
+          <p class="trial-badge">One-time purchase</p>
+          <ul>
+            <li>Everything in Premium</li>
+            <li>All future updates</li>
+            <li>Support development</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="logo">Last Logged</span>
+        <p>&copy; {new Date().getFullYear()} Pearson Media LLC</p>
+      </div>
+      <nav class="footer-links">
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+        <a href="mailto:support@lastlogged.com">Contact</a>
+      </nav>
+    </div>
+  </footer>
+</BaseLayout>
+
+<style>
+  /* Header */
+  .header {
+    position: sticky;
+    top: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--color-border);
+    z-index: 100;
+  }
+
+  .header .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .logo:hover {
+    text-decoration: none;
+  }
+
+  .header nav {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .header nav a {
+    color: var(--color-text-muted);
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  .header nav a:hover {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  /* Container */
+  .container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 5rem 0 4rem;
+    background: linear-gradient(135deg, #f0f0ff 0%, #e8faf0 100%);
+  }
+
+  .hero-inner {
+    display: flex;
+    align-items: center;
+    gap: 3rem;
+  }
+
+  .hero-text {
+    flex: 1;
+  }
+
+  .hero-text h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+    color: var(--color-text);
+  }
+
+  .hero-tagline {
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+    margin-bottom: 2rem;
+    max-width: 480px;
+  }
+
+  .app-store-badge img {
+    display: block;
+  }
+
+  .hero-image {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+
+  .screenshot-placeholder {
+    width: 280px;
+    height: 560px;
+    background: var(--color-bg);
+    border-radius: 2rem;
+    border: 2px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Features */
+  .features {
+    padding: 5rem 0;
+  }
+
+  .features h2 {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 3rem;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+
+  .feature-card {
+    background: var(--color-bg-alt);
+    border-radius: 1rem;
+    padding: 2rem 1.5rem;
+    text-align: center;
+  }
+
+  .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-card h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-card p {
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+  }
+
+  /* Pricing */
+  .pricing {
+    padding: 5rem 0;
+    background: var(--color-bg-alt);
+  }
+
+  .pricing h2 {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .pricing-subtitle {
+    text-align: center;
+    color: var(--color-text-muted);
+    margin-bottom: 3rem;
+    font-size: 1.1rem;
+  }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .pricing-card {
+    background: var(--color-bg);
+    border-radius: 1rem;
+    padding: 2rem 1.5rem;
+    border: 1px solid var(--color-border);
+    position: relative;
+  }
+
+  .pricing-card.featured {
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 8px 30px rgba(79, 70, 229, 0.12);
+  }
+
+  .popular-badge {
+    position: absolute;
+    top: -0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    white-space: nowrap;
+  }
+
+  .pricing-card h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .price {
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+  }
+
+  .price span {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+
+  .trial-badge {
+    font-size: 0.85rem;
+    color: var(--color-accent);
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+  }
+
+  .pricing-card ul {
+    list-style: none;
+    margin-top: 1rem;
+  }
+
+  .pricing-card li {
+    padding: 0.35rem 0;
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+  }
+
+  .pricing-card li::before {
+    content: '\2713';
+    color: var(--color-accent);
+    font-weight: 700;
+    margin-right: 0.5rem;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 2.5rem 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-brand p {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-links a {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  .footer-links a:hover {
+    color: var(--color-primary);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero-inner {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .hero-text h1 {
+      font-size: 2.25rem;
+    }
+
+    .hero-tagline {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .app-store-badge img {
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .pricing-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .footer-inner {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero {
+      padding: 3rem 0 2.5rem;
+    }
+
+    .hero-text h1 {
+      font-size: 1.85rem;
+    }
+
+    .screenshot-placeholder {
+      width: 220px;
+      height: 440px;
+    }
+
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pricing-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

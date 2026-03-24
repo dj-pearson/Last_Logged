@@ -75,6 +75,9 @@ Started: 2026-03-24
 - AppIcon.png placeholder in Assets.xcassets/AppIcon.appiconset — replace with final icon before App Store submission
 - All interactive buttons have .accessibilityLabel and .accessibilityHint; decorative icons use .accessibilityHidden(true)
 - Minimum 44x44pt tap targets enforced on log buttons in both main app and widget views via .frame(minWidth: 44, minHeight: 44)
+- Website (lastlogged.com) is an Astro project in `website/` — static output, Cloudflare Pages deployment via wrangler.toml
+- Website layout in `website/src/layouts/BaseLayout.astro` — includes SEO meta, OG tags, JSON-LD; pages in `website/src/pages/`
+- Website CSS vars: --color-primary (#4f46e5), --color-accent (#10b981), --color-bg-alt (#f8f9fa) — defined in BaseLayout global styles
 ---
 
 ## 2026-03-24 - US-001
@@ -530,4 +533,22 @@ Started: 2026-03-24
   - Widget extension cannot access AnalyticsService.swift from the main app target — use TelemetryDeck.signal() directly in widget code
   - Adding an SPM dependency to the widget target requires: PBXBuildFile (framework), PBXFrameworksBuildPhase entry, packageProductDependencies on native target, and XCSwiftPackageProductDependency
   - Highest pbxproj IDs after this story: A1...0028 (BuildFile), A2...0023 (FileRef), AA...0004 (ProductDependency)
+---
+
+## 2026-03-24 - US-027
+- Implemented lastlogged.com static landing page using Astro
+- Created Astro project in `website/` with static output mode
+- BaseLayout.astro with full SEO meta tags, Open Graph tags, Twitter cards, and JSON-LD structured data (SoftwareApplication schema with pricing offers)
+- Landing page with: sticky header nav, hero section (tagline + App Store badge placeholder + screenshot placeholder), features grid (one-tap logging, elapsed time, smart reminders, widgets), pricing section (Free/Monthly/Annual/Lifetime with "Best Value" badge), footer with Privacy Policy/Terms/Contact links
+- Responsive design with breakpoints at 768px (tablet) and 480px (mobile)
+- Cloudflare Pages deployment config via wrangler.toml
+- Placeholder assets: app-store-badge.svg, favicon.svg, og-image.png
+- Files changed: website/ (new Astro project), website/src/layouts/BaseLayout.astro, website/src/pages/index.astro, website/public/app-store-badge.svg, website/public/favicon.svg, website/public/og-image.png, website/wrangler.toml, website/astro.config.mjs
+- **Learnings for future iterations:**
+  - Astro project is in `website/` directory at project root — sibling to `LastLogged/`, `edge-functions/`, etc.
+  - `astro check` requires `@astrojs/check` and `typescript` packages — install them during setup
+  - JSON-LD `<script>` tags in Astro use `set:html={JSON.stringify(jsonLd)}` pattern — produces a hint (not error) about `is:inline`
+  - Global CSS vars defined in BaseLayout.astro: --color-primary (#4f46e5), --color-accent (#10b981), --color-bg-alt (#f8f9fa), etc.
+  - wrangler.toml uses `[site] bucket = "./dist"` for Cloudflare Pages static deployment
+  - Privacy/Terms pages at /privacy and /terms are linked from footer but not yet created (US-028)
 ---
