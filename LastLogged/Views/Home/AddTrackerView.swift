@@ -112,6 +112,8 @@ struct AddTrackerView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    .accessibilityLabel("Icon: \(selectedIcon)")
+                    .accessibilityHint("Double-tap to choose a different icon")
                 }
             }
             .navigationTitle(editingItem != nil ? "Edit Tracker" : "New Tracker")
@@ -228,6 +230,9 @@ struct SFSymbolPickerView: View {
                                 .foregroundStyle(selectedIcon == symbol ? .accent : .primary)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(symbol.replacingOccurrences(of: ".", with: " ").replacingOccurrences(of: "fill", with: "").trimmingCharacters(in: .whitespaces))
+                        .accessibilityHint("Double-tap to select this icon")
+                        .accessibilityAddTraits(selectedIcon == symbol ? .isSelected : [])
                     }
                 }
                 .padding()

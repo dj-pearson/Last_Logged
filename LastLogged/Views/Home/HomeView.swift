@@ -36,6 +36,8 @@ struct HomeView: View {
                     } label: {
                         Image(systemName: "gearshape")
                     }
+                    .accessibilityLabel("Settings")
+                    .accessibilityHint("Open app settings")
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -60,6 +62,8 @@ struct HomeView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Add tracker")
+                    .accessibilityHint("Create a new tracker or add from templates")
                 }
             }
         }
@@ -119,6 +123,7 @@ struct HomeView: View {
                 Text("Add Your First Tracker")
             }
             .buttonStyle(.borderedProminent)
+            .accessibilityHint("Create a custom tracker")
 
             Button {
                 showingTemplatePicker = true
@@ -126,6 +131,7 @@ struct HomeView: View {
                 Text("Browse Templates")
             }
             .buttonStyle(.bordered)
+            .accessibilityHint("Choose from pre-built tracker templates")
         }
     }
 
@@ -219,12 +225,16 @@ struct HomeView: View {
                 dismissToast()
             }
             .fontWeight(.semibold)
+            .accessibilityLabel("Undo")
+            .accessibilityHint("Undo the last log entry")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 4, y: 2)
         .padding(.bottom, 16)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Completion logged")
     }
 }
 
@@ -245,6 +255,7 @@ struct TrackerRowView: View {
             Image(systemName: item.iconName)
                 .foregroundStyle(.accent)
                 .frame(width: 28)
+                .accessibilityHidden(true)
 
             Text(item.name)
 
@@ -262,7 +273,11 @@ struct TrackerRowView: View {
                     .foregroundStyle(.green)
             }
             .buttonStyle(.plain)
+            .frame(minWidth: 44, minHeight: 44)
+            .accessibilityLabel("Log \(item.name)")
+            .accessibilityHint("Double-tap to log completion now")
         }
+        .accessibilityElement(children: .combine)
     }
 
     private var elapsedTimeText: String {

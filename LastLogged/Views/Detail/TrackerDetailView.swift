@@ -36,6 +36,8 @@ struct TrackerDetailView: View {
                 } label: {
                     Text("Edit")
                 }
+                .accessibilityLabel("Edit tracker")
+                .accessibilityHint("Edit this tracker's details")
             }
         }
         .onAppear {
@@ -117,7 +119,10 @@ struct TrackerDetailView: View {
                             Spacer()
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(.green)
+                                .accessibilityHidden(true)
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Completed \(Self.dateFormatter.string(from: log.completedAt)), \(Self.relativeFormatter.localizedString(for: log.completedAt, relativeTo: Date()))")
                     }
 
                     if !RevenueCatService.shared.isPremium && viewModel.totalLogCount > FreeTierLimits.maxHistoryPerItem {
@@ -141,6 +146,8 @@ struct TrackerDetailView: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
+                        .accessibilityLabel("See full history, \(viewModel.totalLogCount - FreeTierLimits.maxHistoryPerItem) more entries")
+                        .accessibilityHint("Upgrade to Premium to view all completion history")
                     }
                 }
             } else {

@@ -93,8 +93,10 @@ struct SmallWidgetView: View {
                 Image(systemName: item.iconName)
                     .font(.title3)
                     .foregroundStyle(urgencyColor(for: item))
+                    .accessibilityHidden(true)
                 Spacer()
                 urgencyIndicator(for: item)
+                    .accessibilityHidden(true)
             }
 
             Spacer()
@@ -110,6 +112,8 @@ struct SmallWidgetView: View {
                 .lineLimit(1)
         }
         .padding(2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(item.name), \(item.elapsedTimeDescription)")
     }
 }
 
@@ -179,11 +183,13 @@ struct LargeWidgetRowView: View {
     var body: some View {
         HStack(spacing: 10) {
             urgencyIndicator(for: item)
+                .accessibilityHidden(true)
 
             Image(systemName: item.iconName)
                 .font(.body)
                 .foregroundStyle(urgencyColor(for: item))
                 .frame(width: 22)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
@@ -209,7 +215,11 @@ struct LargeWidgetRowView: View {
                     .foregroundStyle(.green)
             }
             .buttonStyle(.plain)
+            .frame(minWidth: 44, minHeight: 44)
+            .accessibilityLabel("Log \(item.name)")
+            .accessibilityHint("Log completion for this item")
         }
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -221,11 +231,13 @@ struct InteractiveWidgetRowView: View {
     var body: some View {
         HStack(spacing: 8) {
             urgencyIndicator(for: item)
+                .accessibilityHidden(true)
 
             Image(systemName: item.iconName)
                 .font(.callout)
                 .foregroundStyle(urgencyColor(for: item))
                 .frame(width: 20)
+                .accessibilityHidden(true)
 
             Text(item.name)
                 .font(.subheadline)
@@ -244,7 +256,11 @@ struct InteractiveWidgetRowView: View {
                     .foregroundStyle(.green)
             }
             .buttonStyle(.plain)
+            .frame(minWidth: 44, minHeight: 44)
+            .accessibilityLabel("Log \(item.name)")
+            .accessibilityHint("Log completion for this item")
         }
+        .accessibilityElement(children: .contain)
     }
 }
 

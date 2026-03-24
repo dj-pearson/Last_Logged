@@ -77,6 +77,9 @@ struct TemplatePickerView: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(template.name), every \(formatInterval(template.reminderIntervalDays))")
+        .accessibilityHint(selectedTemplateIds.contains(template.id) ? "Double-tap to deselect" : "Double-tap to select")
+        .accessibilityAddTraits(selectedTemplateIds.contains(template.id) ? .isSelected : [])
     }
 
     private func toggleSelection(_ template: TemplateItem) {

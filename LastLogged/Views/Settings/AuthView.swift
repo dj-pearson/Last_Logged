@@ -111,6 +111,8 @@ struct AuthView: View {
                 .frame(height: 50)
                 .cornerRadius(10)
                 .padding(.horizontal)
+                .accessibilityLabel("Sign in with Apple")
+                .accessibilityHint("Use your Apple ID to sign in")
 
                 // Divider
                 HStack {
@@ -142,6 +144,8 @@ struct AuthView: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal)
+                    .accessibilityLabel("Continue with email")
+                    .accessibilityHint("Sign in or create an account using email")
                 }
 
                 // Error
@@ -195,6 +199,8 @@ struct AuthView: View {
             .buttonStyle(.borderedProminent)
             .disabled(!viewModel.isFormValid || viewModel.isLoading)
             .padding(.horizontal)
+            .accessibilityLabel(viewModel.isSignUp ? "Create account" : "Sign in")
+            .accessibilityHint(viewModel.isSignUp ? "Create a new account with your email" : "Sign in with your email and password")
 
             if viewModel.isSignUp {
                 Text("Password must be at least 6 characters.")

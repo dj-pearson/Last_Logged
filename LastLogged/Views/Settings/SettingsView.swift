@@ -155,12 +155,14 @@ struct SettingsView: View {
             ) {
                 Label("Export Data", systemImage: "square.and.arrow.up")
             }
+            .accessibilityHint("Share your tracker data as a file")
 
             Button(role: .destructive) {
                 viewModel.showClearDataConfirmation = true
             } label: {
                 Label("Clear All Data", systemImage: "trash")
             }
+            .accessibilityHint("Permanently delete all trackers and history")
             .confirmationDialog(
                 "Clear All Data?",
                 isPresented: Binding(

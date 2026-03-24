@@ -92,9 +92,11 @@ struct OnboardingView: View {
                 .font(.title3)
                 .foregroundStyle(.accent)
                 .frame(width: 28)
+                .accessibilityHidden(true)
             Text(text)
                 .font(.subheadline)
         }
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Screen 2: Category Selection
@@ -176,6 +178,9 @@ struct OnboardingView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(category.name), \(CategoryTemplates.templates(for: category.name).count) starter items")
+        .accessibilityHint(isSelected ? "Double-tap to deselect" : "Double-tap to select")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: - Screen 3: Widget Prompt
@@ -232,9 +237,12 @@ struct OnboardingView: View {
                 .foregroundStyle(.white)
                 .frame(width: 28, height: 28)
                 .background(Circle().fill(.accent))
+                .accessibilityHidden(true)
             Text(text)
                 .font(.subheadline)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Step \(step): \(text)")
     }
 }
 

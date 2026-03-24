@@ -69,6 +69,10 @@ Started: 2026-03-24
 - Use `@ObservationIgnored` on `@AppStorage` properties inside `@Observable` classes to avoid observation conflicts
 - TrackerDetailView in Views/Detail/ — navigated via NavigationLink from HomeView rows; uses TrackerDetailViewModel for data
 - Highest pbxproj IDs: A1...0026 (BuildFile), A2...0022 (FileRef)
+- Custom adaptive Color assets (AccentColor, BrandPrimary, BrandCardBackground, BrandHeaderBackground) in Assets.xcassets with light/dark variants
+- AppIcon.png placeholder in Assets.xcassets/AppIcon.appiconset — replace with final icon before App Store submission
+- All interactive buttons have .accessibilityLabel and .accessibilityHint; decorative icons use .accessibilityHidden(true)
+- Minimum 44x44pt tap targets enforced on log buttons in both main app and widget views via .frame(minWidth: 44, minHeight: 44)
 ---
 
 ## 2026-03-24 - US-001
@@ -477,4 +481,33 @@ Started: 2026-03-24
   - Color(hex:) extension on Color is defined in HomeView.swift — reusable from any view in the main target
   - FetchDescriptor with #Predicate requires capturing UUID into a local let before the closure
   - TrackerDetailViewModel.category is a computed property that fetches on access — avoids stale category data
+---
+
+## 2026-03-24 - US-025
+- What was implemented: Dark mode support, app icon, and accessibility across all views and widgets
+- Files changed:
+  - LastLogged/Assets.xcassets/AccentColor.colorset/Contents.json (set adaptive teal brand color for light/dark)
+  - LastLogged/Assets.xcassets/BrandPrimary.colorset/Contents.json (new adaptive brand primary color)
+  - LastLogged/Assets.xcassets/BrandCardBackground.colorset/Contents.json (new adaptive card surface color)
+  - LastLogged/Assets.xcassets/BrandHeaderBackground.colorset/Contents.json (new adaptive header tint color)
+  - LastLogged/Assets.xcassets/AppIcon.appiconset/Contents.json (references placeholder 1024x1024 PNG)
+  - LastLogged/Assets.xcassets/AppIcon.appiconset/AppIcon.png (generated placeholder icon)
+  - LastLogged/Views/Home/HomeView.swift (accessibility labels/hints on toolbar, log buttons, empty state, toast; 44pt tap targets on log button)
+  - LastLogged/Views/Components/PaywallView.swift (accessibility on pricing cards, purchase button, restore link, feature rows)
+  - LastLogged/Views/Onboarding/OnboardingView.swift (accessibility on value rows, category selection, instruction steps)
+  - LastLogged/Views/Detail/TrackerDetailView.swift (accessibility on edit button, history rows, upgrade prompt)
+  - LastLogged/Views/Settings/SettingsView.swift (accessibility hints on export and clear data)
+  - LastLogged/Views/Settings/AuthView.swift (accessibility on sign-in buttons, email form)
+  - LastLogged/Views/Home/AddTrackerView.swift (accessibility on icon picker button and SF symbol grid items)
+  - LastLogged/Views/Home/TemplatePickerView.swift (accessibility on template selection rows)
+  - LastLoggedWidget/LastLoggedWidget.swift (accessibility on small/medium/large widget rows, 44pt tap targets on log buttons)
+  - prd.json (marked US-025 passes: true)
+- **Learnings for future iterations:**
+  - All views already use system adaptive colors (.accent, .primary, .secondary, .green, .yellow, .red) which work in dark mode by default
+  - Custom Color assets in xcassets use "appearances" array with "luminosity" / "dark" for dark mode variants
+  - Use .accessibilityElement(children: .combine) to merge row elements for VoiceOver; use .contain when children have independent actions
+  - Use .accessibilityAddTraits(.isSelected) for toggle/selection states in custom buttons
+  - Use .accessibilityHidden(true) on decorative icons that duplicate information conveyed by text
+  - SF Symbol picker items already had 44x44 frames; other buttons needed explicit .frame(minWidth: 44, minHeight: 44)
+  - No Swift toolchain on Windows — typecheck verification requires macOS/Xcode build
 ---

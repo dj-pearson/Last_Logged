@@ -92,6 +92,7 @@ struct PaywallView: View {
             Image(systemName: icon)
                 .foregroundStyle(.accent)
                 .frame(width: 24)
+                .accessibilityHidden(true)
             Text(text)
                 .font(.subheadline)
             Spacer()
@@ -99,7 +100,10 @@ struct PaywallView: View {
                 .foregroundStyle(.green)
                 .font(.caption)
                 .fontWeight(.bold)
+                .accessibilityHidden(true)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(text)
     }
 
     // MARK: - Pricing Cards
@@ -182,6 +186,9 @@ struct PaywallView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(title), \(price), \(detail)\(badge.map { ", \($0)" } ?? "")")
+        .accessibilityHint(isSelected ? "Currently selected" : "Double-tap to select this plan")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: - Purchase Button
@@ -206,6 +213,8 @@ struct PaywallView: View {
         }
         .buttonStyle(.borderedProminent)
         .disabled(isPurchasing)
+        .accessibilityLabel(purchaseButtonTitle)
+        .accessibilityHint("Double-tap to proceed with purchase")
     }
 
     private var purchaseButtonTitle: String {
@@ -230,6 +239,9 @@ struct PaywallView: View {
                 .foregroundStyle(.secondary)
         }
         .disabled(isPurchasing)
+        .frame(minHeight: 44)
+        .accessibilityLabel("Restore purchases")
+        .accessibilityHint("Restore previously purchased subscriptions")
     }
 
     // MARK: - Legal Links
