@@ -13,6 +13,12 @@ Started: 2026-03-24
 - ModelContainer configured with App Group shared store in LastLoggedApp.swift (URL: appGroupURL/LastLogged.sqlite)
 - TrackerItem links to TrackerCategory via categoryId (UUID), not a SwiftData @Relationship
 - CompletionLog links to TrackerItem via trackerItemId (UUID), not a SwiftData @Relationship
+- DataSeeder in Utilities/ handles first-launch seed data; called from LastLoggedApp .onAppear
+- Use FetchDescriptor + fetchCount for lightweight existence checks in SwiftData
+- ViewModels are @Observable classes that take ModelContext in init; views pass modelContext from SwiftUI environment
+- Color(hex:) extension on Color lives in Views/Home/HomeView.swift — converts "#RRGGBB" hex strings to SwiftUI Color
+- ContentView is a thin wrapper that renders HomeView; new top-level navigation goes through HomeView
+- Highest pbxproj IDs: A1...000D (BuildFile), A2...000D (FileRef)
 ---
 
 ## 2026-03-24 - US-001
@@ -47,4 +53,46 @@ Started: 2026-03-24
   - SyncStatus is a separate file since it's an enum used by TrackerItem (not a @Model itself)
   - ModelContainer fallback: if App Group URL is nil, uses default ModelConfiguration
   - Highest pbxproj IDs after this story: A1...000A (BuildFile), A2...000A (FileRef)
+---
+
+## 2026-03-24 - US-003
+- What was implemented: DataSeeder utility class that seeds 6 default TrackerCategory records on first launch. Seeding is idempotent (checks fetchCount == 0 before inserting). Called from LastLoggedApp via .onAppear on ContentView.
+- Files changed:
+  - LastLogged/Utilities/DataSeeder.swift (new - static seedDefaultCategoriesIfNeeded method)
+  - LastLogged/LastLoggedApp.swift (updated - calls DataSeeder on ContentView .onAppear)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added DataSeeder.swift to project)
+  - LastLogged/Utilities/.gitkeep (removed - replaced by real file)
+- **Learnings for future iterations:**
+  - Use FetchDescriptor + fetchCount for lightweight existence checks (avoids loading all objects)
+  - DataSeeder is a struct with static methods — no state needed, keeps it simple
+  - Default categories: Home Maintenance (#4A90D9, house.fill), Health & Wellness (#E74C3C, heart.fill), Car Care (#F39C12, car.fill), Personal Care (#9B59B6, person.fill), Social & Family (#2ECC71, person.2.fill), Pet Care (#1ABC9C, pawprint.fill)
+  - Highest pbxproj IDs after this story: A1...000B (BuildFile), A2...000B (FileRef)
+---
+
+## 2026-03-24 - US-004
+- What was implemented: HomeViewModel as @Observable class with CRUD operations, category grouping, and overdue sorting. Fetches non-archived TrackerItems and TrackerCategories from SwiftData. Supports creating items (with auto-incrementing sortOrder per category), archiving (soft delete), and updating sort order. Exposes `itemsByCategory` grouped computed property and `itemsSortedByOverdue` computed property using overdue score ratio (elapsed time / reminder interval).
+- Files changed:
+  - LastLogged/ViewModels/HomeViewModel.swift (new - @Observable ViewModel with fetch, create, archive, sort operations)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added HomeViewModel.swift to project)
+- **Learnings for future iterations:**
+  - HomeViewModel takes ModelContext in init — views should pass `modelContext` from the SwiftUI environment
+  - Overdue scoring: ratio of elapsed time to reminder interval (>1.0 = overdue); items with no interval get lowest score; never-completed items with interval get highest score
+  - After mutations, call save() then fetchItems() to keep the observable state in sync
+  - Highest pbxproj IDs after this story: A1...000C (BuildFile), A2...000C (FileRef)
+---
+
+## 2026-03-24 - US-005
+- What was implemented: HomeView with category-grouped scrollable List, empty state using ContentUnavailableView, navigation title "Last Logged", and toolbar add (+) button. TrackerRowView shows item icon, name, and placeholder for elapsed time. ContentView updated to render HomeView. Color(hex:) extension added to convert category colorHex to SwiftUI Color for section headers.
+- Files changed:
+  - LastLogged/Views/Home/HomeView.swift (new - HomeView, TrackerRowView, Color hex extension)
+  - LastLogged/ContentView.swift (updated - now renders HomeView instead of placeholder)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added HomeView.swift to project)
+  - LastLogged/Views/Home/.gitkeep (removed - replaced by real file)
+- **Learnings for future iterations:**
+  - ContentUnavailableView (iOS 17+) is the idiomatic SwiftUI empty state pattern — use Label for icon+title, description for subtitle, actions for CTA buttons
+  - HomeViewModel is initialized lazily via @State in the view's onAppear using the @Environment modelContext
+  - Category section headers use Label(name, systemImage:) with foregroundStyle colored by category colorHex
+  - TrackerRowView currently shows "—" as elapsed time placeholder — US-007 will replace with real elapsed time display
+  - The add button sets showingAddTracker state but no sheet is presented yet — US-008 will implement AddTrackerView
+  - Highest pbxproj IDs after this story: A1...000D (BuildFile), A2...000D (FileRef)
 ---
