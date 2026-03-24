@@ -40,6 +40,12 @@ Started: 2026-03-24
 - Interactive widget buttons use `Button(intent:)` with AppIntents (iOS 17+); only medium/large widgets support per-item buttons, small uses `widgetURL`
 - `Color(hex:)` extension is duplicated in widget target (LastLoggedWidget.swift) since HomeView.swift isn't compiled there
 - LogCompletionIntent in LastLoggedWidget/ — uses WidgetDataProvider's shared container to read/write SwiftData and reloads timelines after logging
+- RevenueCatService.shared is the singleton for subscriptions — @Observable so views react to tier changes; call configure() in LastLoggedApp.init()
+- Entitlement name "premium" shared by monthly, annual, and lifetime products — distinguish lifetime by checking productIdentifier == "lifetime"
+- RevenueCatService.availablePackages provides Package objects for PaywallView — use these instead of hardcoding pricing
+- PaywallView in Views/Components/ — shared between hard paywall (isHardPaywall: true, non-dismissible) and soft paywall (default, has Close button)
+- FreeTierLimits enum in PaywallView.swift — maxTrackers=5, maxHistoryPerItem=10, maxWidgetStyles=1; check via `RevenueCatService.shared.isPremium` before enforcing
+- HomeViewModel.canCreateTracker checks isPremium OR count < maxTrackers — gate tracker creation on this property
 ---
 
 ## 2026-03-24 - US-001
@@ -261,4 +267,38 @@ Started: 2026-03-24
   - Interactive buttons (Button with intent) are only supported on medium and large widgets; small widgets use widgetURL for the whole tap
   - `WidgetCenter.shared.reloadAllTimelines()` refreshes all widget families after logging from an intent
   - Highest pbxproj IDs after this story: A1...001C (BuildFile), A2...0018 (FileRef)
+---
+
+## 2026-03-24 - US-015
+- What was implemented: RevenueCatService singleton class wrapping RevenueCat Purchases SDK. Defines SubscriptionTier enum (free/premium/lifetime) and three product identifiers (premium_monthly $3.99, premium_annual $24.99, lifetime $59.99). Exposes @Observable state for subscriptionTier and isPremium computed property. Provides purchase(package:) and restorePurchases() async methods. Implements PurchasesDelegate to observe subscription status updates. Loads offerings for paywall packages. Configured with API key placeholder. Initialized at app launch via RevenueCatService.shared.configure() in LastLoggedApp.init().
+- Files changed:
+  - LastLogged/Services/RevenueCatService.swift (new - @Observable singleton with SubscriptionTier enum, purchase, restore, delegate)
+  - LastLogged/LastLoggedApp.swift (updated - added `import RevenueCat` and configure() call in init)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added RevenueCatService.swift to Services group and Sources phase)
+  - prd.json (updated - US-015 passes: true)
+- **Learnings for future iterations:**
+  - RevenueCatService is @Observable (not just a plain class) so SwiftUI views can reactively observe subscriptionTier changes
+  - RevenueCatService inherits from NSObject to conform to PurchasesDelegate (Obj-C protocol requirement)
+  - Use `Purchases.shared.delegate = self` in configure() to receive customerInfo updates — updateTier(from:) handles both delegate and manual refresh paths
+  - Entitlement name is "premium" — both monthly/annual subscriptions and lifetime share this entitlement; distinguish lifetime by checking productIdentifier
+  - `availablePackages` from offerings are used by PaywallView (US-016) to display pricing — no hardcoded Package objects needed
+  - configure() must be called before any Purchases.shared usage — placing it first in LastLoggedApp.init() ensures this
+  - Highest pbxproj IDs after this story: A1...001D (BuildFile), A2...0019 (FileRef)
+---
+
+## 2026-03-24 - US-016
+- What was implemented: Paywall screen with three subscription tiers (Monthly $3.99/mo with 7-day trial, Annual $24.99/yr with 48% savings badge and 7-day trial, Lifetime $59.99 one-time). Annual plan pre-selected by default. Purchase buttons trigger RevenueCatService.purchase(). Restore purchases link. Free tier enforcement: max 5 TrackerItems (hard paywall when creating 6th tracker). Completion history limit (10 entries) and widget style limit (1) defined in FreeTierLimits enum for downstream stories. Legal links to privacy policy and terms of service.
+- Files changed:
+  - LastLogged/Views/Components/PaywallView.swift (new - PaywallView with PricingTier enum, FreeTierLimits enum, purchase/restore flow, legal links)
+  - LastLogged/ViewModels/HomeViewModel.swift (updated - added canCreateTracker computed property checking isPremium or count < 5)
+  - LastLogged/Views/Home/HomeView.swift (updated - added showingPaywall state, hard paywall sheet, free tier gate on New Tracker and Add from Templates)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added PaywallView.swift to Components group and Sources phase)
+  - prd.json (updated - US-016 passes: true)
+- **Learnings for future iterations:**
+  - PaywallView supports `isHardPaywall: Bool` — when true, hides Close button and disables interactive dismiss; use for hard paywall (6th tracker), soft paywall (onboarding) uses default false
+  - FreeTierLimits enum centralizes all free tier limits — downstream stories (US-024 for history, widget stories) should reference these constants
+  - RevenueCat Package objects from `availablePackages` provide `localizedPriceString` for display; fallback hardcoded strings used when packages haven't loaded yet
+  - PaywallView uses `packageFor(_ tier:)` helper to match RevenueCat packages by `storeProduct.productIdentifier`
+  - `.interactiveDismissDisabled(isHardPaywall)` prevents swipe-to-dismiss on hard paywall sheets
+  - Highest pbxproj IDs after this story: A1...001E (BuildFile), A2...001A (FileRef)
 ---

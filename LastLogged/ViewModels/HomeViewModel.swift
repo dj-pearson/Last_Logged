@@ -14,6 +14,12 @@ final class HomeViewModel {
         fetchCategories()
     }
 
+    // MARK: - Free Tier
+
+    var canCreateTracker: Bool {
+        RevenueCatService.shared.isPremium || trackerItems.count < FreeTierLimits.maxTrackers
+    }
+
     // MARK: - Fetch
 
     func fetchItems() {

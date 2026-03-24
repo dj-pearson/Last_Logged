@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel?
     @State private var showingAddTracker = false
     @State private var showingTemplatePicker = false
+    @State private var showingPaywall = false
     @State private var editingItem: TrackerItem?
     @State private var itemToArchive: TrackerItem?
     @State private var showArchiveConfirmation = false
@@ -31,12 +32,20 @@ struct HomeView: View {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         Button {
-                            showingAddTracker = true
+                            if viewModel?.canCreateTracker == true {
+                                showingAddTracker = true
+                            } else {
+                                showingPaywall = true
+                            }
                         } label: {
                             Label("New Tracker", systemImage: "plus")
                         }
                         Button {
-                            showingTemplatePicker = true
+                            if viewModel?.canCreateTracker == true {
+                                showingTemplatePicker = true
+                            } else {
+                                showingPaywall = true
+                            }
                         } label: {
                             Label("Add from Templates", systemImage: "list.bullet.rectangle")
                         }
@@ -65,6 +74,9 @@ struct HomeView: View {
             if let viewModel {
                 TemplatePickerView(viewModel: viewModel)
             }
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView(isHardPaywall: true)
         }
         .confirmationDialog("Archive Tracker?", isPresented: $showArchiveConfirmation, presenting: itemToArchive) { item in
             Button("Archive", role: .destructive) {
