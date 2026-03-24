@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import cron from "node-cron";
 import { reminderDigest, sendReminderDigests } from "./reminder-digest.js";
+import { revenuecatWebhook } from "./revenuecat-webhook.js";
+import { exportData } from "./export-data.js";
 
 const app = new Hono();
 
@@ -12,6 +14,12 @@ app.get("/health", (c) => {
 
 // Reminder digest routes
 app.route("/", reminderDigest);
+
+// RevenueCat subscription webhook
+app.route("/", revenuecatWebhook);
+
+// Data export
+app.route("/", exportData);
 
 // Schedule daily reminder digest at 8:00 AM
 cron.schedule("0 8 * * *", async () => {
