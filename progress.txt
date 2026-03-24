@@ -124,3 +124,18 @@ Started: 2026-03-24
   - No new files added, no pbxproj changes needed
   - Highest pbxproj IDs unchanged: A1...000D (BuildFile), A2...000D (FileRef)
 ---
+
+## 2026-03-24 - US-008
+- What was implemented: Custom tracker creation form (AddTrackerView) with name text field, category Picker, optional reminder interval with days/weeks/months toggle, and a searchable SF Symbol grid picker (SFSymbolPickerView). Form validates name is non-empty before enabling Save. Cancel dismisses without saving. Default icon is "checkmark.circle". HomeView updated to present AddTrackerView as a sheet from the + toolbar button and empty state CTA.
+- Files changed:
+  - LastLogged/Views/Home/AddTrackerView.swift (new - AddTrackerView form with ReminderUnit enum, SFSymbolPickerView with 60+ common symbols in searchable grid)
+  - LastLogged/Views/Home/HomeView.swift (updated - added .sheet(isPresented:) to present AddTrackerView)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added AddTrackerView.swift to Home group and Sources phase)
+- **Learnings for future iterations:**
+  - AddTrackerView takes HomeViewModel directly (not ModelContext) — reuses the existing ViewModel's createItem method
+  - SFSymbolPickerView uses a static list of ~60 common SF Symbols in a LazyVGrid with 5 columns; search filters by symbol name substring
+  - ReminderUnit enum handles days/weeks/months conversion to days (weeks*7, months*30)
+  - Category Picker uses `Optional(category.id)` as tag to match `@State private var selectedCategoryId: UUID?`
+  - The form is presented as a sheet from HomeView — the viewModel is passed through, so new items appear immediately on dismiss
+  - Highest pbxproj IDs after this story: A1...000E (BuildFile), A2...000E (FileRef)
+---

@@ -38,6 +38,11 @@ struct HomeView: View {
                 viewModel = HomeViewModel(modelContext: modelContext)
             }
         }
+        .sheet(isPresented: $showingAddTracker) {
+            if let viewModel {
+                AddTrackerView(viewModel: viewModel)
+            }
+        }
         .overlay(alignment: .bottom) {
             if toastInfo != nil {
                 toastView
