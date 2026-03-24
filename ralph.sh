@@ -2,6 +2,11 @@
 # Ralph Wiggum - Long-running AI agent loop
 # Usage: ./ralph.sh [--tool amp|claude] [max_iterations]
 
+# Ensure Git Bash utilities are on PATH (Windows compatibility)
+if [ -d "/c/Program Files/Git/usr/bin" ]; then
+  export PATH="/c/Program Files/Git/usr/bin:$PATH"
+fi
+
 set -e
 
 # Parse arguments

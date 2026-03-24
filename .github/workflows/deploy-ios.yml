@@ -1,0 +1,240 @@
+name: Deploy iOS App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (e.g. 1.2.0). Leave empty for auto-increment.'
+        required: false
+        type: string
+      build_number:
+        description: 'Build number override. Leave empty for auto-increment from run number.'
+        required: false
+        type: string
+      destination:
+        description: 'Deploy destination'
+        required: true
+        default: 'testflight'
+        type: choice
+        options:
+          - testflight
+          - app-store
+
+env:
+  SCHEME: LastLogged
+  PROJECT: LastLogged.xcodeproj
+  BUNDLE_ID: com.pearsonmedia.lastlogged
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy to ${{ github.event.inputs.destination || 'testflight' }}
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for version calculation
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Calculate Version
+        id: version
+        run: |
+          # --- Marketing Version (semver) ---
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Source: manual override"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            echo "Source: git tag"
+          else
+            # Auto-increment: get latest tag, bump patch
+            LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname | head -1)
+            if [ -z "$LATEST_TAG" ]; then
+              VERSION="1.0.0"
+              echo "Source: default (no tags found)"
+            else
+              LATEST="${LATEST_TAG#v}"
+              MAJOR=$(echo "$LATEST" | cut -d. -f1)
+              MINOR=$(echo "$LATEST" | cut -d. -f2)
+              PATCH=$(echo "$LATEST" | cut -d. -f3)
+              PATCH=$((PATCH + 1))
+              VERSION="${MAJOR}.${MINOR}.${PATCH}"
+              echo "Source: auto-increment from $LATEST_TAG"
+            fi
+          fi
+
+          # --- Build Number ---
+          if [ -n "${{ github.event.inputs.build_number }}" ]; then
+            BUILD="${{ github.event.inputs.build_number }}"
+          else
+            BUILD="${GITHUB_RUN_NUMBER}"
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+          echo "### Version: $VERSION ($BUILD)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set Version in Xcode Project
+        run: |
+          # Update MARKETING_VERSION and CURRENT_PROJECT_VERSION in pbxproj
+          sed -i '' "s/MARKETING_VERSION = .*;/MARKETING_VERSION = ${{ steps.version.outputs.version }};/" "$PROJECT/project.pbxproj"
+          sed -i '' "s/CURRENT_PROJECT_VERSION = .*;/CURRENT_PROJECT_VERSION = ${{ steps.version.outputs.build }};/" "$PROJECT/project.pbxproj"
+
+          echo "Set version to ${{ steps.version.outputs.version }} (${{ steps.version.outputs.build }})"
+          grep -E 'MARKETING_VERSION|CURRENT_PROJECT_VERSION' "$PROJECT/project.pbxproj"
+
+      - name: Install Apple Certificate
+        env:
+          DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.DISTRIBUTION_CERTIFICATE_BASE64 }}
+          DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.DISTRIBUTION_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Create variables
+          CERTIFICATE_PATH="$RUNNER_TEMP/distribution.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+
+          # Decode certificate
+          echo -n "$DISTRIBUTION_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          security import "$CERTIFICATE_PATH" \
+            -P "$DISTRIBUTION_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+      - name: Install Provisioning Profile
+        env:
+          PROVISIONING_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
+          echo -n "$PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< "$(security cms -D -i "$PROFILE_PATH")")
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/"$UUID.mobileprovision"
+          echo "Installed profile: $UUID"
+
+      - name: Resolve Swift Packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm"
+
+      - name: Build Archive
+        run: |
+          xcodebuild archive \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/LastLogged.xcarchive" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
+            -destination "generic/platform=iOS" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="${{ secrets.PROVISIONING_PROFILE_NAME }}" \
+            MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
+            | xcbeautify --renderer github-actions || true
+
+      - name: Create ExportOptions.plist
+        run: |
+          DESTINATION="${{ github.event.inputs.destination || 'testflight' }}"
+          if [ "$DESTINATION" = "app-store" ]; then
+            METHOD="app-store"
+          else
+            METHOD="app-store"  # TestFlight also uses app-store method
+          fi
+
+          cat > "$RUNNER_TEMP/ExportOptions.plist" << PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>${METHOD}</string>
+            <key>teamID</key>
+            <string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>destination</key>
+            <string>upload</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${{ env.BUNDLE_ID }}</key>
+              <string>${{ secrets.PROVISIONING_PROFILE_NAME }}</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/LastLogged.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            | xcbeautify --renderer github-actions || true
+
+      - name: Upload to App Store Connect
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          # Write API key to file
+          mkdir -p ~/.private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+
+          xcrun altool --upload-app \
+            -f "$RUNNER_TEMP/export/LastLogged.ipa" \
+            -t ios \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
+
+      - name: Tag Release
+        if: github.event_name == 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="v${{ steps.version.outputs.version }}"
+          git tag "$VERSION"
+          git push origin "$VERSION"
+
+      - name: Cleanup Keychain
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
+
+      - name: Summary
+        run: |
+          DESTINATION="${{ github.event.inputs.destination || 'testflight' }}"
+          echo "### Deployment Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Detail | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version | ${{ steps.version.outputs.version }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Build | ${{ steps.version.outputs.build }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Destination | $DESTINATION |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Bundle ID | ${{ env.BUNDLE_ID }} |" >> "$GITHUB_STEP_SUMMARY"
