@@ -1,11 +1,13 @@
 import SwiftUI
 import SwiftData
+import RevenueCat
 
 @main
 struct LastLoggedApp: App {
     let modelContainer: ModelContainer
 
     init() {
+        RevenueCatService.shared.configure()
         let schema = Schema([
             TrackerItem.self,
             CompletionLog.self,
