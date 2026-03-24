@@ -1,0 +1,500 @@
+{
+  "project": "LastLogged",
+  "branchName": "ralph/mvp-v1",
+  "description": "Last Logged MVP - iOS app for tracking recurring life events with one-tap logging, elapsed time display, smart reminders, interactive home screen widgets, and freemium subscription",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Xcode project scaffolding with MVVM folder structure",
+      "description": "As a developer, I need a clean Xcode project with MVVM folder structure and SPM dependencies so that all future stories have a consistent foundation to build on.",
+      "acceptanceCriteria": [
+        "Xcode project created with iOS 17+ deployment target and SwiftUI lifecycle",
+        "MVVM folder structure exists: Models/, ViewModels/, Views/ (with Home/, Detail/, Onboarding/, Settings/, Components/ subfolders), Services/, Widget/, Utilities/",
+        "Swift Package dependencies declared: supabase-swift, RevenueCat, TelemetryDeck SDK",
+        "App Group capability configured for widget data sharing (group.com.pearsonmedia.lastlogged)",
+        "Main app entry point renders a placeholder ContentView",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "SwiftData models for TrackerItem, CompletionLog, and TrackerCategory",
+      "description": "As a developer, I need the core SwiftData @Model classes so that tracker data can be persisted locally and queried efficiently.",
+      "acceptanceCriteria": [
+        "TrackerItem @Model with fields: id (UUID), name (String), categoryId (UUID), reminderIntervalDays (Int?), lastCompletedAt (Date?), createdAt (Date), sortOrder (Int), iconName (String), isArchived (Bool), syncStatus (SyncStatus enum)",
+        "CompletionLog @Model with fields: id (UUID), trackerItemId (UUID), completedAt (Date), notes (String?)",
+        "TrackerCategory @Model with fields: id (UUID), name (String), iconName (String), colorHex (String), sortOrder (Int), isDefault (Bool)",
+        "SyncStatus enum defined with cases: synced, pending, conflict",
+        "SwiftData ModelContainer configured in the app entry point with all three models",
+        "Shared ModelContainer uses App Group container for widget access",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Default category seed data",
+      "description": "As a user, I want pre-populated categories available on first launch so I can quickly start tracking common life events.",
+      "acceptanceCriteria": [
+        "Six default TrackerCategory records seeded on first launch: Home Maintenance, Health & Wellness, Car Care, Personal Care, Social & Family, Pet Care",
+        "Each category has an appropriate SF Symbol iconName and distinct colorHex",
+        "Each category has isDefault set to true",
+        "Seed data only inserts if no categories exist (idempotent first-launch check)",
+        "A DataSeeder utility class handles seeding logic",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "HomeViewModel with CRUD operations and sorting",
+      "description": "As a developer, I need an @Observable HomeViewModel that manages tracker items with create, read, update, archive, and sort operations so the UI can bind to reactive state.",
+      "acceptanceCriteria": [
+        "HomeViewModel is an @Observable class",
+        "Fetches all non-archived TrackerItems grouped by TrackerCategory using @Query or manual fetch",
+        "Supports creating a new TrackerItem with name, category, reminder interval, and icon",
+        "Supports archiving (soft delete) a TrackerItem by setting isArchived = true",
+        "Supports updating sortOrder for manual reordering within a category",
+        "Exposes computed property for items sorted by most overdue first (based on lastCompletedAt and reminderIntervalDays)",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Home screen list view with category grouping",
+      "description": "As a user, I want to see all my tracked items on the home screen grouped by category so I can quickly find and manage them.",
+      "acceptanceCriteria": [
+        "HomeView displays TrackerItems in a scrollable List grouped by TrackerCategory",
+        "Each category section has a header showing category name and icon",
+        "Each tracker row shows: item name, SF Symbol icon, and a placeholder for elapsed time",
+        "Empty state view shown when no trackers exist with a call-to-action to create the first tracker",
+        "Navigation title set to 'Last Logged'",
+        "Add button (+) in the toolbar navigates to tracker creation",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "One-tap event logging with haptic feedback and undo toast",
+      "description": "As a user, I want to log an event with a single tap and see confirmation so that tracking is frictionless.",
+      "acceptanceCriteria": [
+        "Each tracker row displays a prominent checkmark.circle.fill button",
+        "Tapping the button creates a new CompletionLog with current timestamp",
+        "Tapping updates TrackerItem.lastCompletedAt to the current timestamp",
+        "UIImpactFeedbackGenerator fires medium haptic on tap",
+        "A transient toast/snackbar appears showing 'Logged! Undo' for 4 seconds",
+        "Tapping 'Undo' on the toast deletes the CompletionLog and reverts lastCompletedAt",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Elapsed time display with color-coded urgency",
+      "description": "As a user, I want to see how long ago I last completed each item with color-coded urgency so I know what needs attention.",
+      "acceptanceCriteria": [
+        "Each tracker row shows human-readable elapsed time using RelativeDateTimeFormatter (e.g., '3 days ago', '2 weeks ago')",
+        "Items with no completion history show 'Never logged'",
+        "Color coding based on reminder interval: green (within schedule, <75% of interval), yellow (approaching due, 75-100%), red (overdue, >100%)",
+        "Items with no reminder interval show neutral/default color",
+        "Elapsed time updates when the view appears or a log is recorded",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Custom tracker creation form",
+      "description": "As a user, I want to create custom trackers with a name, category, reminder interval, and icon so I can track anything important to me.",
+      "acceptanceCriteria": [
+        "AddTrackerView presents a form with: name (required text field), category (Picker from existing categories), reminder interval (optional toggle with days/weeks/months picker and numeric input), icon (SF Symbol picker with search)",
+        "Form validates that name is not empty before allowing save",
+        "Save button creates a new TrackerItem via HomeViewModel and dismisses the form",
+        "Cancel button dismisses without saving",
+        "SF Symbol picker shows a searchable grid of common SF Symbols",
+        "Default icon is 'checkmark.circle' if none selected",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Edit and archive tracker functionality",
+      "description": "As a user, I want to edit tracker details or archive trackers I no longer need so I can keep my list clean and accurate.",
+      "acceptanceCriteria": [
+        "Swipe-to-archive gesture on tracker rows with destructive style confirmation",
+        "Context menu on long-press with options: Edit, Archive",
+        "EditTrackerView reuses the AddTrackerView form pre-populated with existing values",
+        "Saving edits updates the TrackerItem in SwiftData",
+        "Archiving sets isArchived = true and removes the item from the home list",
+        "TrackerDetailViewModel created as @Observable class managing single item state",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Pre-built category templates with starter items",
+      "description": "As a user, I want pre-built tracker templates in each category so I can quickly add common items without manual entry.",
+      "acceptanceCriteria": [
+        "CategoryTemplates utility defines starter items per category with name, iconName, and recommended reminderIntervalDays",
+        "Home Maintenance: HVAC filter (90d), smoke detector batteries (180d), gutter cleaning (180d), water heater flush (365d), dryer vent cleaning (365d)",
+        "Health & Wellness: Dental cleaning (180d), annual physical (365d), eye exam (365d), flu shot (365d)",
+        "Car Care: Oil change (90d), tire rotation (180d), air filter (365d), brake inspection (365d)",
+        "Personal Care: Haircut (42d), deep clean house (30d), wash bedding (14d)",
+        "Social & Family: Call parents (14d), call close friend (30d), date night (14d)",
+        "Pet Care: Flea/tick treatment (30d), heartworm medication (30d), vet checkup (365d), grooming (60d)",
+        "Template items can be bulk-added to the user's trackers from a template picker view",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "NotificationService with smart reminder scheduling",
+      "description": "As a user, I want to receive local notifications when tracked items are due so I don't forget recurring tasks.",
+      "acceptanceCriteria": [
+        "NotificationService class handles all UNUserNotificationCenter interactions",
+        "Requests notification permission on first tracker with a reminder interval",
+        "Schedules UNCalendarNotificationTrigger for each tracker at 9:00 AM on the due date",
+        "Notification content: 'It's been [X days] since your last [item name]. Time to log it!'",
+        "Notification includes a 'Log Now' action button via UNNotificationAction",
+        "Handles the 64 pending notification limit by prioritizing: overdue items first, then soonest-due",
+        "Reschedules all notifications when any tracker is logged or modified",
+        "NotificationService is a singleton accessible from ViewModels",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "App Group container and shared SwiftData store for widgets",
+      "description": "As a developer, I need the App Group container configured so the widget extension can read tracker data from the shared SwiftData store.",
+      "acceptanceCriteria": [
+        "App Group (group.com.pearsonmedia.lastlogged) is configured in both main app and widget extension targets",
+        "ModelContainer is initialized with the App Group container URL for shared storage",
+        "A WidgetDataProvider utility reads TrackerItems and CompletionLogs from the shared store",
+        "WidgetDataProvider exposes a method to get the top N most overdue items sorted by urgency",
+        "Widget extension target created in the Xcode project",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Small and medium home screen widgets",
+      "description": "As a user, I want small and medium home screen widgets showing my most overdue items so I can check status without opening the app.",
+      "acceptanceCriteria": [
+        "WidgetKit TimelineProvider implemented with getTimeline returning entries refreshed every 30 minutes",
+        "Small widget (2x2) shows: single most overdue item name, elapsed time, urgency color indicator",
+        "Medium widget (4x2) shows: top 3 most overdue items each with name, elapsed time, and urgency color",
+        "Widget background uses the app's theme colors",
+        "Empty state shown when no trackers exist: 'Open Last Logged to start tracking'",
+        "Widget configuration uses StaticConfiguration (no user-configurable intent needed for MVP)",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Large widget and interactive AppIntent actions",
+      "description": "As a user, I want a large widget with category grouping and interactive log buttons on all widgets so I can log completions without opening the app.",
+      "acceptanceCriteria": [
+        "Large widget (4x4) shows top 5 overdue items with category labels and color-coded urgency",
+        "LogCompletionIntent AppIntent defined that accepts a tracker item ID parameter",
+        "Interactive checkmark button on medium and large widget items triggers LogCompletionIntent",
+        "LogCompletionIntent creates a CompletionLog, updates lastCompletedAt, and reloads the widget timeline",
+        "Small widget taps open the app to the relevant tracker (deep link via widgetURL)",
+        "All widget sizes use consistent visual styling",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "RevenueCat service integration and subscription configuration",
+      "description": "As a developer, I need RevenueCat SDK integrated and configured with the subscription tiers so the app can manage purchases and entitlements.",
+      "acceptanceCriteria": [
+        "RevenueCatService singleton class wraps Purchases SDK initialization",
+        "Configured with API key placeholder (to be set in production)",
+        "Three product identifiers defined: premium_monthly ($3.99), premium_annual ($24.99), lifetime ($59.99)",
+        "RevenueCatService exposes: current subscription tier (free/premium/lifetime), isPremium computed property, purchase method, restore purchases method",
+        "Subscription status updates observed via Purchases delegate",
+        "RevenueCatService initialized at app launch in the App struct",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Paywall screen with pricing tiers and free tier enforcement",
+      "description": "As a user, I want to see a clear paywall with pricing options, and as a free user I should be limited to 5 trackers so there is a natural upgrade path.",
+      "acceptanceCriteria": [
+        "PaywallView displays three subscription options: Monthly ($3.99/mo with 7-day trial), Annual ($24.99/yr with 48% savings badge and 7-day trial), Lifetime ($59.99 one-time)",
+        "Annual plan is pre-selected as the default option",
+        "Purchase buttons trigger RevenueCatService.purchase()",
+        "Restore purchases link at the bottom calls RevenueCatService.restorePurchases()",
+        "Free tier enforces: max 5 TrackerItems, completion history limited to last 10 entries per item, 1 widget style",
+        "Hard paywall presented when user tries to create a 6th tracker on free tier",
+        "Soft paywall presented during onboarding flow",
+        "Legal links to privacy policy and terms of service at the bottom",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Supabase PostgreSQL schema and RLS policies",
+      "description": "As a developer, I need the Supabase database schema with tables, indexes, and Row Level Security policies so user data is securely stored server-side.",
+      "acceptanceCriteria": [
+        "SQL migration file creates users table with: id, auth_id, display_name, subscription_tier, created_at, updated_at",
+        "SQL migration creates tracker_items table mirroring SwiftData model with user_id foreign key",
+        "SQL migration creates completion_logs table with tracker_item_id and user_id foreign keys",
+        "SQL migration creates tracker_categories table with user_id foreign key",
+        "RLS enabled on all tables with policies enforcing user_id = auth.uid()",
+        "Indexes created: tracker_items(user_id, is_archived), tracker_items(user_id, last_completed_at), completion_logs(tracker_item_id, completed_at DESC), completion_logs(user_id, completed_at DESC)",
+        "Migration file is self-contained and can be run against a Supabase PostgreSQL instance",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "SupabaseService with offline-first data sync",
+      "description": "As a user, I want my data synced to the cloud when I sign in so I can access it across devices without waiting for the network.",
+      "acceptanceCriteria": [
+        "SupabaseService class wraps supabase-swift client initialization with URL and anon key placeholders",
+        "Push method uploads all TrackerItems, CompletionLogs, and TrackerCategories with syncStatus == .pending to Supabase",
+        "Pull method fetches remote changes since last sync timestamp and merges into SwiftData",
+        "Conflict resolution uses last-write-wins based on updated_at timestamp",
+        "Sync triggers on: app foreground, network recovery, and after local writes (debounced)",
+        "All local CRUD operations work without network (offline-first)",
+        "SyncStatus on TrackerItems updates to .synced after successful push",
+        "SupabaseService is a singleton accessible from ViewModels",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Supabase Auth with Apple Sign In and Email/Password",
+      "description": "As a user, I want to optionally sign in with Apple or email so my data is backed up and synced, but I can also use the app without an account.",
+      "acceptanceCriteria": [
+        "Auth screen with 'Sign in with Apple' button using AuthenticationServices framework",
+        "Email/password sign-up and sign-in form as an alternative",
+        "Supabase Auth session persisted and restored on app launch",
+        "After successful sign in, SupabaseService automatically starts syncing",
+        "Sign out option in settings that clears the session but preserves local SwiftData",
+        "App is fully functional without signing in (auth is optional)",
+        "User profile created/updated in the users table on sign in",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Hono edge functions sidecar with reminder digest",
+      "description": "As a developer, I need the edge functions Docker sidecar with the daily reminder digest so users with 64+ notifications still get alerted about overdue items.",
+      "acceptanceCriteria": [
+        "Node.js 20 project initialized with Hono framework and TypeScript",
+        "Dockerfile for Coolify deployment on the same Docker network as Supabase",
+        "supabase-js server client configured with service role key placeholder",
+        "send-reminder-digest endpoint: queries all users with overdue items beyond the 64-notification local limit, compiles a summary, sends push via APNs",
+        "node-cron job scheduled for daily 8:00 AM execution",
+        "APNs integration via @parse/node-apn with certificate placeholder config",
+        "Health check endpoint at GET /health returns 200",
+        "Environment variables documented in .env.example",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Edge functions for subscription webhook and data export",
+      "description": "As a developer, I need the RevenueCat subscription webhook and data export endpoints so subscription status stays in sync and users can export their data.",
+      "acceptanceCriteria": [
+        "POST /webhooks/revenuecat endpoint validates RevenueCat webhook signature",
+        "Webhook handler updates users.subscription_tier based on event type (INITIAL_PURCHASE, RENEWAL, CANCELLATION, EXPIRATION)",
+        "POST /export-data endpoint accepts authenticated user request",
+        "Export generates JSON with all user's tracker_items, completion_logs, and tracker_categories",
+        "Export also supports CSV format via query parameter ?format=csv",
+        "Endpoints return appropriate HTTP status codes and error messages",
+        "Routes added to the main Hono app alongside the reminder digest",
+        "Typecheck passes"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Onboarding walkthrough with category selection",
+      "description": "As a new user, I want a brief onboarding walkthrough that helps me select categories and understand the app so I can start tracking immediately.",
+      "acceptanceCriteria": [
+        "OnboardingView presents 3 screens in a TabView with page indicators",
+        "Screen 1: Welcome - app name, tagline ('When did I last...?'), key value proposition",
+        "Screen 2: Category selection - checkboxes for each default category, pre-selects all, user can deselect unwanted categories",
+        "Screen 3: Widget prompt - visual instructions to add the home screen widget with a 'Get Started' button",
+        "Selected categories seed their template tracker items on completion",
+        "OnboardingViewModel tracks completion state and persists via @AppStorage so onboarding only shows once",
+        "Soft paywall presented after screen 3 before entering the main app",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Settings screen with account and notification preferences",
+      "description": "As a user, I want a settings screen where I can manage my account, notification preferences, and data so I feel in control of the app.",
+      "acceptanceCriteria": [
+        "SettingsView organized in sections: Account, Notifications, Data, About",
+        "Account section: sign in/out button, subscription status, manage subscription link",
+        "Notifications section: global toggle for reminders, default reminder time picker",
+        "Data section: export data button (triggers edge function or local export), clear all data with confirmation alert",
+        "About section: app version, privacy policy link, terms of service link, support email link (support@lastlogged.com)",
+        "SettingsViewModel as @Observable class managing settings state",
+        "Settings accessible from the home screen toolbar via gear icon",
+        "Typecheck passes"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "Completion history view per tracker item",
+      "description": "As a user, I want to see the history of all completions for a tracker item so I can review my patterns over time.",
+      "acceptanceCriteria": [
+        "TrackerDetailView shows item name, category, reminder interval, and current elapsed time at the top",
+        "Scrollable list of CompletionLog entries sorted by completedAt descending",
+        "Each history entry shows: date formatted as 'MMM d, yyyy at h:mm a', and relative time ago",
+        "Free tier shows only the last 10 entries with a 'See full history - Upgrade' prompt",
+        "Premium users see full unlimited history",
+        "Navigation from home screen tracker row tap to TrackerDetailView",
+        "Edit button in toolbar navigates to EditTrackerView",
+        "Typecheck passes"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-025",
+      "title": "Dark mode support, app icon, and accessibility",
+      "description": "As a user, I want the app to support dark mode, have a polished app icon, and be accessible so it works well in all contexts.",
+      "acceptanceCriteria": [
+        "All views support both light and dark mode using adaptive system colors and Color assets",
+        "Custom Color assets defined for brand colors that adapt to light/dark appearance",
+        "App icon asset catalog configured with placeholder icon (1024x1024)",
+        "All interactive elements have accessibilityLabel and accessibilityHint set",
+        "VoiceOver navigates the home list, log buttons, and widgets correctly",
+        "Dynamic Type supported on all text elements",
+        "Minimum tap target size of 44x44 points on all buttons",
+        "Typecheck passes"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-026",
+      "title": "TelemetryDeck analytics integration",
+      "description": "As a developer, I need privacy-first analytics tracking key user events so we can measure engagement and conversion without compromising user privacy.",
+      "acceptanceCriteria": [
+        "TelemetryDeck SDK initialized at app launch with app ID placeholder",
+        "Events tracked: item_created, item_logged, widget_tapped, onboarding_completed, paywall_presented, trial_started, category_selected",
+        "No personally identifiable information sent in any event",
+        "Analytics service is a lightweight wrapper class in Services/AnalyticsService.swift",
+        "Analytics calls are fire-and-forget (never block UI)",
+        "Typecheck passes"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-027",
+      "title": "lastlogged.com static landing page",
+      "description": "As a potential user, I want to visit lastlogged.com and see a compelling landing page with features, pricing, and App Store download link so I can learn about and download the app.",
+      "acceptanceCriteria": [
+        "Astro project initialized for static site generation",
+        "Landing page with hero section: app name, tagline, App Store badge placeholder, hero screenshot placeholder",
+        "Features section highlighting: one-tap logging, elapsed time display, smart reminders, home screen widgets",
+        "Pricing section showing Free, Monthly, Annual, and Lifetime tiers",
+        "Footer with links to Privacy Policy, Terms of Service, and support email",
+        "Responsive design that works on mobile and desktop",
+        "Cloudflare Pages deployment configuration (wrangler.toml or pages config)",
+        "SEO meta tags, Open Graph tags, and JSON-LD structured data",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-028",
+      "title": "Privacy policy and terms of service pages",
+      "description": "As a user and for App Store compliance, I need accessible privacy policy and terms of service pages on the website.",
+      "acceptanceCriteria": [
+        "Privacy Policy page at /privacy with sections: data collection (minimal - TelemetryDeck analytics only), data storage (local SwiftData + optional Supabase), third-party services (RevenueCat, TelemetryDeck, Supabase), data deletion rights, contact info",
+        "Terms of Service page at /terms with sections: acceptance of terms, subscription terms, user responsibilities, limitation of liability, contact info",
+        "Both pages use consistent styling with the main landing page",
+        "Both pages are linked from the app's Settings screen and Paywall",
+        "Pages are accessible from the landing page footer",
+        "Author listed as Pearson Media LLC",
+        "Last updated date shown on both pages",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

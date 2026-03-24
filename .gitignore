@@ -1,0 +1,43 @@
+# Ralph working files
+.last-branch
+
+# Archive is optional to commit
+# archive/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
+
+# Xcode
+*.xcuserdata
+*.xcworkspace
+DerivedData/
+build/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Node (edge functions)
+node_modules/
+dist/
+.env
+.env.local
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# CocoaPods (if used)
+Pods/
