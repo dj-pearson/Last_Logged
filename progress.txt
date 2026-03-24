@@ -37,6 +37,9 @@ Started: 2026-03-24
 - Widget extension files are in LastLoggedWidget/ directory (sibling to LastLogged/)
 - Use `@Environment(\.widgetFamily)` to switch widget layouts by size; `containerBackground(.fill.tertiary, for: .widget)` for iOS 17+ backgrounds
 - OverdueItem.sampleItems provides placeholder/preview data for widget gallery — use `context.isPreview` in getSnapshot
+- Interactive widget buttons use `Button(intent:)` with AppIntents (iOS 17+); only medium/large widgets support per-item buttons, small uses `widgetURL`
+- `Color(hex:)` extension is duplicated in widget target (LastLoggedWidget.swift) since HomeView.swift isn't compiled there
+- LogCompletionIntent in LastLoggedWidget/ — uses WidgetDataProvider's shared container to read/write SwiftData and reloads timelines after logging
 ---
 
 ## 2026-03-24 - US-001
@@ -241,4 +244,21 @@ Started: 2026-03-24
   - Widget supportedFamilies should only list sizes with proper implementations — add `.systemLarge` when US-014 is done
   - No new files added, no pbxproj changes needed — only modified existing LastLoggedWidget.swift
   - Highest pbxproj IDs unchanged: A1...001B (BuildFile), A2...0017 (FileRef)
+---
+
+## 2026-03-24 - US-014
+- What was implemented: Large widget (4x4) with top 5 overdue items showing category labels and color-coded urgency. LogCompletionIntent AppIntent that accepts a tracker item ID, creates a CompletionLog, updates lastCompletedAt, and reloads all widget timelines. Interactive checkmark buttons on medium and large widget rows using `Button(intent:)`. Small widget deep link via `widgetURL` to `lastlogged://tracker/{id}`. Added `.systemLarge` to supportedFamilies. Added 2 more sample items for large widget preview. Duplicated `Color(hex:)` extension in widget target since HomeView.swift isn't compiled there.
+- Files changed:
+  - LastLoggedWidget/LogCompletionIntent.swift (new - AppIntent with trackerItemIdString parameter, creates CompletionLog, reloads timelines)
+  - LastLoggedWidget/LastLoggedWidget.swift (updated - added LargeWidgetView, LargeWidgetRowView, InteractiveWidgetRowView replacing MediumWidgetRowView, widgetURL on small widget, Color hex extension, 2 more sample items)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added LogCompletionIntent.swift to widget extension target)
+  - prd.json (updated - US-014 passes: true)
+- **Learnings for future iterations:**
+  - `Button(intent:)` with AppIntents is the iOS 17+ way to make interactive widgets — replaces the older `Link` approach
+  - LogCompletionIntent uses String parameter for UUID since AppIntents `@Parameter` doesn't directly support UUID — convert with `UUID(uuidString:)`
+  - Widget extensions are separate compilation targets — `Color(hex:)` from HomeView.swift isn't available; must be duplicated or moved to shared file
+  - `widgetURL` on the small widget sets the URL for the entire widget tap — only one URL per widget, not per view element
+  - Interactive buttons (Button with intent) are only supported on medium and large widgets; small widgets use widgetURL for the whole tap
+  - `WidgetCenter.shared.reloadAllTimelines()` refreshes all widget families after logging from an intent
+  - Highest pbxproj IDs after this story: A1...001C (BuildFile), A2...0018 (FileRef)
 ---

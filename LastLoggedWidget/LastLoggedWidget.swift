@@ -1,5 +1,6 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 struct LastLoggedWidgetEntry: TimelineEntry {
     let date: Date
@@ -39,7 +40,7 @@ struct LastLoggedWidget: Widget {
         }
         .configurationDisplayName("Last Logged")
         .description("See your most overdue tracked items.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
@@ -56,8 +57,11 @@ struct LastLoggedWidgetEntryView: View {
             switch family {
             case .systemSmall:
                 SmallWidgetView(item: entry.items[0])
+                    .widgetURL(URL(string: "lastlogged://tracker/\(entry.items[0].id.uuidString)"))
             case .systemMedium:
                 MediumWidgetView(items: Array(entry.items.prefix(3)))
+            case .systemLarge:
+                LargeWidgetView(items: Array(entry.items.prefix(5)))
             default:
                 MediumWidgetView(items: Array(entry.items.prefix(3)))
             }
@@ -125,7 +129,7 @@ struct MediumWidgetView: View {
             .padding(.bottom, 6)
 
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                MediumWidgetRowView(item: item)
+                InteractiveWidgetRowView(item: item)
                 if index < items.count - 1 {
                     Divider()
                         .padding(.vertical, 2)
@@ -140,7 +144,78 @@ struct MediumWidgetView: View {
     }
 }
 
-struct MediumWidgetRowView: View {
+// MARK: - Large Widget (4x4)
+
+struct LargeWidgetView: View {
+    let items: [OverdueItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Last Logged")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.bottom, 8)
+
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                LargeWidgetRowView(item: item)
+                if index < items.count - 1 {
+                    Divider()
+                        .padding(.vertical, 4)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(4)
+    }
+}
+
+struct LargeWidgetRowView: View {
+    let item: OverdueItem
+
+    var body: some View {
+        HStack(spacing: 10) {
+            urgencyIndicator(for: item)
+
+            Image(systemName: item.iconName)
+                .font(.body)
+                .foregroundStyle(urgencyColor(for: item))
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name)
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+
+                Text(item.categoryName)
+                    .font(.caption2)
+                    .foregroundStyle(categoryColor(for: item))
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            Text(item.elapsedTimeDescription)
+                .font(.caption)
+                .foregroundStyle(urgencyColor(for: item))
+                .lineLimit(1)
+
+            Button(intent: LogCompletionIntent(trackerItemId: item.id)) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(.green)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
+// MARK: - Interactive Row (Medium + Large shared pattern)
+
+struct InteractiveWidgetRowView: View {
     let item: OverdueItem
 
     var body: some View {
@@ -162,6 +237,13 @@ struct MediumWidgetRowView: View {
                 .font(.caption)
                 .foregroundStyle(urgencyColor(for: item))
                 .lineLimit(1)
+
+            Button(intent: LogCompletionIntent(trackerItemId: item.id)) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.green)
+            }
+            .buttonStyle(.plain)
         }
     }
 }
@@ -181,6 +263,30 @@ private func urgencyIndicator(for item: OverdueItem) -> some View {
     Circle()
         .fill(urgencyColor(for: item))
         .frame(width: 8, height: 8)
+}
+
+private func categoryColor(for item: OverdueItem) -> Color {
+    Color(hex: item.categoryColorHex) ?? .secondary
+}
+
+// MARK: - Color Hex Extension (duplicated from main app for widget target)
+
+extension Color {
+    init?(hex: String) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+
+        guard hexSanitized.count == 6 else { return nil }
+
+        var rgb: UInt64 = 0
+        guard Scanner(string: hexSanitized).scanHexInt64(&rgb) else { return nil }
+
+        self.init(
+            red: Double((rgb & 0xFF0000) >> 16) / 255.0,
+            green: Double((rgb & 0x00FF00) >> 8) / 255.0,
+            blue: Double(rgb & 0x0000FF) / 255.0
+        )
+    }
 }
 
 // MARK: - Sample Data
@@ -216,6 +322,26 @@ extension OverdueItem {
             lastCompletedAt: Calendar.current.date(byAdding: .day, value: -10, to: Date()),
             reminderIntervalDays: 14,
             overdueScore: 0.71
+        ),
+        OverdueItem(
+            id: UUID(),
+            name: "Dental Cleaning",
+            iconName: "heart.fill",
+            categoryName: "Health & Wellness",
+            categoryColorHex: "#E74C3C",
+            lastCompletedAt: Calendar.current.date(byAdding: .day, value: -200, to: Date()),
+            reminderIntervalDays: 180,
+            overdueScore: 1.11
+        ),
+        OverdueItem(
+            id: UUID(),
+            name: "Flea Treatment",
+            iconName: "pawprint.fill",
+            categoryName: "Pet Care",
+            categoryColorHex: "#1ABC9C",
+            lastCompletedAt: Calendar.current.date(byAdding: .day, value: -35, to: Date()),
+            reminderIntervalDays: 30,
+            overdueScore: 1.17
         ),
     ]
 }

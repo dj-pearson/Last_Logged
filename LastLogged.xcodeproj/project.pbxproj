@@ -34,6 +34,7 @@
 		A10000000000000000000019 /* TrackerCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* TrackerCategory.swift */; };
 		A1000000000000000000001A /* SyncStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* SyncStatus.swift */; };
 		A1000000000000000000001B /* LastLoggedWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* LastLoggedWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A1000000000000000000001C /* LogCompletionIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* LogCompletionIntent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,6 +85,7 @@
 		A20000000000000000000015 /* LastLoggedWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedWidget.swift; sourceTree = "<group>"; };
 		A20000000000000000000016 /* LastLoggedWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LastLoggedWidget.entitlements; sourceTree = "<group>"; };
 		A20000000000000000000017 /* LastLoggedWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LastLoggedWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000018 /* LogCompletionIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogCompletionIntent.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -251,6 +253,7 @@
 			children = (
 				A20000000000000000000014 /* LastLoggedWidgetBundle.swift */,
 				A20000000000000000000015 /* LastLoggedWidget.swift */,
+				A20000000000000000000018 /* LogCompletionIntent.swift */,
 				A20000000000000000000016 /* LastLoggedWidget.entitlements */,
 			);
 			path = LastLoggedWidget;
@@ -389,6 +392,7 @@
 			files = (
 				A10000000000000000000014 /* LastLoggedWidgetBundle.swift in Sources */,
 				A10000000000000000000015 /* LastLoggedWidget.swift in Sources */,
+				A1000000000000000000001C /* LogCompletionIntent.swift in Sources */,
 				A10000000000000000000016 /* WidgetDataProvider.swift in Sources */,
 				A10000000000000000000017 /* TrackerItem.swift in Sources */,
 				A10000000000000000000018 /* CompletionLog.swift in Sources */,
