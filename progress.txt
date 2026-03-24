@@ -55,6 +55,9 @@ Started: 2026-03-24
 - AuthViewModel uses CryptoKit SHA256 for Apple Sign In nonce hashing; nonce is stored transiently per sign-in attempt
 - AuthView in Views/Settings/ — uses SignInWithAppleButton from AuthenticationServices; accessible from HomeView toolbar person.circle icon
 - Session restore happens in LastLoggedApp via `.task { await SupabaseService.shared.restoreSession() }` on ContentView
+- Edge functions in `edge-functions/` — Hono + TypeScript on Node.js 20; use `@hono/node-server` for `serve()`; Dockerfile uses multi-stage build
+- Edge function routes are modular Hono instances merged via `app.route("/", routeModule)` in index.ts
+- Supabase service role key in edge functions bypasses RLS — for server-side cross-user queries
 ---
 
 ## 2026-03-24 - US-001
@@ -367,4 +370,30 @@ Started: 2026-03-24
   - AuthView goes in Views/Settings/ since it's account management; accessed from HomeView toolbar person.circle icon
   - `.task { }` modifier on ContentView in LastLoggedApp runs once on first appear — better than .onAppear for async work
   - Highest pbxproj IDs after this story: A1...0021 (BuildFile), A2...001D (FileRef)
+---
+
+## 2026-03-24 - US-020
+- What was implemented: Hono edge functions sidecar with daily reminder digest. Node.js 20 project with TypeScript in `edge-functions/` directory. Supabase server client configured with service role key placeholder for bypassing RLS. APNs integration via @parse/node-apn with token-based auth (P8 key file). Reminder digest endpoint at POST /send-reminder-digest queries users with 64+ tracked items, finds overdue items, compiles summary notification, and sends via APNs. node-cron job scheduled for daily 8:00 AM. Health check endpoint at GET /health. Dockerfile with multi-stage build for Coolify deployment. Environment variables documented in .env.example.
+- Files changed:
+  - edge-functions/package.json (new - Node.js project with Hono, @parse/node-apn, @supabase/supabase-js, node-cron, @hono/node-server)
+  - edge-functions/tsconfig.json (new - TypeScript strict config targeting ES2022/ESNext)
+  - edge-functions/src/index.ts (new - Hono app entry point with health check, cron scheduling, and serve)
+  - edge-functions/src/supabase.ts (new - Supabase server client with service role key)
+  - edge-functions/src/apns.ts (new - APNs provider setup and notification builder)
+  - edge-functions/src/reminder-digest.ts (new - digest logic: fetch users with device tokens, find overdue items beyond 64-limit, send push notifications)
+  - edge-functions/Dockerfile (new - multi-stage Node.js 20-alpine build for Coolify)
+  - edge-functions/.env.example (new - documented env vars for Supabase, APNs, and server config)
+  - edge-functions/.dockerignore (new - excludes node_modules, dist, .env from Docker context)
+  - edge-functions/package-lock.json (new - npm lockfile)
+  - prd.json (updated - US-020 passes: true)
+- **Learnings for future iterations:**
+  - Edge functions live in `edge-functions/` directory at project root — separate from the iOS app and Supabase migrations
+  - Hono uses `@hono/node-server` for Node.js `serve()` — must be installed alongside `hono`
+  - APNs token-based auth uses .p8 key file + keyId + teamId (not certificate-based) — simpler and doesn't expire
+  - The digest only targets users with 64+ tracker items (beyond local UNNotification limit) — normal users get local notifications only
+  - Supabase service role key bypasses RLS — used for server-side cross-user queries in the digest
+  - `node-cron` schedule format: "0 8 * * *" = daily at 8:00 AM
+  - Dockerfile uses multi-stage build: builder stage compiles TS, production stage only has dist + production deps
+  - No pbxproj changes — this is a standalone Node.js project, not part of the Xcode build
+  - Highest pbxproj IDs unchanged: A1...0021 (BuildFile), A2...001D (FileRef)
 ---

@@ -1,0 +1,28 @@
+{
+  "name": "lastlogged-edge-functions",
+  "version": "1.0.0",
+  "description": "Edge functions sidecar for Last Logged - reminder digest, webhooks, and data export",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.11",
+    "@parse/node-apn": "^6.0.1",
+    "@supabase/supabase-js": "^2.45.0",
+    "hono": "^4.4.0",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.15.0",
+    "typescript": "^5.5.0"
+  }
+}
