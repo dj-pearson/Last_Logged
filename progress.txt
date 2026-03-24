@@ -31,6 +31,10 @@ Started: 2026-03-24
 - HomeView toolbar + button is a Menu with "New Tracker" and "Add from Templates" — add new creation options there
 - NotificationService.shared is the singleton for local notifications — call `rescheduleAllNotifications(modelContext:)` after any tracker mutation
 - Notification uses `UNCalendarNotificationTrigger` at 9 AM on due dates; 64-item limit handled by overdue priority sort
+- Widget extension target: LastLoggedWidgetExtension (com.pearsonmedia.lastlogged.widget), shares models via duplicate PBXBuildFile entries
+- WidgetDataProvider.shared in LastLogged/Widget/ — creates its own ModelContainer from App Group URL; compiled in both targets
+- OverdueItem struct + UrgencyLevel enum live in WidgetDataProvider.swift — use for widget display data
+- Widget extension files are in LastLoggedWidget/ directory (sibling to LastLogged/)
 ---
 
 ## 2026-03-24 - US-001
@@ -199,4 +203,25 @@ Started: 2026-03-24
   - `rescheduleAllNotifications` removes all pending then re-adds — simpler than tracking individual notification changes
   - Permission is requested lazily (only when items with reminders exist), not at app launch
   - Highest pbxproj IDs after this story: A1...0012 (BuildFile), A2...0012 (FileRef)
+---
+
+## 2026-03-24 - US-012
+- What was implemented: App Group container and shared SwiftData store for widgets. Created WidgetDataProvider utility in LastLogged/Widget/ that reads TrackerItems from the shared App Group SwiftData store and returns top N most overdue items sorted by urgency. Created widget extension target (LastLoggedWidgetExtension) with its own entitlements, build configurations, and source files. Widget extension compiles shared model files (TrackerItem, CompletionLog, TrackerCategory, SyncStatus) and WidgetDataProvider. Placeholder widget views included for US-013 to build upon.
+- Files changed:
+  - LastLogged/Widget/WidgetDataProvider.swift (new - WidgetDataProvider singleton with makeSharedModelContainer, getTopOverdueItems, OverdueItem struct, UrgencyLevel enum)
+  - LastLoggedWidget/LastLoggedWidgetBundle.swift (new - @main widget bundle entry point)
+  - LastLoggedWidget/LastLoggedWidget.swift (new - placeholder widget with TimelineProvider, basic entry view)
+  - LastLoggedWidget/LastLoggedWidget.entitlements (new - App Group: group.com.pearsonmedia.lastlogged)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added widget extension target, embed phase, dependency, build configs)
+  - LastLogged/Widget/.gitkeep (removed - replaced by real file)
+- **Learnings for future iterations:**
+  - Widget extension target type is `com.apple.product-type.app-extension` with SKIP_INSTALL = YES
+  - Widget extension needs its own PBXBuildFile entries for shared model files (same FileRef, different BuildFile IDs)
+  - Widget bundle identifier follows pattern: `com.pearsonmedia.lastlogged.widget`
+  - WidgetDataProvider.shared creates its own ModelContainer using the App Group URL — independent from the main app's container
+  - OverdueItem struct and UrgencyLevel enum are in WidgetDataProvider.swift — shared between main app and widget
+  - Widget extension LD_RUNPATH_SEARCH_PATHS needs `@executable_path/../../Frameworks` for app extension context
+  - PBXCopyFilesBuildPhase with dstSubfolderSpec = 13 is used for "Embed App Extensions"
+  - PBXContainerItemProxy + PBXTargetDependency link widget extension as dependency of main app
+  - Highest pbxproj IDs after this story: A1...001B (BuildFile), A2...0017 (FileRef)
 ---

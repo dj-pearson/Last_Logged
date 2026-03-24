@@ -25,7 +25,40 @@
 		A10000000000000000000010 /* CategoryTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* CategoryTemplates.swift */; };
 		A10000000000000000000011 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* TemplatePickerView.swift */; };
 		A10000000000000000000012 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* NotificationService.swift */; };
+		A10000000000000000000013 /* WidgetDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* WidgetDataProvider.swift */; };
+		A10000000000000000000014 /* LastLoggedWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* LastLoggedWidgetBundle.swift */; };
+		A10000000000000000000015 /* LastLoggedWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* LastLoggedWidget.swift */; };
+		A10000000000000000000016 /* WidgetDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* WidgetDataProvider.swift */; };
+		A10000000000000000000017 /* TrackerItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* TrackerItem.swift */; };
+		A10000000000000000000018 /* CompletionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* CompletionLog.swift */; };
+		A10000000000000000000019 /* TrackerCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* TrackerCategory.swift */; };
+		A1000000000000000000001A /* SyncStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* SyncStatus.swift */; };
+		A1000000000000000000001B /* LastLoggedWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* LastLoggedWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AB0000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A60000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000000000000000000002;
+			remoteInfo = LastLoggedWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A40000000000000000000007 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A1000000000000000000001B /* LastLoggedWidgetExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A20000000000000000000001 /* LastLoggedApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedApp.swift; sourceTree = "<group>"; };
@@ -46,6 +79,11 @@
 		A20000000000000000000010 /* CategoryTemplates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryTemplates.swift; sourceTree = "<group>"; };
 		A20000000000000000000011 /* TemplatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatePickerView.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		A20000000000000000000013 /* WidgetDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataProvider.swift; sourceTree = "<group>"; };
+		A20000000000000000000014 /* LastLoggedWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedWidgetBundle.swift; sourceTree = "<group>"; };
+		A20000000000000000000015 /* LastLoggedWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedWidget.swift; sourceTree = "<group>"; };
+		A20000000000000000000016 /* LastLoggedWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LastLoggedWidget.entitlements; sourceTree = "<group>"; };
+		A20000000000000000000017 /* LastLoggedWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LastLoggedWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,6 +97,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A40000000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -66,6 +111,7 @@
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000002 /* LastLogged */,
+				A30000000000000000000010 /* LastLoggedWidget */,
 				A3000000000000000000000E /* Products */,
 				A3000000000000000000000F /* Frameworks */,
 			);
@@ -179,6 +225,7 @@
 		A3000000000000000000000D /* Widget */ = {
 			isa = PBXGroup;
 			children = (
+				A20000000000000000000013 /* WidgetDataProvider.swift */,
 			);
 			path = Widget;
 			sourceTree = "<group>";
@@ -187,6 +234,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000006 /* LastLogged.app */,
+				A20000000000000000000017 /* LastLoggedWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -196,6 +244,16 @@
 			children = (
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A30000000000000000000010 /* LastLoggedWidget */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000014 /* LastLoggedWidgetBundle.swift */,
+				A20000000000000000000015 /* LastLoggedWidget.swift */,
+				A20000000000000000000016 /* LastLoggedWidget.entitlements */,
+			);
+			path = LastLoggedWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -208,10 +266,12 @@
 				A40000000000000000000001 /* Sources */,
 				A40000000000000000000002 /* Frameworks */,
 				A40000000000000000000003 /* Resources */,
+				A40000000000000000000007 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AC0000000000000000000001 /* PBXTargetDependency */,
 			);
 			name = LastLogged;
 			packageProductDependencies = (
@@ -222,6 +282,23 @@
 			productName = LastLogged;
 			productReference = A20000000000000000000006 /* LastLogged.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A50000000000000000000002 /* LastLoggedWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A80000000000000000000003 /* Build configuration list for PBXNativeTarget "LastLoggedWidgetExtension" */;
+			buildPhases = (
+				A40000000000000000000004 /* Sources */,
+				A40000000000000000000005 /* Frameworks */,
+				A40000000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LastLoggedWidgetExtension;
+			productName = LastLoggedWidgetExtension;
+			productReference = A20000000000000000000017 /* LastLoggedWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -234,6 +311,9 @@
 				LastUpgradeCheck = 1540;
 				TargetAttributes = {
 					A50000000000000000000001 = {
+						CreatedOnToolsVersion = 15.4;
+					};
+					A50000000000000000000002 = {
 						CreatedOnToolsVersion = 15.4;
 					};
 				};
@@ -257,6 +337,7 @@
 			projectRoot = "";
 			targets = (
 				A50000000000000000000001 /* LastLogged */,
+				A50000000000000000000002 /* LastLoggedWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -267,6 +348,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000003 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A40000000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -291,10 +379,33 @@
 				A10000000000000000000010 /* CategoryTemplates.swift in Sources */,
 				A10000000000000000000011 /* TemplatePickerView.swift in Sources */,
 				A10000000000000000000012 /* NotificationService.swift in Sources */,
+				A10000000000000000000013 /* WidgetDataProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A40000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000014 /* LastLoggedWidgetBundle.swift in Sources */,
+				A10000000000000000000015 /* LastLoggedWidget.swift in Sources */,
+				A10000000000000000000016 /* WidgetDataProvider.swift in Sources */,
+				A10000000000000000000017 /* TrackerItem.swift in Sources */,
+				A10000000000000000000018 /* CompletionLog.swift in Sources */,
+				A10000000000000000000019 /* TrackerCategory.swift in Sources */,
+				A1000000000000000000001A /* SyncStatus.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AC0000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000000000000000000002 /* LastLoggedWidgetExtension */;
+			targetProxy = AB0000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A70000000000000000000001 /* Debug */ = {
@@ -474,6 +585,56 @@
 			};
 			name = Release;
 		};
+		A70000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LastLoggedWidget/LastLoggedWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Last Logged Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pearsonmedia.lastlogged.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A70000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LastLoggedWidget/LastLoggedWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Last Logged Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pearsonmedia.lastlogged.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -491,6 +652,15 @@
 			buildConfigurations = (
 				A70000000000000000000003 /* Debug */,
 				A70000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A80000000000000000000003 /* Build configuration list for PBXNativeTarget "LastLoggedWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A70000000000000000000005 /* Debug */,
+				A70000000000000000000006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
