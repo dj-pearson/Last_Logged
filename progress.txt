@@ -19,6 +19,8 @@ Started: 2026-03-24
 - Color(hex:) extension on Color lives in Views/Home/HomeView.swift — converts "#RRGGBB" hex strings to SwiftUI Color
 - ContentView is a thin wrapper that renders HomeView; new top-level navigation goes through HomeView
 - Highest pbxproj IDs: A1...000D (BuildFile), A2...000D (FileRef)
+- TrackerRowView takes `onLog: () -> Void` closure — must be provided when constructing the row
+- `import UIKit` needed for haptic feedback (UIImpactFeedbackGenerator) — SwiftUI alone doesn't expose it
 ---
 
 ## 2026-03-24 - US-001
@@ -95,4 +97,18 @@ Started: 2026-03-24
   - TrackerRowView currently shows "—" as elapsed time placeholder — US-007 will replace with real elapsed time display
   - The add button sets showingAddTracker state but no sheet is presented yet — US-008 will implement AddTrackerView
   - Highest pbxproj IDs after this story: A1...000D (BuildFile), A2...000D (FileRef)
+---
+
+## 2026-03-24 - US-006
+- What was implemented: One-tap event logging with haptic feedback and undo toast. Added logCompletion/undoLog methods to HomeViewModel with LogUndoInfo struct for undo state. Updated TrackerRowView with a prominent green checkmark.circle.fill log button. Added UIImpactFeedbackGenerator (medium) on tap. Added a transient toast overlay with "Logged! Undo" that auto-dismisses after 4 seconds. Undo deletes the CompletionLog and reverts lastCompletedAt.
+- Files changed:
+  - LastLogged/ViewModels/HomeViewModel.swift (added LogUndoInfo struct, logCompletion, undoLog methods)
+  - LastLogged/Views/Home/HomeView.swift (added log button to TrackerRowView, haptic feedback, toast overlay with undo)
+- **Learnings for future iterations:**
+  - `import UIKit` is needed alongside SwiftUI for UIImpactFeedbackGenerator — SwiftUI doesn't re-export UIKit haptic classes
+  - Use `Task { @MainActor in try? await Task.sleep(for:) }` for cancellable toast timers — cleaner than Timer.scheduledTimer in SwiftUI
+  - LogUndoInfo holds SwiftData model references (CompletionLog, TrackerItem) — these remain valid after fetchItems() since the same ModelContext manages them
+  - TrackerRowView now takes an `onLog: () -> Void` closure — future stories modifying TrackerRowView must include this parameter
+  - No new files were added, so no pbxproj changes needed for this story
+  - Highest pbxproj IDs unchanged: A1...000D (BuildFile), A2...000D (FileRef)
 ---
