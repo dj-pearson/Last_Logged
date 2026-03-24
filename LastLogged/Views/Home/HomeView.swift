@@ -144,6 +144,12 @@ struct TrackerRowView: View {
     let item: TrackerItem
     let onLog: () -> Void
 
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter
+    }()
+
     var body: some View {
         HStack {
             Image(systemName: item.iconName)
@@ -154,8 +160,8 @@ struct TrackerRowView: View {
 
             Spacer()
 
-            Text("—")
-                .foregroundStyle(.secondary)
+            Text(elapsedTimeText)
+                .foregroundStyle(urgencyColor)
                 .font(.subheadline)
 
             Button {
@@ -166,6 +172,33 @@ struct TrackerRowView: View {
                     .foregroundStyle(.green)
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    private var elapsedTimeText: String {
+        guard let lastCompleted = item.lastCompletedAt else {
+            return "Never logged"
+        }
+        return Self.relativeFormatter.localizedString(for: lastCompleted, relativeTo: Date())
+    }
+
+    private var urgencyColor: Color {
+        guard let lastCompleted = item.lastCompletedAt else {
+            return item.reminderIntervalDays != nil ? .red : .secondary
+        }
+        guard let interval = item.reminderIntervalDays, interval > 0 else {
+            return .secondary
+        }
+        let elapsed = Date().timeIntervalSince(lastCompleted)
+        let intervalSeconds = Double(interval) * 86400
+        let ratio = elapsed / intervalSeconds
+
+        if ratio > 1.0 {
+            return .red
+        } else if ratio >= 0.75 {
+            return .yellow
+        } else {
+            return .green
         }
     }
 }
