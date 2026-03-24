@@ -42,6 +42,9 @@ struct LastLoggedApp: App {
                         modelContext: modelContainer.mainContext
                     )
                 }
+                .task {
+                    await SupabaseService.shared.restoreSession()
+                }
         }
         .modelContainer(modelContainer)
         .onChange(of: scenePhase) { _, newPhase in

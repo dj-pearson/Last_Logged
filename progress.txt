@@ -51,6 +51,10 @@ Started: 2026-03-24
 - Sync DTOs (TrackerCategoryRow, TrackerItemRow, CompletionLogRow) use CodingKeys to map Swift camelCase to Postgres snake_case column names
 - Push only syncs TrackerItems with `syncStatus != .synced`; categories and logs push all (upsert on conflict); pull uses lastSyncTimestamp for incremental fetch
 - After local mutations in HomeViewModel, set `item.syncStatus = .pending` before calling `triggerSync()` to mark items for push
+- SupabaseService auth methods: signInWithApple(idToken:nonce:), signUpEmail/signInEmail, signOut(), restoreSession() — all update isSignedIn/currentUserEmail @Observable state
+- AuthViewModel uses CryptoKit SHA256 for Apple Sign In nonce hashing; nonce is stored transiently per sign-in attempt
+- AuthView in Views/Settings/ — uses SignInWithAppleButton from AuthenticationServices; accessible from HomeView toolbar person.circle icon
+- Session restore happens in LastLoggedApp via `.task { await SupabaseService.shared.restoreSession() }` on ContentView
 ---
 
 ## 2026-03-24 - US-001
@@ -342,4 +346,25 @@ Started: 2026-03-24
   - CompletionLog doesn't have syncStatus — push all logs and upsert on conflict; pull only inserts missing logs by ID
   - LastLoggedApp uses `onChange(of: scenePhase)` to trigger sync when app returns to foreground — covers network recovery scenario too
   - Highest pbxproj IDs after this story: A1...001F (BuildFile), A2...001B (FileRef)
+---
+
+## 2026-03-24 - US-019
+- What was implemented: Supabase Auth with Apple Sign In and Email/Password. Added auth methods to SupabaseService: signInWithApple(idToken:nonce:) using signInWithIdToken, signUpEmail/signInEmail for email/password auth, signOut() that clears session but preserves local data, restoreSession() for app launch session restoration, and createOrUpdateUserProfile() that upserts user record in the users table on sign in. Created AuthViewModel @Observable class with Apple Sign In nonce handling (CryptoKit SHA256), email/password form state, validation, and error handling. Created AuthView in Views/Settings/ with Sign In with Apple button, email/password form with sign-in/sign-up toggle, signed-in state showing email and sign out option. Added person.circle toolbar button in HomeView (filled when signed in). Session restored on app launch via .task modifier in LastLoggedApp. Auth is fully optional — app works without signing in.
+- Files changed:
+  - LastLogged/Services/SupabaseService.swift (updated - added isSignedIn/currentUserEmail state, restoreSession, signInWithApple, signUpEmail, signInEmail, signOut, createOrUpdateUserProfile, UserProfileRow DTO)
+  - LastLogged/ViewModels/AuthViewModel.swift (new - @Observable class with Apple Sign In nonce, email form, sign out)
+  - LastLogged/Views/Settings/AuthView.swift (new - auth screen with Apple Sign In, email form, signed-in state)
+  - LastLogged/Views/Home/HomeView.swift (updated - added showingAuth state, person.circle toolbar button, auth sheet)
+  - LastLogged/LastLoggedApp.swift (updated - added .task for session restore on launch)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added AuthViewModel.swift and AuthView.swift to ViewModels/Settings groups and Sources phase)
+  - prd.json (updated - US-019 passes: true)
+- **Learnings for future iterations:**
+  - Apple Sign In flow: generate random nonce → SHA256 hash → set as request.nonce → pass raw nonce + idToken to Supabase signInWithIdToken
+  - SupabaseService.isSignedIn is a synchronous @Observable property (not async like isAuthenticated) — updated by restoreSession/signIn/signOut for reactive UI binding
+  - supabase-swift signUp returns AuthResponse with optional .session (nil if email confirmation required); signIn and signInWithIdToken return Session directly
+  - UserProfileRow upserts on conflict "auth_id" — creates user profile on first sign in, updates on subsequent sign ins
+  - Session restore uses `client.auth.session` which throws if no persisted session — catch means not signed in
+  - AuthView goes in Views/Settings/ since it's account management; accessed from HomeView toolbar person.circle icon
+  - `.task { }` modifier on ContentView in LastLoggedApp runs once on first appear — better than .onAppear for async work
+  - Highest pbxproj IDs after this story: A1...0021 (BuildFile), A2...001D (FileRef)
 ---

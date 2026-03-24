@@ -17,6 +17,8 @@ final class SupabaseService {
 
     private(set) var isSyncing = false
     private(set) var lastSyncedAt: Date?
+    private(set) var isSignedIn = false
+    private(set) var currentUserEmail: String?
     private var syncDebounceTask: Task<Void, Never>?
     private let syncDebounceInterval: TimeInterval = 2.0
 
@@ -35,6 +37,89 @@ final class SupabaseService {
             supabaseURL: Self.supabaseURL,
             supabaseKey: Self.supabaseAnonKey
         )
+    }
+
+    // MARK: - Session Restore
+
+    func restoreSession() async {
+        do {
+            let session = try await client.auth.session
+            isSignedIn = true
+            currentUserEmail = session.user.email
+        } catch {
+            isSignedIn = false
+            currentUserEmail = nil
+        }
+    }
+
+    // MARK: - Apple Sign In
+
+    func signInWithApple(idToken: String, nonce: String) async throws {
+        let session = try await client.auth.signInWithIdToken(
+            credentials: .init(
+                provider: .apple,
+                idToken: idToken,
+                nonce: nonce
+            )
+        )
+        isSignedIn = true
+        currentUserEmail = session.user.email
+        await createOrUpdateUserProfile(session: session)
+    }
+
+    // MARK: - Email/Password Auth
+
+    func signUpEmail(email: String, password: String) async throws {
+        let session = try await client.auth.signUp(
+            email: email,
+            password: password
+        ).session
+        if let session {
+            isSignedIn = true
+            currentUserEmail = session.user.email
+            await createOrUpdateUserProfile(session: session)
+        }
+    }
+
+    func signInEmail(email: String, password: String) async throws {
+        let session = try await client.auth.signIn(
+            email: email,
+            password: password
+        )
+        isSignedIn = true
+        currentUserEmail = session.user.email
+        await createOrUpdateUserProfile(session: session)
+    }
+
+    // MARK: - Sign Out
+
+    func signOut() async throws {
+        try await client.auth.signOut()
+        isSignedIn = false
+        currentUserEmail = nil
+    }
+
+    // MARK: - User Profile
+
+    private func createOrUpdateUserProfile(session: Session) async {
+        let authId = session.user.id
+        let displayName = session.user.userMetadata["full_name"]?.stringValue
+            ?? session.user.email
+            ?? "User"
+        let tier = RevenueCatService.shared.subscriptionTier.rawValue
+
+        let row = UserProfileRow(
+            authId: authId,
+            displayName: displayName,
+            subscriptionTier: tier
+        )
+        do {
+            try await client.from("users")
+                .upsert(row, onConflict: "auth_id")
+                .execute()
+        } catch {
+            // Profile creation failed — sync will still work via auth_id
+        }
     }
 
     // MARK: - Auth State
@@ -336,6 +421,18 @@ final class SupabaseService {
 
 private struct UserRow: Decodable {
     let id: UUID
+}
+
+struct UserProfileRow: Encodable {
+    let authId: UUID
+    let displayName: String
+    let subscriptionTier: String
+
+    enum CodingKeys: String, CodingKey {
+        case authId = "auth_id"
+        case displayName = "display_name"
+        case subscriptionTier = "subscription_tier"
+    }
 }
 
 struct TrackerCategoryRow: Codable {
