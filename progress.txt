@@ -27,6 +27,8 @@ Started: 2026-03-24
 - Use `.sheet(item:)` with TrackerItem for edit sheet — @Model classes conform to Identifiable via PersistentModel
 - Swipe actions use `.swipeActions(edge: .trailing, allowsFullSwipe: false)` for non-destructive-by-default archive
 - Context menu on rows: `.contextMenu` with Edit and Archive options
+- CategoryTemplates keyed by category name string — match templates to categories via `category.name`
+- HomeView toolbar + button is a Menu with "New Tracker" and "Add from Templates" — add new creation options there
 ---
 
 ## 2026-03-24 - US-001
@@ -161,4 +163,20 @@ Started: 2026-03-24
   - `.sheet(item:)` works with @Model classes since PersistentModel conforms to Identifiable
   - Multiple `.sheet` modifiers on same view work in iOS 17+ when triggered by different bindings
   - Highest pbxproj IDs after this story: A1...000F (BuildFile), A2...000F (FileRef)
+---
+
+## 2026-03-24 - US-010
+- What was implemented: Pre-built category templates with starter items. Created CategoryTemplates utility defining starter items per category with name, iconName, and reminderIntervalDays matching all PRD requirements. Created TemplatePickerView with category-grouped list, checkbox selection, select/deselect all, and bulk-add via HomeViewModel.createItem. Updated HomeView toolbar + button to use a Menu with "New Tracker" and "Add from Templates" options. Added "Browse Templates" button to empty state.
+- Files changed:
+  - LastLogged/Utilities/CategoryTemplates.swift (new - TemplateItem struct, CategoryTemplates static dictionary with all 6 categories)
+  - LastLogged/Views/Home/TemplatePickerView.swift (new - template picker with checkbox selection, bulk-add, select/deselect all)
+  - LastLogged/Views/Home/HomeView.swift (updated - toolbar + changed to Menu, added template picker sheet, added Browse Templates to empty state)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added 2 new files to project)
+- **Learnings for future iterations:**
+  - CategoryTemplates uses static let dictionary keyed by category name string — templates are matched to categories by name, not ID
+  - TemplateItem uses `let id = UUID()` initialized once in the static dictionary — IDs are stable across computed property accesses within a session
+  - TemplatePickerView reuses HomeViewModel.createItem for each selected template — no bulk-create method needed since createItem handles sortOrder auto-increment
+  - HomeView toolbar now uses Menu for + button — future stories adding more creation options should add to this Menu
+  - Color(hex:) extension in HomeView.swift is accessible from TemplatePickerView.swift since both are in the same module
+  - Highest pbxproj IDs after this story: A1...0011 (BuildFile), A2...0011 (FileRef)
 ---
