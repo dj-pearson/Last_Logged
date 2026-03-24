@@ -4,13 +4,14 @@ import SwiftData
 struct AddTrackerView: View {
     @Environment(\.dismiss) private var dismiss
     let viewModel: HomeViewModel
+    let editingItem: TrackerItem?
 
-    @State private var name = ""
+    @State private var name: String
     @State private var selectedCategoryId: UUID?
-    @State private var hasReminder = false
-    @State private var reminderValue = 30
-    @State private var reminderUnit: ReminderUnit = .days
-    @State private var selectedIcon = "checkmark.circle"
+    @State private var hasReminder: Bool
+    @State private var reminderValue: Int
+    @State private var reminderUnit: ReminderUnit
+    @State private var selectedIcon: String
     @State private var showingIconPicker = false
 
     enum ReminderUnit: String, CaseIterable {
@@ -24,6 +25,40 @@ struct AddTrackerView: View {
             case .weeks: return value * 7
             case .months: return value * 30
             }
+        }
+    }
+
+    init(viewModel: HomeViewModel, editingItem: TrackerItem? = nil) {
+        self.viewModel = viewModel
+        self.editingItem = editingItem
+        if let item = editingItem {
+            _name = State(initialValue: item.name)
+            _selectedCategoryId = State(initialValue: item.categoryId)
+            _selectedIcon = State(initialValue: item.iconName)
+            if let days = item.reminderIntervalDays, days > 0 {
+                _hasReminder = State(initialValue: true)
+                if days % 30 == 0 {
+                    _reminderValue = State(initialValue: days / 30)
+                    _reminderUnit = State(initialValue: .months)
+                } else if days % 7 == 0 {
+                    _reminderValue = State(initialValue: days / 7)
+                    _reminderUnit = State(initialValue: .weeks)
+                } else {
+                    _reminderValue = State(initialValue: days)
+                    _reminderUnit = State(initialValue: .days)
+                }
+            } else {
+                _hasReminder = State(initialValue: false)
+                _reminderValue = State(initialValue: 30)
+                _reminderUnit = State(initialValue: .days)
+            }
+        } else {
+            _name = State(initialValue: "")
+            _selectedCategoryId = State(initialValue: nil)
+            _selectedIcon = State(initialValue: "checkmark.circle")
+            _hasReminder = State(initialValue: false)
+            _reminderValue = State(initialValue: 30)
+            _reminderUnit = State(initialValue: .days)
         }
     }
 
@@ -79,7 +114,7 @@ struct AddTrackerView: View {
                     }
                 }
             }
-            .navigationTitle("New Tracker")
+            .navigationTitle(editingItem != nil ? "Edit Tracker" : "New Tracker")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -105,12 +140,22 @@ struct AddTrackerView: View {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty, let categoryId = selectedCategoryId else { return }
         let intervalDays = hasReminder ? reminderUnit.toDays(reminderValue) : nil
-        viewModel.createItem(
-            name: trimmedName,
-            categoryId: categoryId,
-            reminderIntervalDays: intervalDays,
-            iconName: selectedIcon
-        )
+        if let editingItem {
+            viewModel.updateItem(
+                editingItem,
+                name: trimmedName,
+                categoryId: categoryId,
+                reminderIntervalDays: intervalDays,
+                iconName: selectedIcon
+            )
+        } else {
+            viewModel.createItem(
+                name: trimmedName,
+                categoryId: categoryId,
+                reminderIntervalDays: intervalDays,
+                iconName: selectedIcon
+            )
+        }
         dismiss()
     }
 }

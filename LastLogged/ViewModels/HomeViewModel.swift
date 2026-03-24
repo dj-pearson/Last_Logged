@@ -129,6 +129,23 @@ final class HomeViewModel {
         fetchItems()
     }
 
+    // MARK: - Update Item
+
+    func updateItem(
+        _ item: TrackerItem,
+        name: String,
+        categoryId: UUID,
+        reminderIntervalDays: Int?,
+        iconName: String
+    ) {
+        item.name = name
+        item.categoryId = categoryId
+        item.reminderIntervalDays = reminderIntervalDays
+        item.iconName = iconName
+        save()
+        fetchItems()
+    }
+
     // MARK: - Update Sort Order
 
     func updateSortOrder(for item: TrackerItem, newOrder: Int) {

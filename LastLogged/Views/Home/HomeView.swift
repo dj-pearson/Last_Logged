@@ -6,6 +6,9 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: HomeViewModel?
     @State private var showingAddTracker = false
+    @State private var editingItem: TrackerItem?
+    @State private var itemToArchive: TrackerItem?
+    @State private var showArchiveConfirmation = false
     @State private var toastInfo: HomeViewModel.LogUndoInfo?
     @State private var toastDismissTask: Task<Void, Never>?
 
@@ -43,6 +46,18 @@ struct HomeView: View {
                 AddTrackerView(viewModel: viewModel)
             }
         }
+        .sheet(item: $editingItem) { item in
+            if let viewModel {
+                AddTrackerView(viewModel: viewModel, editingItem: item)
+            }
+        }
+        .confirmationDialog("Archive Tracker?", isPresented: $showArchiveConfirmation, presenting: itemToArchive) { item in
+            Button("Archive", role: .destructive) {
+                viewModel?.archiveItem(item)
+            }
+        } message: { item in
+            Text("'\(item.name)' will be hidden from your home list.")
+        }
         .overlay(alignment: .bottom) {
             if toastInfo != nil {
                 toastView
@@ -78,6 +93,27 @@ struct HomeView: View {
                     ForEach(group.items, id: \.id) { item in
                         TrackerRowView(item: item) {
                             logItem(item)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                itemToArchive = item
+                                showArchiveConfirmation = true
+                            } label: {
+                                Label("Archive", systemImage: "archivebox")
+                            }
+                        }
+                        .contextMenu {
+                            Button {
+                                editingItem = item
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                itemToArchive = item
+                                showArchiveConfirmation = true
+                            } label: {
+                                Label("Archive", systemImage: "archivebox")
+                            }
                         }
                     }
                 } header: {
