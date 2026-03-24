@@ -68,7 +68,9 @@ Started: 2026-03-24
 - OnboardingViewModel seeds template items for selected categories on completion via `CategoryTemplates.templates(for:)` and direct SwiftData insert
 - Use `@ObservationIgnored` on `@AppStorage` properties inside `@Observable` classes to avoid observation conflicts
 - TrackerDetailView in Views/Detail/ — navigated via NavigationLink from HomeView rows; uses TrackerDetailViewModel for data
-- Highest pbxproj IDs: A1...0026 (BuildFile), A2...0022 (FileRef)
+- AnalyticsService.shared is the singleton for TelemetryDeck analytics — fire-and-forget calls, no PII; initialized in LastLoggedApp.init()
+- Widget extension uses TelemetryDeck.signal() directly (not AnalyticsService) since it's a separate target
+- Highest pbxproj IDs: A1...0028 (BuildFile), A2...0023 (FileRef), AA...0004 (ProductDependency)
 - Custom adaptive Color assets (AccentColor, BrandPrimary, BrandCardBackground, BrandHeaderBackground) in Assets.xcassets with light/dark variants
 - AppIcon.png placeholder in Assets.xcassets/AppIcon.appiconset — replace with final icon before App Store submission
 - All interactive buttons have .accessibilityLabel and .accessibilityHint; decorative icons use .accessibilityHidden(true)
@@ -510,4 +512,22 @@ Started: 2026-03-24
   - Use .accessibilityHidden(true) on decorative icons that duplicate information conveyed by text
   - SF Symbol picker items already had 44x44 frames; other buttons needed explicit .frame(minWidth: 44, minHeight: 44)
   - No Swift toolchain on Windows — typecheck verification requires macOS/Xcode build
+---
+
+## 2026-03-24 - US-026
+- What was implemented: TelemetryDeck analytics integration with AnalyticsService wrapper class and event tracking across the app
+- Files changed:
+  - LastLogged/Services/AnalyticsService.swift (new) — lightweight wrapper around TelemetryDeck SDK
+  - LastLogged/LastLoggedApp.swift — added AnalyticsService.shared.configure() at app launch
+  - LastLogged/ViewModels/HomeViewModel.swift — added item_created and item_logged event tracking
+  - LastLogged/ViewModels/OnboardingViewModel.swift — added category_selected and onboarding_completed event tracking
+  - LastLogged/Views/Components/PaywallView.swift — added paywall_presented (onAppear) and trial_started (after successful purchase) tracking
+  - LastLoggedWidget/LogCompletionIntent.swift — added widget_tapped tracking via direct TelemetryDeck.signal call
+  - LastLogged.xcodeproj/project.pbxproj — added AnalyticsService.swift to main target, TelemetryDeck framework dependency to widget target
+  - prd.json — marked US-026 as passes: true
+- **Learnings for future iterations:**
+  - TelemetryDeck.signal() is fire-and-forget by design — no async/await needed, never blocks UI
+  - Widget extension cannot access AnalyticsService.swift from the main app target — use TelemetryDeck.signal() directly in widget code
+  - Adding an SPM dependency to the widget target requires: PBXBuildFile (framework), PBXFrameworksBuildPhase entry, packageProductDependencies on native target, and XCSwiftPackageProductDependency
+  - Highest pbxproj IDs after this story: A1...0028 (BuildFile), A2...0023 (FileRef), AA...0004 (ProductDependency)
 ---

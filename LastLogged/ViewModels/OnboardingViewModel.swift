@@ -41,6 +41,7 @@ final class OnboardingViewModel {
             selectedCategoryIds.remove(category.id)
         } else {
             selectedCategoryIds.insert(category.id)
+            AnalyticsService.shared.trackCategorySelected()
         }
     }
 
@@ -84,5 +85,6 @@ final class OnboardingViewModel {
         SupabaseService.shared.scheduleSyncAfterWrite(modelContext: modelContext)
 
         onboardingCompleted = true
+        AnalyticsService.shared.trackOnboardingCompleted()
     }
 }

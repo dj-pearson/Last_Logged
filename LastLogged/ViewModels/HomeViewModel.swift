@@ -102,6 +102,7 @@ final class HomeViewModel {
         fetchItems()
         scheduleNotifications()
         triggerSync()
+        AnalyticsService.shared.trackItemCreated()
     }
 
     // MARK: - Archive
@@ -133,6 +134,7 @@ final class HomeViewModel {
         fetchItems()
         scheduleNotifications()
         triggerSync()
+        AnalyticsService.shared.trackItemLogged()
         return LogUndoInfo(completionLog: log, previousLastCompletedAt: previousDate, item: item)
     }
 

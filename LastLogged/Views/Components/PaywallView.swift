@@ -52,6 +52,9 @@ struct PaywallView: View {
             }
         }
         .interactiveDismissDisabled(isHardPaywall)
+        .onAppear {
+            AnalyticsService.shared.trackPaywallPresented()
+        }
     }
 
     // MARK: - Header
@@ -302,6 +305,7 @@ struct PaywallView: View {
         do {
             let success = try await revenueCatService.purchase(package)
             if success {
+                AnalyticsService.shared.trackTrialStarted()
                 dismiss()
             }
         } catch {

@@ -45,6 +45,8 @@
 		A10000000000000000000024 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* SettingsViewModel.swift */; };
 		A10000000000000000000025 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* SettingsView.swift */; };
 		A10000000000000000000026 /* TrackerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* TrackerDetailView.swift */; };
+		A10000000000000000000027 /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* AnalyticsService.swift */; };
+		A10000000000000000000028 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000004 /* TelemetryDeck */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -106,6 +108,7 @@
 		A20000000000000000000020 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		A20000000000000000000021 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A20000000000000000000022 /* TrackerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerDetailView.swift; sourceTree = "<group>"; };
+		A20000000000000000000023 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +126,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000028 /* TelemetryDeck in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -238,6 +242,7 @@
 		A3000000000000000000000B /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A20000000000000000000023 /* AnalyticsService.swift */,
 				A20000000000000000000012 /* NotificationService.swift */,
 				A20000000000000000000019 /* RevenueCatService.swift */,
 				A2000000000000000000001B /* SupabaseService.swift */,
@@ -329,6 +334,9 @@
 			dependencies = (
 			);
 			name = LastLoggedWidgetExtension;
+			packageProductDependencies = (
+				AA0000000000000000000004 /* TelemetryDeck */,
+			);
 			productName = LastLoggedWidgetExtension;
 			productReference = A20000000000000000000017 /* LastLoggedWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -423,6 +431,7 @@
 				A10000000000000000000024 /* SettingsViewModel.swift in Sources */,
 				A10000000000000000000025 /* SettingsView.swift in Sources */,
 				A10000000000000000000026 /* TrackerDetailView.swift in Sources */,
+				A10000000000000000000027 /* AnalyticsService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -750,6 +759,11 @@
 			productName = RevenueCat;
 		};
 		AA0000000000000000000003 /* TelemetryDeck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A90000000000000000000003 /* XCRemoteSwiftPackageReference "SwiftClient" */;
+			productName = TelemetryDeck;
+		};
+		AA0000000000000000000004 /* TelemetryDeck */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A90000000000000000000003 /* XCRemoteSwiftPackageReference "SwiftClient" */;
 			productName = TelemetryDeck;

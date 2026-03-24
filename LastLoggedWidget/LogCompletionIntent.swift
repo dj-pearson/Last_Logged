@@ -1,5 +1,6 @@
 import AppIntents
 import SwiftData
+import TelemetryDeck
 import WidgetKit
 
 struct LogCompletionIntent: AppIntent {
@@ -39,6 +40,8 @@ struct LogCompletionIntent: AppIntent {
         try? context.save()
 
         WidgetCenter.shared.reloadAllTimelines()
+
+        TelemetryDeck.signal("widget_tapped")
 
         return .result()
     }
