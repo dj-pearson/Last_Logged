@@ -29,6 +29,8 @@ Started: 2026-03-24
 - Context menu on rows: `.contextMenu` with Edit and Archive options
 - CategoryTemplates keyed by category name string — match templates to categories via `category.name`
 - HomeView toolbar + button is a Menu with "New Tracker" and "Add from Templates" — add new creation options there
+- NotificationService.shared is the singleton for local notifications — call `rescheduleAllNotifications(modelContext:)` after any tracker mutation
+- Notification uses `UNCalendarNotificationTrigger` at 9 AM on due dates; 64-item limit handled by overdue priority sort
 ---
 
 ## 2026-03-24 - US-001
@@ -179,4 +181,22 @@ Started: 2026-03-24
   - HomeView toolbar now uses Menu for + button — future stories adding more creation options should add to this Menu
   - Color(hex:) extension in HomeView.swift is accessible from TemplatePickerView.swift since both are in the same module
   - Highest pbxproj IDs after this story: A1...0011 (BuildFile), A2...0011 (FileRef)
+---
+
+## 2026-03-24 - US-011
+- What was implemented: NotificationService singleton class handling all UNUserNotificationCenter interactions. Requests permission on first tracker with a reminder interval. Schedules UNCalendarNotificationTrigger for each tracker at 9:00 AM on the due date. Notification content uses "It's been [X days] since your last [item name]. Time to log it!" format. Includes a "Log Now" UNNotificationAction button. Handles the 64 pending notification limit by prioritizing overdue items first, then soonest-due. Reschedules all notifications after every create, log, update, archive, and undo operation via HomeViewModel.
+- Files changed:
+  - LastLogged/Services/NotificationService.swift (new - singleton with permission, scheduling, reschedule, category registration)
+  - LastLogged/ViewModels/HomeViewModel.swift (updated - added scheduleNotifications() calls after all mutations)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added NotificationService.swift to Services group and Sources phase)
+  - LastLogged/Services/.gitkeep (removed - replaced by real file)
+- **Learnings for future iterations:**
+  - NotificationService.shared is the singleton — accessed from ViewModels via `NotificationService.shared.rescheduleAllNotifications(modelContext:)`
+  - `UNNotificationAction` with `.foreground` option brings the app to foreground when tapped — use userInfo["trackerItemId"] to identify which tracker
+  - `UNCalendarNotificationTrigger` uses DateComponents (year, month, day, hour, minute) — non-repeating for specific dates
+  - Overdue items get scheduled for tomorrow 9 AM; future items get scheduled for their due date at 9 AM
+  - The 64-notification limit is handled by sorting all items by overdue priority and taking the top 64
+  - `rescheduleAllNotifications` removes all pending then re-adds — simpler than tracking individual notification changes
+  - Permission is requested lazily (only when items with reminders exist), not at app launch
+  - Highest pbxproj IDs after this story: A1...0012 (BuildFile), A2...0012 (FileRef)
 ---
