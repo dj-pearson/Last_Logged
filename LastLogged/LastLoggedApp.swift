@@ -8,6 +8,7 @@ struct LastLoggedApp: App {
     let modelContainer: ModelContainer
 
     init() {
+        AppSecrets.validate()
         AnalyticsService.shared.configure()
         RevenueCatService.shared.configure()
         let schema = Schema([

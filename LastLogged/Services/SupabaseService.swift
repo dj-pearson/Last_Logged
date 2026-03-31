@@ -6,10 +6,10 @@ import Supabase
 final class SupabaseService {
     static let shared = SupabaseService()
 
-    // MARK: - Configuration
+    // MARK: - Configuration (read from AppSecrets)
 
-    private static let supabaseURL = URL(string: "https://YOUR_PROJECT.supabase.co")!
-    private static let supabaseAnonKey = "YOUR_SUPABASE_ANON_KEY"
+    private static let supabaseURL = URL(string: AppSecrets.supabaseURL)!
+    private static let supabaseAnonKey = AppSecrets.supabaseAnonKey
 
     let client: SupabaseClient
 

@@ -18,8 +18,8 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": "Critical security issue — placeholder API keys currently in source code. Must be fixed before any TestFlight build."
+      "passes": true,
+      "notes": "Implemented via AppSecrets.swift pattern — services read from centralized enum, validate() crashes release builds with placeholders."
     },
     {
       "id": "PH-002",

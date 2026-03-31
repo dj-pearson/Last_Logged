@@ -9,7 +9,7 @@ final class AnalyticsService {
     // MARK: - Configuration
 
     func configure() {
-        let config = TelemetryDeck.Config(appID: "YOUR_TELEMETRYDECK_APP_ID")
+        let config = TelemetryDeck.Config(appID: AppSecrets.telemetryDeckAppID)
         TelemetryDeck.initialize(config: config)
     }
 

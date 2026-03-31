@@ -39,10 +39,9 @@ final class RevenueCatService: NSObject {
     }
 
     func configure() {
-        // Replace with your actual RevenueCat API key in production
         Purchases.logLevel = .debug
         Purchases.configure(
-            with: Configuration.Builder(withAPIKey: "YOUR_REVENUECAT_API_KEY")
+            with: Configuration.Builder(withAPIKey: AppSecrets.revenueCatAPIKey)
                 .with(appUserID: nil)
                 .build()
         )
