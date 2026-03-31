@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import Supabase
+import Network
 
 @Observable
 final class SupabaseService {
@@ -19,11 +20,23 @@ final class SupabaseService {
     private(set) var lastSyncedAt: Date?
     private(set) var isSignedIn = false
     private(set) var currentUserEmail: String?
+    private(set) var isNetworkAvailable = true
     private var syncDebounceTask: Task<Void, Never>?
     private let syncDebounceInterval: TimeInterval = 2.0
+    private var hasPendingSync = false
+    private var pendingSyncModelContext: ModelContext?
 
-    // UserDefaults key for last sync timestamp
+    // Network monitoring
+    private let networkMonitor = NWPathMonitor()
+    private let networkQueue = DispatchQueue(label: "com.pearsonmedia.lastlogged.network")
+
+    // Retry config
+    private static let maxRetryAttempts = 4
+    private static let baseRetryDelay: TimeInterval = 2.0
+
+    // UserDefaults keys
     private static let lastSyncTimestampKey = "com.pearsonmedia.lastlogged.lastSyncTimestamp"
+    private static let hasPendingSyncKey = "com.pearsonmedia.lastlogged.hasPendingSync"
 
     private var lastSyncTimestamp: Date? {
         get { UserDefaults.standard.object(forKey: Self.lastSyncTimestampKey) as? Date }
@@ -37,6 +50,51 @@ final class SupabaseService {
             supabaseURL: Self.supabaseURL,
             supabaseKey: Self.supabaseAnonKey
         )
+        hasPendingSync = UserDefaults.standard.bool(forKey: Self.hasPendingSyncKey)
+        startNetworkMonitoring()
+    }
+
+    // MARK: - Network Monitoring
+
+    private func startNetworkMonitoring() {
+        networkMonitor.pathUpdateHandler = { [weak self] path in
+            let wasAvailable = self?.isNetworkAvailable ?? false
+            let isNowAvailable = path.status == .satisfied
+
+            Task { @MainActor in
+                self?.isNetworkAvailable = isNowAvailable
+
+                // Auto-sync when network returns and there are pending changes
+                if !wasAvailable && isNowAvailable && self?.hasPendingSync == true {
+                    if let context = self?.pendingSyncModelContext {
+                        self?.syncOnForeground(modelContext: context)
+                    }
+                }
+            }
+        }
+        networkMonitor.start(queue: networkQueue)
+    }
+
+    // MARK: - Retry Helper
+
+    private func withRetry<T>(
+        context: String,
+        operation: () async throws -> T
+    ) async throws -> T {
+        var lastError: Error?
+        for attempt in 0..<Self.maxRetryAttempts {
+            do {
+                return try await operation()
+            } catch {
+                lastError = error
+                if attempt < Self.maxRetryAttempts - 1 {
+                    let delay = Self.baseRetryDelay * pow(2.0, Double(attempt))
+                    try? await Task.sleep(for: .seconds(delay))
+                }
+            }
+        }
+        AnalyticsService.shared.trackError("sync_\(context)_exhausted", error: lastError!)
+        throw lastError!
     }
 
     // MARK: - Session Restore
@@ -118,7 +176,7 @@ final class SupabaseService {
                 .upsert(row, onConflict: "auth_id")
                 .execute()
         } catch {
-            // Profile creation failed — sync will still work via auth_id
+            AnalyticsService.shared.trackError("profile_upsert_failed", error: error)
         }
     }
 
@@ -156,6 +214,12 @@ final class SupabaseService {
     // MARK: - Sync Trigger (Debounced)
 
     func scheduleSyncAfterWrite(modelContext: ModelContext) {
+        // Mark pending sync (persists across app restarts)
+        hasPendingSync = true
+        pendingSyncModelContext = modelContext
+        UserDefaults.standard.set(true, forKey: Self.hasPendingSyncKey)
+
+        // Debounce: only delays the trigger, does not cancel pending data
         syncDebounceTask?.cancel()
         let context = modelContext
         syncDebounceTask = Task {
@@ -166,6 +230,7 @@ final class SupabaseService {
     }
 
     func syncOnForeground(modelContext: ModelContext) {
+        pendingSyncModelContext = modelContext
         Task {
             await sync(modelContext: modelContext)
         }
@@ -177,10 +242,19 @@ final class SupabaseService {
     func sync(modelContext: ModelContext) async {
         guard await isAuthenticated else { return }
         guard !isSyncing else { return }
+        guard isNetworkAvailable else {
+            hasPendingSync = true
+            UserDefaults.standard.set(true, forKey: Self.hasPendingSyncKey)
+            return
+        }
+
         isSyncing = true
         defer { isSyncing = false }
 
-        guard let userId = await currentUserId else { return }
+        guard let userId = await currentUserId else {
+            AnalyticsService.shared.trackError("sync_no_user_id", error: NSError(domain: "Sync", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not resolve user ID"]))
+            return
+        }
 
         await pushCategories(modelContext: modelContext, userId: userId)
         await pushTrackerItems(modelContext: modelContext, userId: userId)
@@ -193,7 +267,15 @@ final class SupabaseService {
         lastSyncedAt = Date()
         lastSyncTimestamp = Date()
 
-        try? modelContext.save()
+        // Clear pending flag on successful sync
+        hasPendingSync = false
+        UserDefaults.standard.set(false, forKey: Self.hasPendingSyncKey)
+
+        do {
+            try modelContext.save()
+        } catch {
+            AnalyticsService.shared.trackError("sync_save_failed", error: error)
+        }
     }
 
     // MARK: - Push Categories
@@ -202,7 +284,6 @@ final class SupabaseService {
         let descriptor = FetchDescriptor<TrackerCategory>()
         guard let categories = try? modelContext.fetch(descriptor) else { return }
 
-        // Push all categories (upsert on server side)
         for category in categories {
             let row = TrackerCategoryRow(
                 id: category.id,
@@ -214,11 +295,13 @@ final class SupabaseService {
                 isDefault: category.isDefault
             )
             do {
-                try await client.from("tracker_categories")
-                    .upsert(row, onConflict: "id")
-                    .execute()
+                try await withRetry(context: "push_category") {
+                    try await client.from("tracker_categories")
+                        .upsert(row, onConflict: "id")
+                        .execute()
+                }
             } catch {
-                // Continue with next item on failure
+                AnalyticsService.shared.trackError("push_category_failed", error: error)
             }
         }
     }
@@ -246,12 +329,16 @@ final class SupabaseService {
                 syncStatus: "synced"
             )
             do {
-                try await client.from("tracker_items")
-                    .upsert(row, onConflict: "id")
-                    .execute()
+                try await withRetry(context: "push_item") {
+                    try await client.from("tracker_items")
+                        .upsert(row, onConflict: "id")
+                        .execute()
+                }
+                // Only mark synced AFTER confirmed server push
                 item.syncStatus = .synced
             } catch {
-                // Keep as pending on failure
+                // Keep as .pending — will retry on next sync
+                AnalyticsService.shared.trackError("push_item_failed", error: error)
             }
         }
     }
@@ -271,11 +358,13 @@ final class SupabaseService {
                 notes: log.notes
             )
             do {
-                try await client.from("completion_logs")
-                    .upsert(row, onConflict: "id")
-                    .execute()
+                try await withRetry(context: "push_log") {
+                    try await client.from("completion_logs")
+                        .upsert(row, onConflict: "id")
+                        .execute()
+                }
             } catch {
-                // Continue with next log on failure
+                AnalyticsService.shared.trackError("push_log_failed", error: error)
             }
         }
     }
@@ -322,7 +411,7 @@ final class SupabaseService {
                 }
             }
         } catch {
-            // Pull failed — local data remains intact
+            AnalyticsService.shared.trackError("pull_categories_failed", error: error)
         }
     }
 
@@ -375,7 +464,7 @@ final class SupabaseService {
                 }
             }
         } catch {
-            // Pull failed — local data remains intact
+            AnalyticsService.shared.trackError("pull_items_failed", error: error)
         }
     }
 
@@ -412,7 +501,7 @@ final class SupabaseService {
                 }
             }
         } catch {
-            // Pull failed — local data remains intact
+            AnalyticsService.shared.trackError("pull_logs_failed", error: error)
         }
     }
 }

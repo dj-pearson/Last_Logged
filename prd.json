@@ -51,8 +51,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": "Current sync silently drops failed operations. Users can lose data if network is intermittent."
+      "passes": true,
+      "notes": "Added NWPathMonitor, retry with backoff, persistent pending flag, error logging on all push/pull ops."
     },
     {
       "id": "PH-004",
