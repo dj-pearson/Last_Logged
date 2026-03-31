@@ -34,8 +34,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "Without this, any model field change in a future update will crash existing users."
+      "passes": true,
+      "notes": "SchemaVersions.swift in Models/ with SchemaV1 + LastLoggedMigrationPlan. Both app and widget targets use versioned schema."
     },
     {
       "id": "PH-003",

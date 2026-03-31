@@ -78,6 +78,16 @@ Started: 2026-03-24
 - Website (lastlogged.com) is an Astro project in `website/` — static output, Cloudflare Pages deployment via wrangler.toml
 - Website layout in `website/src/layouts/BaseLayout.astro` — includes SEO meta, OG tags, JSON-LD; pages in `website/src/pages/`
 - Website CSS vars: --color-primary (#4f46e5), --color-accent (#10b981), --color-bg-alt (#f8f9fa) — defined in BaseLayout global styles
+- AppSecrets enum in Utilities/AppSecrets.swift — centralized API keys; services read from here, not hardcoded strings
+- AppSecrets.validate() called at app launch — warns in debug, fatalError in release if keys are still placeholders
+- SchemaVersions.swift in Models/ — SchemaV1 (VersionedSchema) + LastLoggedMigrationPlan; both app and widget targets use versioned schema
+- To add a SwiftData migration: create SchemaV2 enum, add MigrationStage to LastLoggedMigrationPlan.stages, update .schemas array
+- Edge functions use middleware.ts for rate limiting, CORS, body size limits, request logging, and cron auth
+- Edge functions validate env vars at startup via validate-env.ts — crashes if placeholders detected
+- Notification time uses UserDefaults keys "defaultReminderHour" / "defaultReminderMinute" — NotificationService reads these
+- Error handling: ViewModels expose `lastError: String?`; AnalyticsService.trackError() for telemetry
+- PaywallView always allows dismissal — isHardPaywall shows "Continue with Free Plan" but never traps the user
+- Highest pbxproj IDs: A1...002D (BuildFile), A2...0027 (FileRef), AA...0004 (ProductDependency)
 ---
 
 ## 2026-03-24 - US-001
@@ -566,4 +576,39 @@ Started: 2026-03-24
   - Both pages are already linked from the app's SettingsView and PaywallView at `https://lastlogged.com/privacy` and `https://lastlogged.com/terms`
   - Author is Pearson Media LLC — consistent across footer copyright and legal page contact sections
   - Astro typecheck produces 0 errors for the new pages; the existing `is:inline` hint in BaseLayout is pre-existing and benign
+---
+
+## 2026-03-31 - PH-001
+- What was implemented: Centralized API key management via AppSecrets.swift pattern. All three services (SupabaseService, RevenueCatService, AnalyticsService) now read credentials from a single AppSecrets enum instead of hardcoded strings. Added validate() method called at app launch that warns in debug and crashes in release if any key is still a placeholder. Created AppSecrets.example.swift as a developer onboarding template.
+- Files changed:
+  - LastLogged/Utilities/AppSecrets.swift (new - centralized API key enum with validation)
+  - LastLogged/Utilities/AppSecrets.example.swift (new - template for developer setup)
+  - LastLogged/Services/SupabaseService.swift (updated - reads from AppSecrets instead of hardcoded strings)
+  - LastLogged/Services/RevenueCatService.swift (updated - reads from AppSecrets)
+  - LastLogged/Services/AnalyticsService.swift (updated - reads from AppSecrets)
+  - LastLogged/LastLoggedApp.swift (updated - calls AppSecrets.validate() at init)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added AppSecrets.swift to Utilities group and Sources phase)
+  - prd.json (updated - PH-001 passes: true)
+- **Learnings for future iterations:**
+  - AppSecrets.swift pattern is simpler than XCConfig → Info.plist → Bundle for Swift projects — keeps keys compiled-in and not visible in IPA's Info.plist
+  - Use #if DEBUG for warnings vs fatalError in validate() — allows UI development without real keys
+  - Highest pbxproj IDs after this story: A1...002B (BuildFile), A2...0026 (FileRef)
+  - AppSecrets.swift stays in repo with placeholders (safe); real keys substituted per-developer or via CI
+---
+
+## 2026-03-31 - PH-002
+- What was implemented: SwiftData versioned migration plan. Created SchemaV1 VersionedSchema and LastLoggedMigrationPlan SchemaMigrationPlan. Updated both main app and widget extension to initialize ModelContainer with versioned schema and migration plan. This ensures future model changes can be handled via lightweight or custom migration stages without crashing existing users.
+- Files changed:
+  - LastLogged/Models/SchemaVersions.swift (new - SchemaV1 + LastLoggedMigrationPlan with inline HOW-TO docs)
+  - LastLogged/LastLoggedApp.swift (updated - uses Schema(versionedSchema:) and migrationPlan parameter)
+  - LastLogged/Widget/WidgetDataProvider.swift (updated - uses versioned schema and migration plan)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added SchemaVersions.swift to Models group and both target Sources phases)
+  - progress.txt (updated - added codebase patterns for migrations)
+  - prd.json (updated - PH-002 passes: true)
+- **Learnings for future iterations:**
+  - Schema(versionedSchema: SchemaV1.self) replaces Schema([Model.self, ...]) when using versioned schemas
+  - ModelContainer gains migrationPlan: parameter — pass the SchemaMigrationPlan.Type
+  - SchemaVersions.swift must be compiled in BOTH main app and widget extension targets
+  - Empty stages array is valid — means no migrations needed yet, but the plan is ready
+  - Highest pbxproj IDs after this story: A1...002D (BuildFile), A2...0027 (FileRef)
 ---
