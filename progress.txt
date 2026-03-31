@@ -612,3 +612,32 @@ Started: 2026-03-24
   - Empty stages array is valid — means no migrations needed yet, but the plan is ready
   - Highest pbxproj IDs after this story: A1...002D (BuildFile), A2...0027 (FileRef)
 ---
+
+## 2026-03-31 - PH-003
+- What was implemented: Comprehensive sync reliability improvements in SupabaseService. Added NWPathMonitor for network reachability monitoring with auto-sync on reconnect. Implemented withRetry() helper with exponential backoff (2s/4s/8s/16s, 4 attempts) wrapping all push operations. Added persistent pending sync flag in UserDefaults. Fixed debounce to not cancel pending data. Fixed SyncStatus to only be set to .synced after confirmed server push. All push/pull errors now logged to AnalyticsService with context.
+- Files changed:
+  - LastLogged/Services/SupabaseService.swift (major update - network monitoring, retry logic, error logging, pending state persistence)
+  - prd.json (updated - PH-003 passes: true)
+- **Learnings for future iterations:**
+  - `import Network` for NWPathMonitor — requires dedicated DispatchQueue for path updates
+  - NWPathMonitor pathUpdateHandler fires on a background queue — must dispatch to @MainActor for state updates
+  - withRetry pattern: generic async throwing function wrapping operation with exponential backoff
+  - pow(2.0, Double(attempt)) gives 2s, 4s, 8s, 16s delay sequence
+  - Persistent hasPendingSync in UserDefaults survives app restart; cleared only on successful full sync
+  - SyncStatus.synced should only be set AFTER server confirms — not optimistically before upsert
+---
+
+## 2026-03-31 - PH-004
+- What was implemented: Thread safety fixes for all SwiftData ModelContext access. All Task blocks that pass modelContext now use `Task { @MainActor in }` to ensure ModelContext access stays on the main thread. NotificationService.rescheduleAllNotifications marked @MainActor. SupabaseService sync triggers (scheduleSyncAfterWrite, syncOnForeground) use @MainActor Tasks.
+- Files changed:
+  - LastLogged/ViewModels/HomeViewModel.swift (updated - scheduleNotifications Task to @MainActor)
+  - LastLogged/Services/NotificationService.swift (updated - rescheduleAllNotifications marked @MainActor)
+  - LastLogged/Services/SupabaseService.swift (updated - syncDebounceTask and syncOnForeground Tasks to @MainActor)
+  - LastLogged/Views/Settings/SettingsView.swift (updated - notification reschedule Task to @MainActor)
+  - prd.json (updated - PH-004 passes: true)
+- **Learnings for future iterations:**
+  - SwiftData ModelContext is NOT thread-safe — must always be accessed on the main thread
+  - Use `Task { @MainActor in }` when creating Tasks that need to access modelContext
+  - `@MainActor` on a method ensures all body runs on main thread, but callers can still await from background
+  - SupabaseService.sync is already @MainActor; the fix was ensuring the Task creation points also use @MainActor
+---

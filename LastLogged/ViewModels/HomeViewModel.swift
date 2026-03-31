@@ -183,7 +183,7 @@ final class HomeViewModel {
 
     private func scheduleNotifications() {
         let context = modelContext
-        Task {
+        Task { @MainActor in
             await NotificationService.shared.rescheduleAllNotifications(modelContext: context)
         }
     }

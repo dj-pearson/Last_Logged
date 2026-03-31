@@ -222,7 +222,7 @@ final class SupabaseService {
         // Debounce: only delays the trigger, does not cancel pending data
         syncDebounceTask?.cancel()
         let context = modelContext
-        syncDebounceTask = Task {
+        syncDebounceTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(syncDebounceInterval))
             guard !Task.isCancelled else { return }
             await sync(modelContext: context)
@@ -231,7 +231,7 @@ final class SupabaseService {
 
     func syncOnForeground(modelContext: ModelContext) {
         pendingSyncModelContext = modelContext
-        Task {
+        Task { @MainActor in
             await sync(modelContext: modelContext)
         }
     }

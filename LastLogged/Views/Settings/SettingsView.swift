@@ -171,7 +171,7 @@ struct SettingsView: View {
                         set: { newValue in
                             viewModel.defaultReminderTime = newValue
                             // Reschedule notifications with the new preferred time
-                            Task {
+                            Task { @MainActor in
                                 await NotificationService.shared.rescheduleAllNotifications(modelContext: modelContext)
                             }
                         }

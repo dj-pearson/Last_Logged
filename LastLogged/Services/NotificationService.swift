@@ -51,6 +51,7 @@ final class NotificationService {
 
     // MARK: - Reschedule All
 
+    @MainActor
     func rescheduleAllNotifications(modelContext: ModelContext) async {
         // Fetch non-archived items with reminder intervals
         let descriptor = FetchDescriptor<TrackerItem>(

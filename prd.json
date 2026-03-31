@@ -67,8 +67,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": "ModelContext is not thread-safe. Current code passes it to background Tasks which can cause crashes under load."
+      "passes": true,
+      "notes": "All Task blocks with modelContext access now use @MainActor. NotificationService.rescheduleAll marked @MainActor."
     },
     {
       "id": "PH-005",
