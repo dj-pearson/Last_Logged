@@ -110,6 +110,10 @@ exportData.post("/export-data", async (c) => {
   const data = await fetchUserData(userId);
   const format = c.req.query("format") ?? "json";
 
+  if (!["json", "csv"].includes(format)) {
+    return c.json({ error: "Invalid format. Use 'json' or 'csv'." }, 400);
+  }
+
   if (format === "csv") {
     const csv = buildCsvExport(data);
     return new Response(csv, {

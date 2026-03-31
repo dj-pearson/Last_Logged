@@ -2,8 +2,8 @@ import { Hono } from "hono";
 import { supabase } from "./supabase.js";
 import crypto from "node:crypto";
 
-const REVENUECAT_WEBHOOK_SECRET =
-  process.env.REVENUECAT_WEBHOOK_SECRET ?? "your-webhook-secret";
+const REVENUECAT_WEBHOOK_SECRET = process.env.REVENUECAT_WEBHOOK_SECRET!;
+// Validated at startup by validate-env.ts — no fallback default
 
 export const revenuecatWebhook = new Hono();
 

@@ -86,6 +86,17 @@ final class NotificationService {
         }
     }
 
+    // MARK: - User Reminder Time Preference
+
+    private var preferredHour: Int {
+        let val = UserDefaults.standard.integer(forKey: "defaultReminderHour")
+        return val == 0 ? 9 : val
+    }
+
+    private var preferredMinute: Int {
+        UserDefaults.standard.integer(forKey: "defaultReminderMinute")
+    }
+
     // MARK: - Notification Creation
 
     private func makeNotificationRequest(for item: TrackerItem) -> UNNotificationRequest? {
@@ -93,16 +104,18 @@ final class NotificationService {
 
         let dueDate = computeDueDate(for: item)
         let now = Date()
+        let hour = preferredHour
+        let minute = preferredMinute
 
-        // If due date is in the past, schedule for tomorrow at 9 AM
+        // If due date is in the past, schedule for tomorrow at user's preferred time
         let scheduleDate: Date
         if dueDate <= now {
             let calendar = Calendar.current
             guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) else { return nil }
-            scheduleDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow) ?? tomorrow
+            scheduleDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: tomorrow) ?? tomorrow
         } else {
             let calendar = Calendar.current
-            scheduleDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: dueDate) ?? dueDate
+            scheduleDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: dueDate) ?? dueDate
         }
 
         let elapsedDays = daysSinceLastCompletion(for: item)

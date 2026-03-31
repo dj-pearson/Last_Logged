@@ -90,7 +90,7 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $showingPaywall) {
-            PaywallView(isHardPaywall: true)
+            PaywallView()
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
@@ -106,7 +106,10 @@ struct HomeView: View {
             Text("'\(item.name)' will be hidden from your home list.")
         }
         .overlay(alignment: .bottom) {
-            if toastInfo != nil {
+            if let error = viewModel?.lastError {
+                errorBanner(error)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if toastInfo != nil {
                 toastView
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -224,6 +227,35 @@ struct HomeView: View {
         }
         toastDismissTask?.cancel()
         toastDismissTask = nil
+    }
+
+    // MARK: - Error Banner
+
+    private func errorBanner(_ message: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.white)
+                .accessibilityHidden(true)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.white)
+            Spacer()
+            Button {
+                viewModel?.lastError = nil
+            } label: {
+                Image(systemName: "xmark")
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .accessibilityLabel("Dismiss error")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.red, in: RoundedRectangle(cornerRadius: 12))
+        .shadow(radius: 4, y: 2)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Error: \(message)")
     }
 
     // MARK: - Toast View

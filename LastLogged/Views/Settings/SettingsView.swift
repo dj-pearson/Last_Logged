@@ -58,6 +58,26 @@ struct SettingsView: View {
 
     private func settingsForm(viewModel: SettingsViewModel) -> some View {
         Form {
+            if let error = viewModel.lastError {
+                Section {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                        Text(error)
+                            .font(.subheadline)
+                            .foregroundStyle(.red)
+                        Spacer()
+                        Button {
+                            viewModel.lastError = nil
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
             accountSection(viewModel: viewModel)
             notificationsSection(viewModel: viewModel)
             dataSection(viewModel: viewModel)
@@ -148,7 +168,13 @@ struct SettingsView: View {
                     "Default Reminder Time",
                     selection: Binding(
                         get: { viewModel.defaultReminderTime },
-                        set: { viewModel.defaultReminderTime = $0 }
+                        set: { newValue in
+                            viewModel.defaultReminderTime = newValue
+                            // Reschedule notifications with the new preferred time
+                            Task {
+                                await NotificationService.shared.rescheduleAllNotifications(modelContext: modelContext)
+                            }
+                        }
                     ),
                     displayedComponents: .hourAndMinute
                 )

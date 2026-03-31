@@ -1,8 +1,9 @@
 import apn from "@parse/node-apn";
 
+// APNS_KEY_PATH can default to conventional location; others validated at startup
 const APNS_KEY_PATH = process.env.APNS_KEY_PATH ?? "./certs/AuthKey.p8";
-const APNS_KEY_ID = process.env.APNS_KEY_ID ?? "YOUR_KEY_ID";
-const APNS_TEAM_ID = process.env.APNS_TEAM_ID ?? "YOUR_TEAM_ID";
+const APNS_KEY_ID = process.env.APNS_KEY_ID!;
+const APNS_TEAM_ID = process.env.APNS_TEAM_ID!;
 const APNS_BUNDLE_ID = process.env.APNS_BUNDLE_ID ?? "com.pearsonmedia.lastlogged";
 const APNS_PRODUCTION = process.env.APNS_PRODUCTION === "true";
 

@@ -7,6 +7,7 @@ final class HomeViewModel {
 
     var trackerItems: [TrackerItem] = []
     var categories: [TrackerCategory] = []
+    var lastError: String?
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -31,6 +32,7 @@ final class HomeViewModel {
             trackerItems = try modelContext.fetch(descriptor)
         } catch {
             trackerItems = []
+            AnalyticsService.shared.trackError("fetch_items", error: error)
         }
     }
 
@@ -42,6 +44,7 @@ final class HomeViewModel {
             categories = try modelContext.fetch(descriptor)
         } catch {
             categories = []
+            AnalyticsService.shared.trackError("fetch_categories", error: error)
         }
     }
 
@@ -196,8 +199,10 @@ final class HomeViewModel {
     private func save() {
         do {
             try modelContext.save()
+            lastError = nil
         } catch {
-            // Save failed silently; items remain in-memory
+            lastError = "Failed to save changes. Please try again."
+            AnalyticsService.shared.trackError("save_failed", error: error)
         }
     }
 }

@@ -7,6 +7,7 @@ final class TrackerDetailViewModel {
     var item: TrackerItem
     var completionLogs: [CompletionLog] = []
     var totalLogCount: Int = 0
+    var lastError: String?
 
     init(modelContext: ModelContext, item: TrackerItem) {
         self.modelContext = modelContext
@@ -32,6 +33,7 @@ final class TrackerDetailViewModel {
         } catch {
             completionLogs = []
             totalLogCount = 0
+            AnalyticsService.shared.trackError("fetch_completion_logs", error: error)
         }
     }
 
@@ -64,8 +66,10 @@ final class TrackerDetailViewModel {
     private func save() {
         do {
             try modelContext.save()
+            lastError = nil
         } catch {
-            // Save failed silently
+            lastError = "Failed to save changes. Please try again."
+            AnalyticsService.shared.trackError("detail_save_failed", error: error)
         }
     }
 }

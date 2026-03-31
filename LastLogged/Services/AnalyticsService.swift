@@ -42,4 +42,16 @@ final class AnalyticsService {
     func trackCategorySelected() {
         TelemetryDeck.signal("category_selected")
     }
+
+    // MARK: - Error Tracking
+
+    func trackError(_ context: String, error: Error) {
+        TelemetryDeck.signal(
+            "app_error",
+            parameters: [
+                "context": context,
+                "error": error.localizedDescription,
+            ]
+        )
+    }
 }
