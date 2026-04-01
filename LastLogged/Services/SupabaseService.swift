@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 import Supabase
 import Network
+import UIKit
 
 @Observable
 final class SupabaseService {
@@ -183,6 +184,28 @@ final class SupabaseService {
                 .execute()
         } catch {
             AnalyticsService.shared.trackError("profile_upsert_failed", error: error)
+        }
+    }
+
+    // MARK: - Device Token Registration
+
+    func registerDeviceToken(_ token: String) async {
+        guard let userId = await currentUserId else { return }
+
+        let deviceName = await UIDevice.current.name
+        let row = DeviceTokenRow(
+            userId: userId,
+            deviceToken: token,
+            deviceName: deviceName,
+            platform: "ios",
+            lastSeenAt: Date()
+        )
+        do {
+            try await client.from("user_devices")
+                .upsert(row, onConflict: "device_token")
+                .execute()
+        } catch {
+            AnalyticsService.shared.trackError("device_token_register_failed", error: error)
         }
     }
 
@@ -611,5 +634,21 @@ struct CompletionLogRow: Codable {
         case trackerItemId = "tracker_item_id"
         case completedAt = "completed_at"
         case notes
+    }
+}
+
+struct DeviceTokenRow: Encodable {
+    let userId: UUID
+    let deviceToken: String
+    let deviceName: String
+    let platform: String
+    let lastSeenAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case deviceToken = "device_token"
+        case deviceName = "device_name"
+        case platform
+        case lastSeenAt = "last_seen_at"
     }
 }

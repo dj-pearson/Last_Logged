@@ -88,6 +88,12 @@ Started: 2026-03-24
 - Error handling: ViewModels expose `lastError: String?`; AnalyticsService.trackError() for telemetry
 - PaywallView always allows dismissal — isHardPaywall shows "Continue with Free Plan" but never traps the user
 - Highest pbxproj IDs: A1...002D (BuildFile), A2...0027 (FileRef), AA...0004 (ProductDependency)
+- Widget premium enforcement: RevenueCatService writes isPremium to App Group UserDefaults; WidgetDataProvider reads it
+- Loading states: ViewModels expose isLoading/isClearingData/isSigningOut booleans; views show ProgressView and disable buttons
+- Edge function logger.ts: use log(), logError(), logWarn() for consistent structured JSON logging with requestId
+- TrackerItem.updatedAt set on every mutation — used for timestamp-based sync conflict detection
+- user_devices table for multi-device push — SupabaseService.registerDeviceToken() upserts by device_token
+- Notification 64-item limit: NotificationService reserves slot 64 for overflow warning, tracks skippedItemCount
 ---
 
 ## 2026-03-24 - US-001
@@ -821,4 +827,18 @@ Started: 2026-03-24
   - Keep local version on conflict by setting .pending — will push on next sync cycle
   - SwiftData lightweight migration handles adding new fields with defaults automatically
   - Track conflicts in analytics for monitoring — high conflict rate may indicate sync issues
+---
+
+## 2026-04-01 - PH-018
+- What was implemented: Separate user_devices table for multi-device push notifications. New SQL migration creates user_devices with id, user_id, device_token (unique), device_name, platform, last_seen_at, created_at. RLS policies for user-managed entries. SupabaseService.registerDeviceToken() upserts by device_token on app launch. reminder-digest.ts queries user_devices instead of users.device_token, groups by user, sends to all active devices. Stale tokens (>90 days) excluded.
+- Files changed:
+  - supabase/migrations/20260401000002_user_devices.sql (new - user_devices table with RLS)
+  - LastLogged/Services/SupabaseService.swift (updated - registerDeviceToken method, DeviceTokenRow DTO, UIKit import)
+  - edge-functions/src/reminder-digest.ts (updated - queries user_devices, groups by user, sends to all devices, filters stale tokens)
+  - prd.json (updated - PH-018 passes: true)
+- **Learnings for future iterations:**
+  - UNIQUE(device_token) constraint allows upsert by device_token for idempotent registration
+  - Group devices by user_id to avoid duplicate overdue item queries per user
+  - Filter stale devices with .gte("last_seen_at", cutoff) — 90 day retention
+  - UIDevice.current.name gives user-friendly device name for the device_name column
 ---

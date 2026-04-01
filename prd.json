@@ -295,7 +295,7 @@
         "Typecheck passes"
       ],
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "notes": "Current single device_token on users table only supports one device per user."
     }
   ]
