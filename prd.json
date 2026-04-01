@@ -19,7 +19,7 @@
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Implemented via AppSecrets.swift pattern — services read from centralized enum, validate() crashes release builds with placeholders."
+      "notes": "Implemented via AppSecrets.swift pattern \u2014 services read from centralized enum, validate() crashes release builds with placeholders."
     },
     {
       "id": "PH-002",
@@ -45,8 +45,8 @@
         "SupabaseService maintains a persistent sync queue (stored in UserDefaults or a lightweight file) of pending operations",
         "Failed sync operations are retried with exponential backoff (2s, 4s, 8s, 16s) up to 4 attempts",
         "Sync errors are logged to AnalyticsService with context (push/pull, table, error type)",
-        "Network reachability monitored via NWPathMonitor — sync triggers automatically when connectivity returns",
-        "Debounced sync no longer cancels previous pending operations — only delays the trigger",
+        "Network reachability monitored via NWPathMonitor \u2014 sync triggers automatically when connectivity returns",
+        "Debounced sync no longer cancels previous pending operations \u2014 only delays the trigger",
         "SyncStatus on TrackerItems correctly reflects actual server state (not optimistically set to .synced before confirmation)",
         "Typecheck passes"
       ],
@@ -84,7 +84,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Current 6-char minimum with no complexity is too weak. No brute-force protection exists."
     },
     {
@@ -94,7 +94,7 @@
       "acceptanceCriteria": [
         "WidgetDataProvider checks RevenueCat entitlement status via App Group shared UserDefaults",
         "RevenueCatService writes isPremium boolean to App Group UserDefaults on every tier change",
-        "Free tier widgets limited to small size only — medium and large show upgrade prompt",
+        "Free tier widgets limited to small size only \u2014 medium and large show upgrade prompt",
         "Free tier widget shows max 1 overdue item (matches FreeTierLimits.maxWidgetStyles = 1)",
         "Premium users see full widget functionality across all sizes",
         "Typecheck passes"
@@ -202,7 +202,7 @@
       ],
       "priority": 12,
       "passes": false,
-      "notes": "Current logging is inconsistent — some operations log success, some log nothing, some log only failures."
+      "notes": "Current logging is inconsistent \u2014 some operations log success, some log nothing, some log only failures."
     },
     {
       "id": "PH-013",
@@ -233,7 +233,7 @@
       ],
       "priority": 14,
       "passes": false,
-      "notes": "Currently queries users table on every single sync operation — wasteful and slow."
+      "notes": "Currently queries users table on every single sync operation \u2014 wasteful and slow."
     },
     {
       "id": "PH-015",

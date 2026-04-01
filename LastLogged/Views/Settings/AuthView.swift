@@ -189,6 +189,45 @@ struct AuthView: View {
                 .textFieldStyle(.roundedBorder)
                 .padding(.horizontal)
 
+            // Inline password validation (sign-up only)
+            if viewModel.isSignUp && !viewModel.password.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(viewModel.passwordValidationMessages, id: \.self) { message in
+                        HStack(spacing: 6) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.red)
+                            Text(message)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    if viewModel.passwordValidationMessages.isEmpty {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.green)
+                            Text("Password meets requirements")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+            }
+
+            // Cooldown timer
+            if viewModel.isLockedOut {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.fill")
+                        .foregroundStyle(.orange)
+                    Text("Try again in \(viewModel.cooldownSecondsRemaining)s")
+                        .font(.subheadline)
+                        .foregroundStyle(.orange)
+                }
+                .padding(.horizontal)
+            }
+
             Button {
                 viewModel.submitEmailForm()
             } label: {
@@ -197,16 +236,10 @@ struct AuthView: View {
                     .frame(height: 50)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(!viewModel.isFormValid || viewModel.isLoading)
+            .disabled(!viewModel.isFormValid || viewModel.isLoading || viewModel.isLockedOut)
             .padding(.horizontal)
             .accessibilityLabel(viewModel.isSignUp ? "Create account" : "Sign in")
             .accessibilityHint(viewModel.isSignUp ? "Create a new account with your email" : "Sign in with your email and password")
-
-            if viewModel.isSignUp {
-                Text("Password must be at least 6 characters.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 }

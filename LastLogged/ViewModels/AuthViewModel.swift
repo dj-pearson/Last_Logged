@@ -17,6 +17,24 @@ final class AuthViewModel {
     private let modelContext: ModelContext
     private var currentNonce: String?
 
+    // MARK: - Rate Limiting
+
+    private static let maxFailedAttempts = 5
+    private static let cooldownDuration: TimeInterval = 30
+
+    private var failedAttemptCount = 0
+    private var cooldownExpiresAt: Date?
+    private var cooldownTimer: Task<Void, Never>?
+
+    var cooldownSecondsRemaining: Int {
+        guard let expiresAt = cooldownExpiresAt else { return 0 }
+        return max(0, Int(expiresAt.timeIntervalSinceNow.rounded(.up)))
+    }
+
+    var isLockedOut: Bool {
+        cooldownSecondsRemaining > 0
+    }
+
     // MARK: - Computed
 
     var isSignedIn: Bool {
@@ -29,7 +47,24 @@ final class AuthViewModel {
 
     var isFormValid: Bool {
         !email.trimmingCharacters(in: .whitespaces).isEmpty
-            && password.count >= 6
+            && isPasswordValid
+    }
+
+    var isPasswordValid: Bool {
+        password.count >= 8
+            && password.range(of: "[A-Z]", options: .regularExpression) != nil
+            && password.range(of: "[a-z]", options: .regularExpression) != nil
+            && password.range(of: "[0-9]", options: .regularExpression) != nil
+    }
+
+    var passwordValidationMessages: [String] {
+        guard isSignUp else { return [] }
+        var messages: [String] = []
+        if password.count < 8 { messages.append("At least 8 characters") }
+        if password.range(of: "[A-Z]", options: .regularExpression) == nil { messages.append("One uppercase letter") }
+        if password.range(of: "[a-z]", options: .regularExpression) == nil { messages.append("One lowercase letter") }
+        if password.range(of: "[0-9]", options: .regularExpression) == nil { messages.append("One number") }
+        return messages
     }
 
     // MARK: - Initialization
@@ -83,6 +118,11 @@ final class AuthViewModel {
 
     func submitEmailForm() {
         guard isFormValid else { return }
+        guard !isLockedOut else {
+            errorMessage = "Too many attempts. Wait \(cooldownSecondsRemaining)s."
+            return
+        }
+
         isLoading = true
         errorMessage = nil
 
@@ -99,13 +139,41 @@ final class AuthViewModel {
                         email: trimmedEmail, password: password
                     )
                 }
+                // Success — reset rate limiting
+                failedAttemptCount = 0
+                cooldownExpiresAt = nil
+                cooldownTimer?.cancel()
                 SupabaseService.shared.syncOnForeground(modelContext: modelContext)
                 email = ""
                 password = ""
             } catch {
-                errorMessage = error.localizedDescription
+                failedAttemptCount += 1
+                if failedAttemptCount >= Self.maxFailedAttempts {
+                    startCooldown()
+                    errorMessage = "Too many failed attempts. Please wait \(Int(Self.cooldownDuration)) seconds."
+                } else {
+                    let remaining = Self.maxFailedAttempts - failedAttemptCount
+                    errorMessage = "\(error.localizedDescription) (\(remaining) attempt\(remaining == 1 ? "" : "s") remaining)"
+                }
             }
             isLoading = false
+        }
+    }
+
+    // MARK: - Cooldown
+
+    private func startCooldown() {
+        cooldownExpiresAt = Date().addingTimeInterval(Self.cooldownDuration)
+        cooldownTimer?.cancel()
+        cooldownTimer = Task { @MainActor in
+            while cooldownSecondsRemaining > 0 {
+                try? await Task.sleep(for: .seconds(1))
+                // Force observation update by touching the property
+                _ = cooldownSecondsRemaining
+            }
+            // Cooldown expired — reset
+            failedAttemptCount = 0
+            cooldownExpiresAt = nil
         }
     }
 
