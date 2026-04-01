@@ -135,7 +135,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Missing CSP headers, broken App Store link, no 404 page."
     },
     {

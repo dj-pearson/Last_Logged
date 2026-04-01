@@ -684,3 +684,18 @@ Started: 2026-03-24
   - AuthView already had isLoading + ProgressView + disabled button from PH-005 — no changes needed
   - ShareLink in SwiftUI generates export synchronously, no loading state needed for it
 ---
+
+## 2026-04-01 - PH-008
+- What was implemented: Website security headers via Cloudflare _headers file (CSP, X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy). Added rel="noopener noreferrer" target="_blank" to all 6 external links in privacy.astro. Updated App Store badge href from "#" to placeholder App Store URL. Created 404.astro error page with navigation back to home.
+- Files changed:
+  - website/public/_headers (new - Cloudflare security headers file)
+  - website/src/pages/privacy.astro (updated - rel="noopener noreferrer" on all external links)
+  - website/src/pages/index.astro (updated - App Store badge href from "#" to apps.apple.com URL)
+  - website/src/pages/404.astro (new - custom 404 page with back-to-home link)
+  - prd.json (updated - PH-008 passes: true)
+- **Learnings for future iterations:**
+  - Cloudflare Pages uses `_headers` file in public/ for custom response headers
+  - Astro's 404.astro in pages/ is automatically served as the 404 page
+  - App Store URL format: https://apps.apple.com/app/APP_NAME/idNUMBER — update the id once the app is published
+  - CSP with 'unsafe-inline' for styles is needed since Astro uses inline styles
+---

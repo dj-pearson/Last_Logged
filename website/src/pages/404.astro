@@ -1,0 +1,65 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = '404 — Page Not Found — Last Logged';
+const description = 'The page you were looking for could not be found.';
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="not-found">
+    <div class="container">
+      <h1>404</h1>
+      <p class="subtitle">Page not found</p>
+      <p class="message">
+        The page you were looking for doesn&rsquo;t exist or has been moved.
+      </p>
+      <a href="/" class="back-home">Back to Home</a>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .not-found {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    text-align: center;
+  }
+
+  .not-found h1 {
+    font-size: 6rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .message {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .back-home {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s ease;
+  }
+
+  .back-home:hover {
+    background: var(--color-primary-dark, #4338ca);
+    text-decoration: none;
+  }
+</style>
