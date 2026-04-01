@@ -9,7 +9,7 @@ final class AnalyticsService {
     // MARK: - Configuration
 
     func configure() {
-        let config = TelemetryDeck.Config(appID: "YOUR_TELEMETRYDECK_APP_ID")
+        let config = TelemetryDeck.Config(appID: AppSecrets.telemetryDeckAppID)
         TelemetryDeck.initialize(config: config)
     }
 
@@ -35,11 +35,38 @@ final class AnalyticsService {
         TelemetryDeck.signal("paywall_presented")
     }
 
+    func trackPaywallDismissed() {
+        TelemetryDeck.signal("paywall_dismissed")
+    }
+
+    func trackPaywallConverted() {
+        TelemetryDeck.signal("paywall_converted")
+    }
+
     func trackTrialStarted() {
         TelemetryDeck.signal("trial_started")
     }
 
     func trackCategorySelected() {
         TelemetryDeck.signal("category_selected")
+    }
+
+    func trackSyncConflict(itemId: UUID) {
+        TelemetryDeck.signal(
+            "sync_conflict",
+            parameters: ["itemId": itemId.uuidString]
+        )
+    }
+
+    // MARK: - Error Tracking
+
+    func trackError(_ context: String, error: Error) {
+        TelemetryDeck.signal(
+            "app_error",
+            parameters: [
+                "context": context,
+                "error": error.localizedDescription,
+            ]
+        )
     }
 }

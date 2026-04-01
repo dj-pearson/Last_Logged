@@ -78,6 +78,22 @@ Started: 2026-03-24
 - Website (lastlogged.com) is an Astro project in `website/` — static output, Cloudflare Pages deployment via wrangler.toml
 - Website layout in `website/src/layouts/BaseLayout.astro` — includes SEO meta, OG tags, JSON-LD; pages in `website/src/pages/`
 - Website CSS vars: --color-primary (#4f46e5), --color-accent (#10b981), --color-bg-alt (#f8f9fa) — defined in BaseLayout global styles
+- AppSecrets enum in Utilities/AppSecrets.swift — centralized API keys; services read from here, not hardcoded strings
+- AppSecrets.validate() called at app launch — warns in debug, fatalError in release if keys are still placeholders
+- SchemaVersions.swift in Models/ — SchemaV1 (VersionedSchema) + LastLoggedMigrationPlan; both app and widget targets use versioned schema
+- To add a SwiftData migration: create SchemaV2 enum, add MigrationStage to LastLoggedMigrationPlan.stages, update .schemas array
+- Edge functions use middleware.ts for rate limiting, CORS, body size limits, request logging, and cron auth
+- Edge functions validate env vars at startup via validate-env.ts — crashes if placeholders detected
+- Notification time uses UserDefaults keys "defaultReminderHour" / "defaultReminderMinute" — NotificationService reads these
+- Error handling: ViewModels expose `lastError: String?`; AnalyticsService.trackError() for telemetry
+- PaywallView always allows dismissal — isHardPaywall shows "Continue with Free Plan" but never traps the user
+- Highest pbxproj IDs: A1...002D (BuildFile), A2...0027 (FileRef), AA...0004 (ProductDependency)
+- Widget premium enforcement: RevenueCatService writes isPremium to App Group UserDefaults; WidgetDataProvider reads it
+- Loading states: ViewModels expose isLoading/isClearingData/isSigningOut booleans; views show ProgressView and disable buttons
+- Edge function logger.ts: use log(), logError(), logWarn() for consistent structured JSON logging with requestId
+- TrackerItem.updatedAt set on every mutation — used for timestamp-based sync conflict detection
+- user_devices table for multi-device push — SupabaseService.registerDeviceToken() upserts by device_token
+- Notification 64-item limit: NotificationService reserves slot 64 for overflow warning, tracks skippedItemCount
 ---
 
 ## 2026-03-24 - US-001
@@ -566,4 +582,263 @@ Started: 2026-03-24
   - Both pages are already linked from the app's SettingsView and PaywallView at `https://lastlogged.com/privacy` and `https://lastlogged.com/terms`
   - Author is Pearson Media LLC — consistent across footer copyright and legal page contact sections
   - Astro typecheck produces 0 errors for the new pages; the existing `is:inline` hint in BaseLayout is pre-existing and benign
+---
+
+## 2026-03-31 - PH-001
+- What was implemented: Centralized API key management via AppSecrets.swift pattern. All three services (SupabaseService, RevenueCatService, AnalyticsService) now read credentials from a single AppSecrets enum instead of hardcoded strings. Added validate() method called at app launch that warns in debug and crashes in release if any key is still a placeholder. Created AppSecrets.example.swift as a developer onboarding template.
+- Files changed:
+  - LastLogged/Utilities/AppSecrets.swift (new - centralized API key enum with validation)
+  - LastLogged/Utilities/AppSecrets.example.swift (new - template for developer setup)
+  - LastLogged/Services/SupabaseService.swift (updated - reads from AppSecrets instead of hardcoded strings)
+  - LastLogged/Services/RevenueCatService.swift (updated - reads from AppSecrets)
+  - LastLogged/Services/AnalyticsService.swift (updated - reads from AppSecrets)
+  - LastLogged/LastLoggedApp.swift (updated - calls AppSecrets.validate() at init)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added AppSecrets.swift to Utilities group and Sources phase)
+  - prd.json (updated - PH-001 passes: true)
+- **Learnings for future iterations:**
+  - AppSecrets.swift pattern is simpler than XCConfig → Info.plist → Bundle for Swift projects — keeps keys compiled-in and not visible in IPA's Info.plist
+  - Use #if DEBUG for warnings vs fatalError in validate() — allows UI development without real keys
+  - Highest pbxproj IDs after this story: A1...002B (BuildFile), A2...0026 (FileRef)
+  - AppSecrets.swift stays in repo with placeholders (safe); real keys substituted per-developer or via CI
+---
+
+## 2026-03-31 - PH-002
+- What was implemented: SwiftData versioned migration plan. Created SchemaV1 VersionedSchema and LastLoggedMigrationPlan SchemaMigrationPlan. Updated both main app and widget extension to initialize ModelContainer with versioned schema and migration plan. This ensures future model changes can be handled via lightweight or custom migration stages without crashing existing users.
+- Files changed:
+  - LastLogged/Models/SchemaVersions.swift (new - SchemaV1 + LastLoggedMigrationPlan with inline HOW-TO docs)
+  - LastLogged/LastLoggedApp.swift (updated - uses Schema(versionedSchema:) and migrationPlan parameter)
+  - LastLogged/Widget/WidgetDataProvider.swift (updated - uses versioned schema and migration plan)
+  - LastLogged.xcodeproj/project.pbxproj (updated - added SchemaVersions.swift to Models group and both target Sources phases)
+  - progress.txt (updated - added codebase patterns for migrations)
+  - prd.json (updated - PH-002 passes: true)
+- **Learnings for future iterations:**
+  - Schema(versionedSchema: SchemaV1.self) replaces Schema([Model.self, ...]) when using versioned schemas
+  - ModelContainer gains migrationPlan: parameter — pass the SchemaMigrationPlan.Type
+  - SchemaVersions.swift must be compiled in BOTH main app and widget extension targets
+  - Empty stages array is valid — means no migrations needed yet, but the plan is ready
+  - Highest pbxproj IDs after this story: A1...002D (BuildFile), A2...0027 (FileRef)
+---
+
+## 2026-03-31 - PH-003
+- What was implemented: Comprehensive sync reliability improvements in SupabaseService. Added NWPathMonitor for network reachability monitoring with auto-sync on reconnect. Implemented withRetry() helper with exponential backoff (2s/4s/8s/16s, 4 attempts) wrapping all push operations. Added persistent pending sync flag in UserDefaults. Fixed debounce to not cancel pending data. Fixed SyncStatus to only be set to .synced after confirmed server push. All push/pull errors now logged to AnalyticsService with context.
+- Files changed:
+  - LastLogged/Services/SupabaseService.swift (major update - network monitoring, retry logic, error logging, pending state persistence)
+  - prd.json (updated - PH-003 passes: true)
+- **Learnings for future iterations:**
+  - `import Network` for NWPathMonitor — requires dedicated DispatchQueue for path updates
+  - NWPathMonitor pathUpdateHandler fires on a background queue — must dispatch to @MainActor for state updates
+  - withRetry pattern: generic async throwing function wrapping operation with exponential backoff
+  - pow(2.0, Double(attempt)) gives 2s, 4s, 8s, 16s delay sequence
+  - Persistent hasPendingSync in UserDefaults survives app restart; cleared only on successful full sync
+  - SyncStatus.synced should only be set AFTER server confirms — not optimistically before upsert
+---
+
+## 2026-03-31 - PH-004
+- What was implemented: Thread safety fixes for all SwiftData ModelContext access. All Task blocks that pass modelContext now use `Task { @MainActor in }` to ensure ModelContext access stays on the main thread. NotificationService.rescheduleAllNotifications marked @MainActor. SupabaseService sync triggers (scheduleSyncAfterWrite, syncOnForeground) use @MainActor Tasks.
+- Files changed:
+  - LastLogged/ViewModels/HomeViewModel.swift (updated - scheduleNotifications Task to @MainActor)
+  - LastLogged/Services/NotificationService.swift (updated - rescheduleAllNotifications marked @MainActor)
+  - LastLogged/Services/SupabaseService.swift (updated - syncDebounceTask and syncOnForeground Tasks to @MainActor)
+  - LastLogged/Views/Settings/SettingsView.swift (updated - notification reschedule Task to @MainActor)
+  - prd.json (updated - PH-004 passes: true)
+- **Learnings for future iterations:**
+  - SwiftData ModelContext is NOT thread-safe — must always be accessed on the main thread
+  - Use `Task { @MainActor in }` when creating Tasks that need to access modelContext
+  - `@MainActor` on a method ensures all body runs on main thread, but callers can still await from background
+  - SupabaseService.sync is already @MainActor; the fix was ensuring the Task creation points also use @MainActor
+---
+
+## 2026-04-01 - PH-005
+- What was implemented: Strengthened password validation with complexity requirements (8+ chars, uppercase, lowercase, number) and added auth rate limiting (5 failed attempts triggers 30s cooldown). Inline validation UI shows checkmark/xmark per requirement. Cooldown timer displays remaining seconds when locked out.
+- Files changed:
+  - LastLogged/ViewModels/AuthViewModel.swift (updated - added isPasswordValid, passwordValidationMessages, rate limiting state, cooldown timer, submitEmailForm tracking)
+  - LastLogged/Views/Settings/AuthView.swift (updated - added inline password validation UI with icons, cooldown timer display, disabled button during lockout)
+  - prd.json (updated - PH-005 passes: true)
+- **Learnings for future iterations:**
+  - Use `.range(of:options:.regularExpression)` for Swift regex matching on String
+  - Rate limiting state (failedAttemptCount, cooldownExpiresAt) is in-memory only — resets on app restart, which is acceptable for client-side auth rate limiting
+  - Timer.scheduledTimer needs RunLoop — use DispatchQueue.main.asyncAfter for simple delayed resets
+  - Password validation messages array pattern: return only the requirements not yet met for clean inline UI
+---
+
+## 2026-04-01 - PH-006
+- What was implemented: Widget premium tier enforcement. RevenueCatService now writes isPremium to App Group UserDefaults on every tier change. WidgetDataProvider reads this value. Free tier users: small widget only (max 1 overdue item), medium/large widgets show upgrade prompt. Premium users get full widget functionality across all sizes.
+- Files changed:
+  - LastLogged/Services/RevenueCatService.swift (updated - writePremiumStatusToAppGroup() called from updateTier())
+  - LastLogged/Widget/WidgetDataProvider.swift (updated - added isPremium computed property reading from App Group UserDefaults)
+  - LastLoggedWidget/LastLoggedWidget.swift (updated - isPremium in entry, provider limits items for free tier, upgrade prompt view for medium/large)
+  - prd.json (updated - PH-006 passes: true)
+- **Learnings for future iterations:**
+  - Widget extensions can't access RevenueCat SDK directly — share entitlement status via App Group UserDefaults
+  - Use `UserDefaults(suiteName: "group.com.pearsonmedia.lastlogged")` for shared App Group defaults
+  - Widget timeline provider should check isPremium at timeline generation time, not just entry view
+  - Placeholder/preview entries should show isPremium: true to showcase full widget in gallery
+---
+
+## 2026-04-01 - PH-007
+- What was implemented: Added loading states to all async UI actions. TrackerRowView log button shows a spinner during the brief log operation and prevents double-taps. SettingsView sign-out and clear-data buttons show ProgressView spinners and disable during execution. TrackerDetailView shows "Loading history…" ProgressView while fetchCompletionLogs runs. AuthView already had loading states from PH-005.
+- Files changed:
+  - LastLogged/Views/Home/HomeView.swift (updated - TrackerRowView isLogging state with spinner and disabled button)
+  - LastLogged/Views/Settings/SettingsView.swift (updated - sign out and clear data buttons with ProgressView and disabled state)
+  - LastLogged/ViewModels/SettingsViewModel.swift (updated - added isClearingData, isSigningOut properties)
+  - LastLogged/Views/Detail/TrackerDetailView.swift (updated - isLoadingLogs ProgressView in history section)
+  - LastLogged/ViewModels/TrackerDetailViewModel.swift (updated - added isLoadingLogs property set during fetchCompletionLogs)
+  - prd.json (updated - PH-007 passes: true)
+- **Learnings for future iterations:**
+  - For synchronous operations that complete instantly, use a brief Task.sleep delay (400ms) to show visual feedback
+  - `guard !isLogging else { return }` pattern prevents double-taps on buttons
+  - AuthView already had isLoading + ProgressView + disabled button from PH-005 — no changes needed
+  - ShareLink in SwiftUI generates export synchronously, no loading state needed for it
+---
+
+## 2026-04-01 - PH-008
+- What was implemented: Website security headers via Cloudflare _headers file (CSP, X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy). Added rel="noopener noreferrer" target="_blank" to all 6 external links in privacy.astro. Updated App Store badge href from "#" to placeholder App Store URL. Created 404.astro error page with navigation back to home.
+- Files changed:
+  - website/public/_headers (new - Cloudflare security headers file)
+  - website/src/pages/privacy.astro (updated - rel="noopener noreferrer" on all external links)
+  - website/src/pages/index.astro (updated - App Store badge href from "#" to apps.apple.com URL)
+  - website/src/pages/404.astro (new - custom 404 page with back-to-home link)
+  - prd.json (updated - PH-008 passes: true)
+- **Learnings for future iterations:**
+  - Cloudflare Pages uses `_headers` file in public/ for custom response headers
+  - Astro's 404.astro in pages/ is automatically served as the 404 page
+  - App Store URL format: https://apps.apple.com/app/APP_NAME/idNUMBER — update the id once the app is published
+  - CSP with 'unsafe-inline' for styles is needed since Astro uses inline styles
+---
+
+## 2026-04-01 - PH-009
+- What was implemented: New SQL migration adding audit_log table (id, user_id, action, resource_type, resource_id, metadata JSONB, created_at) with RLS for user read-only access. Added deleted_at TIMESTAMPTZ column to completion_logs for soft delete. Updated completion_logs RLS policies to filter WHERE deleted_at IS NULL on SELECT. Added index on completion_logs(deleted_at). Updated export-data endpoint to filter out soft-deleted logs with `.is("deleted_at", null)`.
+- Files changed:
+  - supabase/migrations/20260401000001_audit_log_and_soft_delete.sql (new - audit log table, soft delete column, updated RLS)
+  - edge-functions/src/export-data.ts (updated - filter soft-deleted completion logs)
+  - prd.json (updated - PH-009 passes: true)
+- **Learnings for future iterations:**
+  - Use `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for idempotent column additions
+  - DROP POLICY IF EXISTS before CREATE POLICY for safe re-creation of RLS policies
+  - Supabase JS `.is("column", null)` generates `WHERE column IS NULL` — use for soft delete filtering
+  - Audit log uses service role for inserts (no user insert policy) — edge functions write via service role key
+  - Migration naming: YYYYMMDDHHMMSS format for sequential ordering
+---
+
+## 2026-04-01 - PH-010
+- What was implemented: Verified onboarding paywall is already soft (isHardPaywall=false) and dismissible. Added analytics tracking for paywall_dismissed and paywall_converted events. AnalyticsService gains trackPaywallDismissed() and trackPaywallConverted() methods. PaywallView Close button and "Continue with Free Plan" button both track paywall_dismissed. Successful purchase tracks paywall_converted.
+- Files changed:
+  - LastLogged/Services/AnalyticsService.swift (updated - added trackPaywallDismissed() and trackPaywallConverted())
+  - LastLogged/Views/Components/PaywallView.swift (updated - dismiss tracking on Close and Continue with Free buttons, conversion tracking on purchase success)
+  - prd.json (updated - PH-010 passes: true)
+- **Learnings for future iterations:**
+  - OnboardingView already uses isHardPaywall: false — was fixed in PH-003
+  - Track analytics events at the point of action (dismiss/purchase), not on view disappear, to avoid false positives
+  - PaywallView has two dismiss paths: Close button (soft paywall) and "Continue with Free Plan" (hard paywall) — both need tracking
+---
+
+## 2026-04-01 - PH-011
+- What was implemented: APNs key loading from APNS_KEY_CONTENT environment variable (base64-encoded .p8 key). Falls back to APNS_KEY_PATH file read if not set. Updated .env.example with documentation and Dockerfile with env-based key comment.
+- Files changed:
+  - edge-functions/src/apns.ts (updated - resolveApnsKey() function, supports Buffer from base64 or file path string)
+  - edge-functions/.env.example (updated - APNS_KEY_CONTENT documentation)
+  - edge-functions/Dockerfile (updated - comment about env-based key option)
+  - prd.json (updated - PH-011 passes: true)
+- **Learnings for future iterations:**
+  - @parse/node-apn Provider token.key accepts string (file path) OR Buffer (key content)
+  - Base64 encode .p8 key with `base64 -i AuthKey.p8` for env var injection
+  - Buffer.from(string, "base64") decodes base64 to binary in Node.js
+---
+
+## 2026-04-01 - PH-012
+- What was implemented: Created centralized logger.ts with log(), logError(), logWarn() functions producing structured JSON with timestamp, level, event, requestId, and context. Updated all edge function files to use structured logging: export-data.ts (auth failures, export success with counts), revenuecat-webhook.ts (signature failures with IP, tier updates), reminder-digest.ts (fetch errors, send success/failure per user), index.ts (cron start/complete/error, server start), middleware.ts (rate limit rejections with IP).
+- Files changed:
+  - edge-functions/src/logger.ts (new - centralized structured logging utility)
+  - edge-functions/src/export-data.ts (updated - structured logging for auth and export)
+  - edge-functions/src/revenuecat-webhook.ts (updated - structured logging for signature and tier updates)
+  - edge-functions/src/reminder-digest.ts (updated - structured logging for digest operations)
+  - edge-functions/src/index.ts (updated - structured logging for cron and server start)
+  - edge-functions/src/middleware.ts (updated - structured logging for rate limits and request log format)
+  - prd.json (updated - PH-012 passes: true)
+- **Learnings for future iterations:**
+  - Centralized logger with log/logError/logWarn keeps structured JSON format consistent
+  - Pass Hono Context (c) to logger to extract requestId from middleware
+  - Rate limit logging includes IP for abuse detection — use x-forwarded-for header
+  - Webhook signature failures should log IP for security monitoring
+---
+
+## 2026-04-01 - PH-013
+- What was implemented: Accessibility improvements across PaywallView (savings badge with "percent" label), toast view (UIAccessibility.post announcement, hidden redundant text, improved undo button labels), AddTrackerView (icon grid container label), and CancellationView (stat items with label-first read order).
+- Files changed:
+  - LastLogged/Views/Components/PaywallView.swift (updated - savings badge accessibilityLabel with % → percent)
+  - LastLogged/Views/Home/HomeView.swift (updated - toast UIAccessibility announcement, hidden redundant text, improved undo label)
+  - LastLogged/Views/Home/AddTrackerView.swift (updated - icon grid accessibilityLabel)
+  - LastLogged/Views/Components/CancellationView.swift (updated - statItem accessibilityLabel with label:value order)
+  - prd.json (updated - PH-013 passes: true)
+- **Learnings for future iterations:**
+  - UIAccessibility.post(notification: .announcement) announces text for VoiceOver without focus change — use for transient UI like toasts
+  - Use .accessibilityElement(children: .ignore) + explicit .accessibilityLabel for controlled read order
+  - Replace "%" with "percent" in accessibility labels for clearer VoiceOver pronunciation
+  - .accessibilityHidden(true) on decorative text prevents redundant announcements
+---
+
+## 2026-04-01 - PH-014
+- What was implemented: User ID caching in SupabaseService. Added cachedUserId private property that stores the internal user ID after first database lookup. Cache cleared on sign out, session restore failure, and all sign-in methods (Apple, email sign-up, email sign-in) to handle account switching. Subsequent sync calls use cached value without querying users table.
+- Files changed:
+  - LastLogged/Services/SupabaseService.swift (updated - cachedUserId property, cache in currentUserId getter, cache clearing on auth state changes)
+  - prd.json (updated - PH-014 passes: true)
+- **Learnings for future iterations:**
+  - Cache invalidation on every auth state change (sign in, sign out, restore failure) prevents stale user IDs
+  - Clear cache BEFORE async sign-in calls to avoid race conditions with concurrent sync
+  - The computed `currentUserId` async property is called on every sync — caching saves one DB query per sync cycle
+---
+
+## 2026-04-01 - PH-015
+- What was implemented: Graceful handling of 64-notification limit. NotificationService now reserves 1 slot for an overflow warning notification when items exceed 64. Tracks skippedItemCount property. Settings shows orange warning banner with count of skipped trackers and premium upsell for unlimited server-side reminders.
+- Files changed:
+  - LastLogged/Services/NotificationService.swift (updated - skippedItemCount, overflow warning notification in slot 64, reserve 1 slot for warning)
+  - LastLogged/Views/Settings/SettingsView.swift (updated - notification limit warning banner in notifications section)
+  - prd.json (updated - PH-015 passes: true)
+- **Learnings for future iterations:**
+  - iOS limits 64 pending local notifications per app — schedule by overdue priority
+  - Reserve the last notification slot for an informational overflow message
+  - Use "notification_limit_warning" as a fixed identifier so it replaces itself on reschedule
+  - Server-side push notifications (APNs via edge functions) have no per-app limit — premium upsell
+---
+
+## 2026-04-01 - PH-016
+- What was implemented: Data retention edge function POST /cleanup-old-data. Permanently deletes soft-deleted completion_logs older than 90 days. Deletes archived tracker_items with no completion_logs newer than 180 days. Weekly cron (Sunday 3 AM). Protected by cron secret auth. Uses structured logging.
+- Files changed:
+  - edge-functions/src/cleanup.ts (new - cleanup endpoint and runCleanup function)
+  - edge-functions/src/index.ts (updated - import cleanup, rate limit, route registration, weekly cron)
+  - prd.json (updated - PH-016 passes: true)
+- **Learnings for future iterations:**
+  - Supabase JS .delete() with .select("id") returns deleted rows for counting
+  - Check for recent completion_logs before deleting archived items to avoid data loss
+  - Use separate cron schedule for cleanup (weekly) vs reminders (daily) — different operational cadences
+---
+
+## 2026-04-01 - PH-017
+- What was implemented: Timestamp-based sync conflict detection. Added updatedAt field to TrackerItem model, set on every local mutation. SupabaseService pullTrackerItems now compares local updatedAt with remote updated_at — if local is newer and pending, local version is kept and pushed on next sync. Added trackSyncConflict analytics event. TrackerItemRow DTO updated with updatedAt field.
+- Files changed:
+  - LastLogged/Models/TrackerItem.swift (updated - added updatedAt: Date property)
+  - LastLogged/ViewModels/HomeViewModel.swift (updated - set updatedAt = Date() on archive, log, undo, update)
+  - LastLogged/ViewModels/TrackerDetailViewModel.swift (updated - set updatedAt on archive and update)
+  - LastLogged/Services/SupabaseService.swift (updated - pullTrackerItems compares timestamps, TrackerItemRow with updatedAt, push includes updatedAt)
+  - LastLogged/Services/AnalyticsService.swift (updated - added trackSyncConflict method)
+  - prd.json (updated - PH-017 passes: true)
+- **Learnings for future iterations:**
+  - Conflict detection: compare local updatedAt > remote updated_at AND syncStatus != .synced (both conditions needed)
+  - Keep local version on conflict by setting .pending — will push on next sync cycle
+  - SwiftData lightweight migration handles adding new fields with defaults automatically
+  - Track conflicts in analytics for monitoring — high conflict rate may indicate sync issues
+---
+
+## 2026-04-01 - PH-018
+- What was implemented: Separate user_devices table for multi-device push notifications. New SQL migration creates user_devices with id, user_id, device_token (unique), device_name, platform, last_seen_at, created_at. RLS policies for user-managed entries. SupabaseService.registerDeviceToken() upserts by device_token on app launch. reminder-digest.ts queries user_devices instead of users.device_token, groups by user, sends to all active devices. Stale tokens (>90 days) excluded.
+- Files changed:
+  - supabase/migrations/20260401000002_user_devices.sql (new - user_devices table with RLS)
+  - LastLogged/Services/SupabaseService.swift (updated - registerDeviceToken method, DeviceTokenRow DTO, UIKit import)
+  - edge-functions/src/reminder-digest.ts (updated - queries user_devices, groups by user, sends to all devices, filters stale tokens)
+  - prd.json (updated - PH-018 passes: true)
+- **Learnings for future iterations:**
+  - UNIQUE(device_token) constraint allows upsert by device_token for idempotent registration
+  - Group devices by user_id to avoid duplicate overdue item queries per user
+  - Filter stale devices with .gte("last_seen_at", cutoff) — 90 day retention
+  - UIDevice.current.name gives user-friendly device name for the device_name column
 ---

@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import { supabase } from "./supabase.js";
+import { log, logError, logWarn } from "./logger.js";
 import crypto from "node:crypto";
 
-const REVENUECAT_WEBHOOK_SECRET =
-  process.env.REVENUECAT_WEBHOOK_SECRET ?? "your-webhook-secret";
+const REVENUECAT_WEBHOOK_SECRET = process.env.REVENUECAT_WEBHOOK_SECRET!;
+// Validated at startup by validate-env.ts — no fallback default
 
 export const revenuecatWebhook = new Hono();
 
@@ -55,14 +56,17 @@ revenuecatWebhook.post("/webhooks/revenuecat", async (c) => {
   // Validate signature
   const signature = c.req.header("X-RevenueCat-Signature") ?? "";
   if (!signature) {
+    logWarn("webhook_signature_missing", { ip: c.req.header("x-forwarded-for") ?? "unknown" }, c);
     return c.json({ error: "Missing webhook signature" }, 401);
   }
 
   try {
     if (!verifySignature(rawBody, signature)) {
+      logWarn("webhook_signature_invalid", { ip: c.req.header("x-forwarded-for") ?? "unknown" }, c);
       return c.json({ error: "Invalid webhook signature" }, 401);
     }
   } catch {
+    logWarn("webhook_signature_invalid", { ip: c.req.header("x-forwarded-for") ?? "unknown" }, c);
     return c.json({ error: "Invalid webhook signature" }, 401);
   }
 
@@ -87,15 +91,18 @@ revenuecatWebhook.post("/webhooks/revenuecat", async (c) => {
     .eq("auth_id", event.app_user_id);
 
   if (error) {
-    console.error(
-      `Webhook: failed to update tier for ${event.app_user_id}:`,
-      error.message
-    );
+    logError("webhook_tier_update_failed", error.message, {
+      appUserId: event.app_user_id,
+      eventType: event.type,
+      newTier,
+    }, c);
     return c.json({ error: "Failed to update subscription" }, 500);
   }
 
-  console.log(
-    `Webhook: ${event.type} → ${event.app_user_id} tier set to ${newTier}`
-  );
+  log("webhook_tier_updated", {
+    appUserId: event.app_user_id,
+    eventType: event.type,
+    newTier,
+  }, c);
   return c.json({ success: true, tier: newTier });
 });

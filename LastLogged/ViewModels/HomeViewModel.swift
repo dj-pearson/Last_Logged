@@ -7,6 +7,7 @@ final class HomeViewModel {
 
     var trackerItems: [TrackerItem] = []
     var categories: [TrackerCategory] = []
+    var lastError: String?
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -31,6 +32,7 @@ final class HomeViewModel {
             trackerItems = try modelContext.fetch(descriptor)
         } catch {
             trackerItems = []
+            AnalyticsService.shared.trackError("fetch_items", error: error)
         }
     }
 
@@ -42,6 +44,7 @@ final class HomeViewModel {
             categories = try modelContext.fetch(descriptor)
         } catch {
             categories = []
+            AnalyticsService.shared.trackError("fetch_categories", error: error)
         }
     }
 
@@ -110,6 +113,7 @@ final class HomeViewModel {
     func archiveItem(_ item: TrackerItem) {
         item.isArchived = true
         item.syncStatus = .pending
+        item.updatedAt = Date()
         save()
         fetchItems()
         scheduleNotifications()
@@ -130,6 +134,7 @@ final class HomeViewModel {
         modelContext.insert(log)
         item.lastCompletedAt = log.completedAt
         item.syncStatus = .pending
+        item.updatedAt = Date()
         save()
         fetchItems()
         scheduleNotifications()
@@ -142,6 +147,7 @@ final class HomeViewModel {
         modelContext.delete(info.completionLog)
         info.item.lastCompletedAt = info.previousLastCompletedAt
         info.item.syncStatus = .pending
+        info.item.updatedAt = Date()
         save()
         fetchItems()
         scheduleNotifications()
@@ -162,6 +168,7 @@ final class HomeViewModel {
         item.reminderIntervalDays = reminderIntervalDays
         item.iconName = iconName
         item.syncStatus = .pending
+        item.updatedAt = Date()
         save()
         fetchItems()
         scheduleNotifications()
@@ -180,7 +187,7 @@ final class HomeViewModel {
 
     private func scheduleNotifications() {
         let context = modelContext
-        Task {
+        Task { @MainActor in
             await NotificationService.shared.rescheduleAllNotifications(modelContext: context)
         }
     }
@@ -196,8 +203,10 @@ final class HomeViewModel {
     private func save() {
         do {
             try modelContext.save()
+            lastError = nil
         } catch {
-            // Save failed silently; items remain in-memory
+            lastError = "Failed to save changes. Please try again."
+            AnalyticsService.shared.trackError("save_failed", error: error)
         }
     }
 }

@@ -9,7 +9,8 @@ struct PaywallView: View {
 
     private let revenueCatService = RevenueCatService.shared
 
-    /// When true, hides the dismiss/close button (used for hard paywall)
+    /// When true, hides the close button but shows a "Continue with Free" link
+    /// to comply with App Store guidelines (users must always have a way to proceed).
     var isHardPaywall: Bool = false
 
     enum PricingTier: String, CaseIterable {
@@ -28,6 +29,20 @@ struct PaywallView: View {
                     purchaseButton
                     restoreLink
 
+                    if isHardPaywall {
+                        Button {
+                            AnalyticsService.shared.trackPaywallDismissed()
+                            dismiss()
+                        } label: {
+                            Text("Continue with Free Plan")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(minHeight: 44)
+                        .accessibilityLabel("Continue with free plan")
+                        .accessibilityHint("Dismiss paywall and continue using the free tier")
+                    }
+
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.caption)
@@ -45,13 +60,14 @@ struct PaywallView: View {
                 if !isHardPaywall {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Close") {
+                            AnalyticsService.shared.trackPaywallDismissed()
                             dismiss()
                         }
                     }
                 }
             }
         }
-        .interactiveDismissDisabled(isHardPaywall)
+        // Always allow dismissal — App Store requires users can proceed without purchasing
         .onAppear {
             AnalyticsService.shared.trackPaywallPresented()
         }
@@ -166,6 +182,7 @@ struct PaywallView: View {
                                 .background(.green)
                                 .foregroundStyle(.white)
                                 .clipShape(Capsule())
+                                .accessibilityLabel(badge.replacingOccurrences(of: "%", with: " percent"))
                         }
                     }
                     Text(detail)
@@ -306,6 +323,7 @@ struct PaywallView: View {
             let success = try await revenueCatService.purchase(package)
             if success {
                 AnalyticsService.shared.trackTrialStarted()
+                AnalyticsService.shared.trackPaywallConverted()
                 dismiss()
             }
         } catch {

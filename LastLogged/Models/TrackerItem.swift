@@ -13,6 +13,7 @@ final class TrackerItem {
     var iconName: String
     var isArchived: Bool
     var syncStatus: SyncStatus
+    var updatedAt: Date
 
     init(
         id: UUID = UUID(),
@@ -24,7 +25,8 @@ final class TrackerItem {
         sortOrder: Int = 0,
         iconName: String = "checkmark.circle",
         isArchived: Bool = false,
-        syncStatus: SyncStatus = .pending
+        syncStatus: SyncStatus = .pending,
+        updatedAt: Date = Date()
     ) {
         self.id = id
         self.name = name
@@ -36,5 +38,6 @@ final class TrackerItem {
         self.iconName = iconName
         self.isArchived = isArchived
         self.syncStatus = syncStatus
+        self.updatedAt = updatedAt
     }
 }

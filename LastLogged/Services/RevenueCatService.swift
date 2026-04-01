@@ -39,10 +39,9 @@ final class RevenueCatService: NSObject {
     }
 
     func configure() {
-        // Replace with your actual RevenueCat API key in production
         Purchases.logLevel = .debug
         Purchases.configure(
-            with: Configuration.Builder(withAPIKey: "YOUR_REVENUECAT_API_KEY")
+            with: Configuration.Builder(withAPIKey: AppSecrets.revenueCatAPIKey)
                 .with(appUserID: nil)
                 .build()
         )
@@ -95,6 +94,13 @@ final class RevenueCatService: NSObject {
         } else {
             subscriptionTier = .free
         }
+        writePremiumStatusToAppGroup()
+    }
+
+    /// Writes isPremium to App Group UserDefaults so widgets can check entitlement
+    private func writePremiumStatusToAppGroup() {
+        guard let defaults = UserDefaults(suiteName: "group.com.pearsonmedia.lastlogged") else { return }
+        defaults.set(isPremium, forKey: "isPremium")
     }
 
     // MARK: - Offerings

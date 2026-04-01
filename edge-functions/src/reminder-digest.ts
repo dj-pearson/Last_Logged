@@ -1,16 +1,18 @@
 import { Hono } from "hono";
 import { supabase } from "./supabase.js";
+import { log, logError } from "./logger.js";
 import { getApnProvider, buildDigestNotification, OverdueItem } from "./apns.js";
 
 const LOCAL_NOTIFICATION_LIMIT = 64;
 
 export const reminderDigest = new Hono();
 
-interface UserRow {
+interface DeviceRow {
   id: string;
-  auth_id: string;
-  display_name: string | null;
-  device_token: string | null;
+  user_id: string;
+  device_token: string;
+  device_name: string | null;
+  last_seen_at: string;
 }
 
 interface TrackerItemRow {
@@ -21,14 +23,19 @@ interface TrackerItemRow {
   is_archived: boolean;
 }
 
-async function getUsersWithDeviceTokens(): Promise<UserRow[]> {
+const STALE_DEVICE_DAYS = 90;
+
+async function getActiveDevices(): Promise<DeviceRow[]> {
+  const staleCutoff = new Date();
+  staleCutoff.setDate(staleCutoff.getDate() - STALE_DEVICE_DAYS);
+
   const { data, error } = await supabase
-    .from("users")
-    .select("id, auth_id, display_name, device_token")
-    .not("device_token", "is", null);
+    .from("user_devices")
+    .select("id, user_id, device_token, device_name, last_seen_at")
+    .gte("last_seen_at", staleCutoff.toISOString());
 
   if (error) {
-    console.error("Error fetching users:", error.message);
+    logError("digest_fetch_devices_failed", error.message);
     return [];
   }
 
@@ -45,7 +52,7 @@ async function getOverdueItemsForUser(userId: string): Promise<OverdueItem[]> {
     .not("last_completed_at", "is", null);
 
   if (error) {
-    console.error(`Error fetching items for user ${userId}:`, error.message);
+    logError("digest_fetch_items_failed", error.message, { userId });
     return [];
   }
 
@@ -91,12 +98,20 @@ export async function sendReminderDigests(): Promise<{
 }> {
   const stats = { sent: 0, skipped: 0, errors: 0 };
 
-  const users = await getUsersWithDeviceTokens();
+  const devices = await getActiveDevices();
   const provider = getApnProvider();
 
-  for (const user of users) {
+  // Group devices by user_id
+  const devicesByUser = new Map<string, DeviceRow[]>();
+  for (const device of devices) {
+    const existing = devicesByUser.get(device.user_id) ?? [];
+    existing.push(device);
+    devicesByUser.set(device.user_id, existing);
+  }
+
+  for (const [userId, userDevices] of devicesByUser) {
     try {
-      const totalTrackers = await countUserTrackers(user.id);
+      const totalTrackers = await countUserTrackers(userId);
 
       // Only send digest to users who exceed the local notification limit
       if (totalTrackers <= LOCAL_NOTIFICATION_LIMIT) {
@@ -104,26 +119,28 @@ export async function sendReminderDigests(): Promise<{
         continue;
       }
 
-      const overdueItems = await getOverdueItemsForUser(user.id);
+      const overdueItems = await getOverdueItemsForUser(userId);
       if (overdueItems.length === 0) {
         stats.skipped++;
         continue;
       }
 
       const notification = buildDigestNotification(overdueItems);
-      const result = await provider.send(notification, user.device_token!);
 
-      if (result.failed.length > 0) {
-        console.error(
-          `Failed to send to user ${user.id}:`,
-          result.failed[0].response
-        );
-        stats.errors++;
-      } else {
-        stats.sent++;
+      // Send to all of the user's active devices
+      for (const device of userDevices) {
+        const result = await provider.send(notification, device.device_token);
+
+        if (result.failed.length > 0) {
+          logError("digest_send_failed", result.failed[0].response, { userId, deviceId: device.id });
+          stats.errors++;
+        } else {
+          log("digest_send_success", { userId, deviceId: device.id, overdueCount: overdueItems.length });
+          stats.sent++;
+        }
       }
     } catch (err) {
-      console.error(`Error processing user ${user.id}:`, err);
+      logError("digest_user_error", err, { userId });
       stats.errors++;
     }
   }
@@ -132,8 +149,8 @@ export async function sendReminderDigests(): Promise<{
 }
 
 reminderDigest.post("/send-reminder-digest", async (c) => {
-  console.log("Starting reminder digest...");
+  log("digest_start", {}, c);
   const stats = await sendReminderDigests();
-  console.log("Reminder digest complete:", stats);
+  log("digest_complete", stats, c);
   return c.json({ success: true, stats });
 });

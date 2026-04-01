@@ -1,15 +1,17 @@
 import Foundation
 import SwiftData
 import Supabase
+import Network
+import UIKit
 
 @Observable
 final class SupabaseService {
     static let shared = SupabaseService()
 
-    // MARK: - Configuration
+    // MARK: - Configuration (read from AppSecrets)
 
-    private static let supabaseURL = URL(string: "https://YOUR_PROJECT.supabase.co")!
-    private static let supabaseAnonKey = "YOUR_SUPABASE_ANON_KEY"
+    private static let supabaseURL = URL(string: AppSecrets.supabaseURL)!
+    private static let supabaseAnonKey = AppSecrets.supabaseAnonKey
 
     let client: SupabaseClient
 
@@ -19,11 +21,24 @@ final class SupabaseService {
     private(set) var lastSyncedAt: Date?
     private(set) var isSignedIn = false
     private(set) var currentUserEmail: String?
+    private(set) var isNetworkAvailable = true
+    private var cachedUserId: UUID?
     private var syncDebounceTask: Task<Void, Never>?
     private let syncDebounceInterval: TimeInterval = 2.0
+    private var hasPendingSync = false
+    private var pendingSyncModelContext: ModelContext?
 
-    // UserDefaults key for last sync timestamp
+    // Network monitoring
+    private let networkMonitor = NWPathMonitor()
+    private let networkQueue = DispatchQueue(label: "com.pearsonmedia.lastlogged.network")
+
+    // Retry config
+    private static let maxRetryAttempts = 4
+    private static let baseRetryDelay: TimeInterval = 2.0
+
+    // UserDefaults keys
     private static let lastSyncTimestampKey = "com.pearsonmedia.lastlogged.lastSyncTimestamp"
+    private static let hasPendingSyncKey = "com.pearsonmedia.lastlogged.hasPendingSync"
 
     private var lastSyncTimestamp: Date? {
         get { UserDefaults.standard.object(forKey: Self.lastSyncTimestampKey) as? Date }
@@ -37,6 +52,51 @@ final class SupabaseService {
             supabaseURL: Self.supabaseURL,
             supabaseKey: Self.supabaseAnonKey
         )
+        hasPendingSync = UserDefaults.standard.bool(forKey: Self.hasPendingSyncKey)
+        startNetworkMonitoring()
+    }
+
+    // MARK: - Network Monitoring
+
+    private func startNetworkMonitoring() {
+        networkMonitor.pathUpdateHandler = { [weak self] path in
+            let wasAvailable = self?.isNetworkAvailable ?? false
+            let isNowAvailable = path.status == .satisfied
+
+            Task { @MainActor in
+                self?.isNetworkAvailable = isNowAvailable
+
+                // Auto-sync when network returns and there are pending changes
+                if !wasAvailable && isNowAvailable && self?.hasPendingSync == true {
+                    if let context = self?.pendingSyncModelContext {
+                        self?.syncOnForeground(modelContext: context)
+                    }
+                }
+            }
+        }
+        networkMonitor.start(queue: networkQueue)
+    }
+
+    // MARK: - Retry Helper
+
+    private func withRetry<T>(
+        context: String,
+        operation: () async throws -> T
+    ) async throws -> T {
+        var lastError: Error?
+        for attempt in 0..<Self.maxRetryAttempts {
+            do {
+                return try await operation()
+            } catch {
+                lastError = error
+                if attempt < Self.maxRetryAttempts - 1 {
+                    let delay = Self.baseRetryDelay * pow(2.0, Double(attempt))
+                    try? await Task.sleep(for: .seconds(delay))
+                }
+            }
+        }
+        AnalyticsService.shared.trackError("sync_\(context)_exhausted", error: lastError!)
+        throw lastError!
     }
 
     // MARK: - Session Restore
@@ -49,12 +109,14 @@ final class SupabaseService {
         } catch {
             isSignedIn = false
             currentUserEmail = nil
+            cachedUserId = nil
         }
     }
 
     // MARK: - Apple Sign In
 
     func signInWithApple(idToken: String, nonce: String) async throws {
+        cachedUserId = nil
         let session = try await client.auth.signInWithIdToken(
             credentials: .init(
                 provider: .apple,
@@ -70,6 +132,7 @@ final class SupabaseService {
     // MARK: - Email/Password Auth
 
     func signUpEmail(email: String, password: String) async throws {
+        cachedUserId = nil
         let session = try await client.auth.signUp(
             email: email,
             password: password
@@ -82,6 +145,7 @@ final class SupabaseService {
     }
 
     func signInEmail(email: String, password: String) async throws {
+        cachedUserId = nil
         let session = try await client.auth.signIn(
             email: email,
             password: password
@@ -97,6 +161,7 @@ final class SupabaseService {
         try await client.auth.signOut()
         isSignedIn = false
         currentUserEmail = nil
+        cachedUserId = nil
     }
 
     // MARK: - User Profile
@@ -118,7 +183,29 @@ final class SupabaseService {
                 .upsert(row, onConflict: "auth_id")
                 .execute()
         } catch {
-            // Profile creation failed — sync will still work via auth_id
+            AnalyticsService.shared.trackError("profile_upsert_failed", error: error)
+        }
+    }
+
+    // MARK: - Device Token Registration
+
+    func registerDeviceToken(_ token: String) async {
+        guard let userId = await currentUserId else { return }
+
+        let deviceName = await UIDevice.current.name
+        let row = DeviceTokenRow(
+            userId: userId,
+            deviceToken: token,
+            deviceName: deviceName,
+            platform: "ios",
+            lastSeenAt: Date()
+        )
+        do {
+            try await client.from("user_devices")
+                .upsert(row, onConflict: "device_token")
+                .execute()
+        } catch {
+            AnalyticsService.shared.trackError("device_token_register_failed", error: error)
         }
     }
 
@@ -137,6 +224,10 @@ final class SupabaseService {
 
     var currentUserId: UUID? {
         get async {
+            // Return cached value if available
+            if let cachedUserId {
+                return cachedUserId
+            }
             do {
                 let session = try await client.auth.session
                 let authId = session.user.id
@@ -146,7 +237,9 @@ final class SupabaseService {
                     .eq("auth_id", value: authId.uuidString)
                     .execute()
                     .value
-                return rows.first?.id
+                let userId = rows.first?.id
+                cachedUserId = userId
+                return userId
             } catch {
                 return nil
             }
@@ -156,9 +249,15 @@ final class SupabaseService {
     // MARK: - Sync Trigger (Debounced)
 
     func scheduleSyncAfterWrite(modelContext: ModelContext) {
+        // Mark pending sync (persists across app restarts)
+        hasPendingSync = true
+        pendingSyncModelContext = modelContext
+        UserDefaults.standard.set(true, forKey: Self.hasPendingSyncKey)
+
+        // Debounce: only delays the trigger, does not cancel pending data
         syncDebounceTask?.cancel()
         let context = modelContext
-        syncDebounceTask = Task {
+        syncDebounceTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(syncDebounceInterval))
             guard !Task.isCancelled else { return }
             await sync(modelContext: context)
@@ -166,7 +265,8 @@ final class SupabaseService {
     }
 
     func syncOnForeground(modelContext: ModelContext) {
-        Task {
+        pendingSyncModelContext = modelContext
+        Task { @MainActor in
             await sync(modelContext: modelContext)
         }
     }
@@ -177,10 +277,19 @@ final class SupabaseService {
     func sync(modelContext: ModelContext) async {
         guard await isAuthenticated else { return }
         guard !isSyncing else { return }
+        guard isNetworkAvailable else {
+            hasPendingSync = true
+            UserDefaults.standard.set(true, forKey: Self.hasPendingSyncKey)
+            return
+        }
+
         isSyncing = true
         defer { isSyncing = false }
 
-        guard let userId = await currentUserId else { return }
+        guard let userId = await currentUserId else {
+            AnalyticsService.shared.trackError("sync_no_user_id", error: NSError(domain: "Sync", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not resolve user ID"]))
+            return
+        }
 
         await pushCategories(modelContext: modelContext, userId: userId)
         await pushTrackerItems(modelContext: modelContext, userId: userId)
@@ -193,7 +302,15 @@ final class SupabaseService {
         lastSyncedAt = Date()
         lastSyncTimestamp = Date()
 
-        try? modelContext.save()
+        // Clear pending flag on successful sync
+        hasPendingSync = false
+        UserDefaults.standard.set(false, forKey: Self.hasPendingSyncKey)
+
+        do {
+            try modelContext.save()
+        } catch {
+            AnalyticsService.shared.trackError("sync_save_failed", error: error)
+        }
     }
 
     // MARK: - Push Categories
@@ -202,7 +319,6 @@ final class SupabaseService {
         let descriptor = FetchDescriptor<TrackerCategory>()
         guard let categories = try? modelContext.fetch(descriptor) else { return }
 
-        // Push all categories (upsert on server side)
         for category in categories {
             let row = TrackerCategoryRow(
                 id: category.id,
@@ -214,11 +330,13 @@ final class SupabaseService {
                 isDefault: category.isDefault
             )
             do {
-                try await client.from("tracker_categories")
-                    .upsert(row, onConflict: "id")
-                    .execute()
+                try await withRetry(context: "push_category") {
+                    try await client.from("tracker_categories")
+                        .upsert(row, onConflict: "id")
+                        .execute()
+                }
             } catch {
-                // Continue with next item on failure
+                AnalyticsService.shared.trackError("push_category_failed", error: error)
             }
         }
     }
@@ -243,15 +361,20 @@ final class SupabaseService {
                 sortOrder: item.sortOrder,
                 iconName: item.iconName,
                 isArchived: item.isArchived,
-                syncStatus: "synced"
+                syncStatus: "synced",
+                updatedAt: item.updatedAt
             )
             do {
-                try await client.from("tracker_items")
-                    .upsert(row, onConflict: "id")
-                    .execute()
+                try await withRetry(context: "push_item") {
+                    try await client.from("tracker_items")
+                        .upsert(row, onConflict: "id")
+                        .execute()
+                }
+                // Only mark synced AFTER confirmed server push
                 item.syncStatus = .synced
             } catch {
-                // Keep as pending on failure
+                // Keep as .pending — will retry on next sync
+                AnalyticsService.shared.trackError("push_item_failed", error: error)
             }
         }
     }
@@ -271,11 +394,13 @@ final class SupabaseService {
                 notes: log.notes
             )
             do {
-                try await client.from("completion_logs")
-                    .upsert(row, onConflict: "id")
-                    .execute()
+                try await withRetry(context: "push_log") {
+                    try await client.from("completion_logs")
+                        .upsert(row, onConflict: "id")
+                        .execute()
+                }
             } catch {
-                // Continue with next log on failure
+                AnalyticsService.shared.trackError("push_log_failed", error: error)
             }
         }
     }
@@ -322,7 +447,7 @@ final class SupabaseService {
                 }
             }
         } catch {
-            // Pull failed — local data remains intact
+            AnalyticsService.shared.trackError("pull_categories_failed", error: error)
         }
     }
 
@@ -349,15 +474,25 @@ final class SupabaseService {
                 let existing = try? modelContext.fetch(descriptor).first
 
                 if let existing {
-                    // Last-write-wins using updated_at from server
-                    existing.name = row.name
-                    existing.categoryId = row.categoryId
-                    existing.reminderIntervalDays = row.reminderIntervalDays
-                    existing.lastCompletedAt = row.lastCompletedAt
-                    existing.sortOrder = row.sortOrder
-                    existing.iconName = row.iconName
-                    existing.isArchived = row.isArchived
-                    existing.syncStatus = .synced
+                    let remoteUpdatedAt = row.updatedAt ?? .distantPast
+                    let localUpdatedAt = existing.updatedAt
+
+                    if localUpdatedAt > remoteUpdatedAt && existing.syncStatus != .synced {
+                        // Local is newer — keep local version, mark as pending for next push
+                        existing.syncStatus = .pending
+                        AnalyticsService.shared.trackSyncConflict(itemId: existing.id)
+                    } else {
+                        // Remote is newer or equal — overwrite local
+                        existing.name = row.name
+                        existing.categoryId = row.categoryId
+                        existing.reminderIntervalDays = row.reminderIntervalDays
+                        existing.lastCompletedAt = row.lastCompletedAt
+                        existing.sortOrder = row.sortOrder
+                        existing.iconName = row.iconName
+                        existing.isArchived = row.isArchived
+                        existing.syncStatus = .synced
+                        existing.updatedAt = remoteUpdatedAt
+                    }
                 } else {
                     let item = TrackerItem(
                         id: row.id,
@@ -369,13 +504,14 @@ final class SupabaseService {
                         sortOrder: row.sortOrder,
                         iconName: row.iconName,
                         isArchived: row.isArchived,
-                        syncStatus: .synced
+                        syncStatus: .synced,
+                        updatedAt: row.updatedAt ?? Date()
                     )
                     modelContext.insert(item)
                 }
             }
         } catch {
-            // Pull failed — local data remains intact
+            AnalyticsService.shared.trackError("pull_items_failed", error: error)
         }
     }
 
@@ -412,7 +548,7 @@ final class SupabaseService {
                 }
             }
         } catch {
-            // Pull failed — local data remains intact
+            AnalyticsService.shared.trackError("pull_logs_failed", error: error)
         }
     }
 }
@@ -467,6 +603,7 @@ struct TrackerItemRow: Codable {
     let iconName: String
     let isArchived: Bool
     let syncStatus: String
+    let updatedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -480,6 +617,7 @@ struct TrackerItemRow: Codable {
         case iconName = "icon_name"
         case isArchived = "is_archived"
         case syncStatus = "sync_status"
+        case updatedAt = "updated_at"
     }
 }
 
@@ -496,5 +634,21 @@ struct CompletionLogRow: Codable {
         case trackerItemId = "tracker_item_id"
         case completedAt = "completed_at"
         case notes
+    }
+}
+
+struct DeviceTokenRow: Encodable {
+    let userId: UUID
+    let deviceToken: String
+    let deviceName: String
+    let platform: String
+    let lastSeenAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case deviceToken = "device_token"
+        case deviceName = "device_name"
+        case platform
+        case lastSeenAt = "last_seen_at"
     }
 }

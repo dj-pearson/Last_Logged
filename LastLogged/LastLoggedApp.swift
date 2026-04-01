@@ -8,13 +8,10 @@ struct LastLoggedApp: App {
     let modelContainer: ModelContainer
 
     init() {
+        AppSecrets.validate()
         AnalyticsService.shared.configure()
         RevenueCatService.shared.configure()
-        let schema = Schema([
-            TrackerItem.self,
-            CompletionLog.self,
-            TrackerCategory.self,
-        ])
+        let schema = Schema(versionedSchema: SchemaV1.self)
 
         let appGroupURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: "group.com.pearsonmedia.lastlogged"
@@ -29,7 +26,11 @@ struct LastLoggedApp: App {
         }
 
         do {
-            modelContainer = try ModelContainer(for: schema, configurations: [configuration])
+            modelContainer = try ModelContainer(
+                for: schema,
+                migrationPlan: LastLoggedMigrationPlan.self,
+                configurations: [configuration]
+            )
         } catch {
             fatalError("Failed to initialize ModelContainer: \(error)")
         }

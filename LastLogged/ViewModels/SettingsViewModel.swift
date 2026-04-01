@@ -68,6 +68,9 @@ final class SettingsViewModel {
 
     var showClearDataConfirmation = false
     var isExporting = false
+    var isClearingData = false
+    var isSigningOut = false
+    var lastError: String?
 
     // MARK: - Navigation
 
@@ -99,20 +102,31 @@ final class SettingsViewModel {
     // MARK: - Actions
 
     func signOut() {
-        Task {
-            try? await SupabaseService.shared.signOut()
+        isSigningOut = true
+        Task { @MainActor in
+            do {
+                try await SupabaseService.shared.signOut()
+            } catch {
+                lastError = "Failed to sign out. Please try again."
+                AnalyticsService.shared.trackError("sign_out_failed", error: error)
+            }
+            isSigningOut = false
         }
     }
 
     func clearAllData() {
+        isClearingData = true
         do {
             try modelContext.delete(model: CompletionLog.self)
             try modelContext.delete(model: TrackerItem.self)
             try modelContext.delete(model: TrackerCategory.self)
             try modelContext.save()
+            lastError = nil
         } catch {
-            // Silent failure — local data clear
+            lastError = "Failed to clear data. Please try again."
+            AnalyticsService.shared.trackError("clear_data_failed", error: error)
         }
+        isClearingData = false
     }
 
     func exportDataLocally() -> String {

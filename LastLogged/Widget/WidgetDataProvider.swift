@@ -42,12 +42,14 @@ class WidgetDataProvider {
 
     private init() {}
 
+    /// Reads premium status from App Group UserDefaults (written by RevenueCatService)
+    var isPremium: Bool {
+        let defaults = UserDefaults(suiteName: "group.com.pearsonmedia.lastlogged")
+        return defaults?.bool(forKey: "isPremium") ?? false
+    }
+
     func makeSharedModelContainer() -> ModelContainer? {
-        let schema = Schema([
-            TrackerItem.self,
-            CompletionLog.self,
-            TrackerCategory.self,
-        ])
+        let schema = Schema(versionedSchema: SchemaV1.self)
 
         guard let appGroupURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: "group.com.pearsonmedia.lastlogged"
@@ -58,7 +60,11 @@ class WidgetDataProvider {
         let storeURL = appGroupURL.appending(path: "LastLogged.sqlite")
         let configuration = ModelConfiguration(url: storeURL)
 
-        return try? ModelContainer(for: schema, configurations: [configuration])
+        return try? ModelContainer(
+            for: schema,
+            migrationPlan: LastLoggedMigrationPlan.self,
+            configurations: [configuration]
+        )
     }
 
     func getTopOverdueItems(count: Int) -> [OverdueItem] {

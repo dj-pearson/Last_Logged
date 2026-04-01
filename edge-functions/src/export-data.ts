@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { supabase } from "./supabase.js";
+import { log, logError } from "./logger.js";
 
 export const exportData = new Hono();
 
@@ -34,6 +35,7 @@ async function fetchUserData(userId: string) {
       .from("completion_logs")
       .select("*")
       .eq("user_id", userId)
+      .is("deleted_at", null)
       .order("completed_at", { ascending: false }),
   ]);
 
@@ -87,6 +89,7 @@ exportData.post("/export-data", async (c) => {
   // Authenticate via Authorization header (Supabase JWT)
   const authHeader = c.req.header("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
+    logError("export_auth_failed", "Missing or invalid Authorization header", {}, c);
     return c.json({ error: "Missing or invalid Authorization header" }, 401);
   }
 
@@ -99,16 +102,31 @@ exportData.post("/export-data", async (c) => {
   } = await supabase.auth.getUser(token);
 
   if (authError || !user) {
+    logError("export_auth_failed", authError ?? "Invalid token", {}, c);
     return c.json({ error: "Invalid or expired token" }, 401);
   }
 
   const userId = await getUserIdFromAuth(user.id);
   if (!userId) {
+    logError("export_user_not_found", "User not found", { authId: user.id }, c);
     return c.json({ error: "User not found" }, 404);
   }
 
   const data = await fetchUserData(userId);
   const format = c.req.query("format") ?? "json";
+
+  if (!["json", "csv"].includes(format)) {
+    logError("export_invalid_format", `Invalid format: ${format}`, {}, c);
+    return c.json({ error: "Invalid format. Use 'json' or 'csv'." }, 400);
+  }
+
+  log("export_success", {
+    userId,
+    format,
+    categories: data.tracker_categories.length,
+    items: data.tracker_items.length,
+    logs: data.completion_logs.length,
+  }, c);
 
   if (format === "csv") {
     const csv = buildCsvExport(data);

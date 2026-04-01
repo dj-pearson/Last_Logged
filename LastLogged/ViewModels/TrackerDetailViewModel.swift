@@ -7,6 +7,8 @@ final class TrackerDetailViewModel {
     var item: TrackerItem
     var completionLogs: [CompletionLog] = []
     var totalLogCount: Int = 0
+    var isLoadingLogs = true
+    var lastError: String?
 
     init(modelContext: ModelContext, item: TrackerItem) {
         self.modelContext = modelContext
@@ -15,6 +17,7 @@ final class TrackerDetailViewModel {
     }
 
     func fetchCompletionLogs() {
+        isLoadingLogs = true
         let itemId = item.id
         let descriptor = FetchDescriptor<CompletionLog>(
             predicate: #Predicate { $0.trackerItemId == itemId },
@@ -32,7 +35,9 @@ final class TrackerDetailViewModel {
         } catch {
             completionLogs = []
             totalLogCount = 0
+            AnalyticsService.shared.trackError("fetch_completion_logs", error: error)
         }
+        isLoadingLogs = false
     }
 
     var category: TrackerCategory? {
@@ -45,6 +50,7 @@ final class TrackerDetailViewModel {
 
     func archiveItem() {
         item.isArchived = true
+        item.updatedAt = Date()
         save()
     }
 
@@ -58,14 +64,17 @@ final class TrackerDetailViewModel {
         item.categoryId = categoryId
         item.reminderIntervalDays = reminderIntervalDays
         item.iconName = iconName
+        item.updatedAt = Date()
         save()
     }
 
     private func save() {
         do {
             try modelContext.save()
+            lastError = nil
         } catch {
-            // Save failed silently
+            lastError = "Failed to save changes. Please try again."
+            AnalyticsService.shared.trackError("detail_save_failed", error: error)
         }
     }
 }

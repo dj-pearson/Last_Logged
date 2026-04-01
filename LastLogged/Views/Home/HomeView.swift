@@ -90,7 +90,7 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $showingPaywall) {
-            PaywallView(isHardPaywall: true)
+            PaywallView()
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
@@ -106,7 +106,10 @@ struct HomeView: View {
             Text("'\(item.name)' will be hidden from your home list.")
         }
         .overlay(alignment: .bottom) {
-            if toastInfo != nil {
+            if let error = viewModel?.lastError {
+                errorBanner(error)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if toastInfo != nil {
                 toastView
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -226,12 +229,42 @@ struct HomeView: View {
         toastDismissTask = nil
     }
 
+    // MARK: - Error Banner
+
+    private func errorBanner(_ message: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.white)
+                .accessibilityHidden(true)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.white)
+            Spacer()
+            Button {
+                viewModel?.lastError = nil
+            } label: {
+                Image(systemName: "xmark")
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .accessibilityLabel("Dismiss error")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.red, in: RoundedRectangle(cornerRadius: 12))
+        .shadow(radius: 4, y: 2)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Error: \(message)")
+    }
+
     // MARK: - Toast View
 
     private var toastView: some View {
         HStack(spacing: 12) {
             Text("Logged!")
                 .fontWeight(.medium)
+                .accessibilityHidden(true)
             Button("Undo") {
                 if let toastInfo {
                     viewModel?.undoLog(toastInfo)
@@ -239,16 +272,17 @@ struct HomeView: View {
                 dismissToast()
             }
             .fontWeight(.semibold)
-            .accessibilityLabel("Undo")
-            .accessibilityHint("Undo the last log entry")
+            .accessibilityLabel("Undo log")
+            .accessibilityHint("Double-tap to undo the last log entry")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 4, y: 2)
         .padding(.bottom, 16)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Completion logged")
+        .onAppear {
+            UIAccessibility.post(notification: .announcement, argument: "Completion logged")
+        }
     }
 }
 
@@ -257,6 +291,7 @@ struct HomeView: View {
 struct TrackerRowView: View {
     let item: TrackerItem
     let onLog: () -> Void
+    @State private var isLogging = false
 
     private static let relativeFormatter: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
@@ -280,13 +315,26 @@ struct TrackerRowView: View {
                 .font(.subheadline)
 
             Button {
+                guard !isLogging else { return }
+                isLogging = true
                 onLog()
+                // Brief visual feedback before resetting
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(400))
+                    isLogging = false
+                }
             } label: {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.green)
+                if isLogging {
+                    ProgressView()
+                        .font(.title2)
+                } else {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.green)
+                }
             }
             .buttonStyle(.plain)
+            .disabled(isLogging)
             .frame(minWidth: 44, minHeight: 44)
             .accessibilityLabel("Log \(item.name)")
             .accessibilityHint("Double-tap to log completion now")

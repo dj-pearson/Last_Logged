@@ -5,25 +5,28 @@ import AppIntents
 struct LastLoggedWidgetEntry: TimelineEntry {
     let date: Date
     let items: [OverdueItem]
+    let isPremium: Bool
 }
 
 struct LastLoggedWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> LastLoggedWidgetEntry {
-        LastLoggedWidgetEntry(date: Date(), items: OverdueItem.sampleItems)
+        LastLoggedWidgetEntry(date: Date(), items: OverdueItem.sampleItems, isPremium: true)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (LastLoggedWidgetEntry) -> Void) {
         if context.isPreview {
-            completion(LastLoggedWidgetEntry(date: Date(), items: OverdueItem.sampleItems))
+            completion(LastLoggedWidgetEntry(date: Date(), items: OverdueItem.sampleItems, isPremium: true))
         } else {
-            let items = WidgetDataProvider.shared.getTopOverdueItems(count: 5)
-            completion(LastLoggedWidgetEntry(date: Date(), items: items))
+            let isPremium = WidgetDataProvider.shared.isPremium
+            let items = WidgetDataProvider.shared.getTopOverdueItems(count: isPremium ? 5 : 1)
+            completion(LastLoggedWidgetEntry(date: Date(), items: items, isPremium: isPremium))
         }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<LastLoggedWidgetEntry>) -> Void) {
-        let items = WidgetDataProvider.shared.getTopOverdueItems(count: 5)
-        let entry = LastLoggedWidgetEntry(date: Date(), items: items)
+        let isPremium = WidgetDataProvider.shared.isPremium
+        let items = WidgetDataProvider.shared.getTopOverdueItems(count: isPremium ? 5 : 1)
+        let entry = LastLoggedWidgetEntry(date: Date(), items: items, isPremium: isPremium)
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
@@ -53,6 +56,8 @@ struct LastLoggedWidgetEntryView: View {
     var body: some View {
         if entry.items.isEmpty {
             emptyStateView
+        } else if !entry.isPremium && family != .systemSmall {
+            upgradePromptView
         } else {
             switch family {
             case .systemSmall:
@@ -66,6 +71,21 @@ struct LastLoggedWidgetEntryView: View {
                 MediumWidgetView(items: Array(entry.items.prefix(3)))
             }
         }
+    }
+
+    private var upgradePromptView: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "lock.fill")
+                .font(.title)
+                .foregroundStyle(.secondary)
+            Text("Upgrade to Premium")
+                .font(.headline)
+            Text("Medium and large widgets are available with a Premium subscription.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
     }
 
     private var emptyStateView: some View {

@@ -58,6 +58,26 @@ struct SettingsView: View {
 
     private func settingsForm(viewModel: SettingsViewModel) -> some View {
         Form {
+            if let error = viewModel.lastError {
+                Section {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                        Text(error)
+                            .font(.subheadline)
+                            .foregroundStyle(.red)
+                        Spacer()
+                        Button {
+                            viewModel.lastError = nil
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
             accountSection(viewModel: viewModel)
             notificationsSection(viewModel: viewModel)
             dataSection(viewModel: viewModel)
@@ -106,9 +126,18 @@ struct SettingsView: View {
                     }
                 }
 
-                Button("Sign Out", role: .destructive) {
+                Button(role: .destructive) {
                     viewModel.signOut()
+                } label: {
+                    HStack {
+                        Text("Sign Out")
+                        if viewModel.isSigningOut {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
                 }
+                .disabled(viewModel.isSigningOut)
             } else {
                 Button {
                     viewModel.showingAuth = true
@@ -148,10 +177,35 @@ struct SettingsView: View {
                     "Default Reminder Time",
                     selection: Binding(
                         get: { viewModel.defaultReminderTime },
-                        set: { viewModel.defaultReminderTime = $0 }
+                        set: { newValue in
+                            viewModel.defaultReminderTime = newValue
+                            // Reschedule notifications with the new preferred time
+                            Task { @MainActor in
+                                await NotificationService.shared.rescheduleAllNotifications(modelContext: modelContext)
+                            }
+                        }
                     ),
                     displayedComponents: .hourAndMinute
                 )
+
+                if NotificationService.shared.skippedItemCount > 0 {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(NotificationService.shared.skippedItemCount) tracker\(NotificationService.shared.skippedItemCount == 1 ? "" : "s") without reminders")
+                                .font(.subheadline)
+                                .foregroundStyle(.orange)
+                            if !viewModel.isPremium {
+                                Text("Upgrade to Premium for unlimited server-side reminders")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(NotificationService.shared.skippedItemCount) trackers without reminders due to iOS notification limit")
+                }
             }
         }
     }
@@ -172,8 +226,15 @@ struct SettingsView: View {
             Button(role: .destructive) {
                 viewModel.showClearDataConfirmation = true
             } label: {
-                Label("Clear All Data", systemImage: "trash")
+                HStack {
+                    Label("Clear All Data", systemImage: "trash")
+                    if viewModel.isClearingData {
+                        Spacer()
+                        ProgressView()
+                    }
+                }
             }
+            .disabled(viewModel.isClearingData)
             .accessibilityHint("Permanently delete all trackers and history")
             .confirmationDialog(
                 "Clear All Data?",

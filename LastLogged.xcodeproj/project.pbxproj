@@ -49,6 +49,9 @@
 		A10000000000000000000028 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000004 /* TelemetryDeck */; };
 		A10000000000000000000029 /* CancellationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* CancellationView.swift */; };
 		A1000000000000000000002A /* WidgetPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* WidgetPromptView.swift */; };
+		A1000000000000000000002B /* AppSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* AppSecrets.swift */; };
+		A1000000000000000000002C /* SchemaVersions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* SchemaVersions.swift */; };
+		A1000000000000000000002D /* SchemaVersions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* SchemaVersions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -113,6 +116,8 @@
 		A20000000000000000000023 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
 		A20000000000000000000024 /* CancellationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancellationView.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* WidgetPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPromptView.swift; sourceTree = "<group>"; };
+		A20000000000000000000026 /* AppSecrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSecrets.swift; sourceTree = "<group>"; };
+		A20000000000000000000027 /* SchemaVersions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaVersions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -172,6 +177,7 @@
 				A20000000000000000000008 /* TrackerItem.swift */,
 				A20000000000000000000009 /* CompletionLog.swift */,
 				A2000000000000000000000A /* TrackerCategory.swift */,
+				A20000000000000000000027 /* SchemaVersions.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -261,6 +267,7 @@
 			children = (
 				A2000000000000000000000B /* DataSeeder.swift */,
 				A20000000000000000000010 /* CategoryTemplates.swift */,
+				A20000000000000000000026 /* AppSecrets.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -440,6 +447,8 @@
 				A10000000000000000000027 /* AnalyticsService.swift in Sources */,
 				A10000000000000000000029 /* CancellationView.swift in Sources */,
 				A1000000000000000000002A /* WidgetPromptView.swift in Sources */,
+				A1000000000000000000002B /* AppSecrets.swift in Sources */,
+				A1000000000000000000002C /* SchemaVersions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -455,6 +464,7 @@
 				A10000000000000000000018 /* CompletionLog.swift in Sources */,
 				A10000000000000000000019 /* TrackerCategory.swift in Sources */,
 				A1000000000000000000001A /* SyncStatus.swift in Sources */,
+				A1000000000000000000002D /* SchemaVersions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
