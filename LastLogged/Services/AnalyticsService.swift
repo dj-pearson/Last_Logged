@@ -35,6 +35,14 @@ final class AnalyticsService {
         TelemetryDeck.signal("paywall_presented")
     }
 
+    func trackPaywallDismissed() {
+        TelemetryDeck.signal("paywall_dismissed")
+    }
+
+    func trackPaywallConverted() {
+        TelemetryDeck.signal("paywall_converted")
+    }
+
     func trackTrialStarted() {
         TelemetryDeck.signal("trial_started")
     }

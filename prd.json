@@ -169,7 +169,7 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Current forced paywall after onboarding creates poor first impression and risks App Store rejection."
     },
     {

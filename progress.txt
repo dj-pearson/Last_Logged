@@ -713,3 +713,15 @@ Started: 2026-03-24
   - Audit log uses service role for inserts (no user insert policy) — edge functions write via service role key
   - Migration naming: YYYYMMDDHHMMSS format for sequential ordering
 ---
+
+## 2026-04-01 - PH-010
+- What was implemented: Verified onboarding paywall is already soft (isHardPaywall=false) and dismissible. Added analytics tracking for paywall_dismissed and paywall_converted events. AnalyticsService gains trackPaywallDismissed() and trackPaywallConverted() methods. PaywallView Close button and "Continue with Free Plan" button both track paywall_dismissed. Successful purchase tracks paywall_converted.
+- Files changed:
+  - LastLogged/Services/AnalyticsService.swift (updated - added trackPaywallDismissed() and trackPaywallConverted())
+  - LastLogged/Views/Components/PaywallView.swift (updated - dismiss tracking on Close and Continue with Free buttons, conversion tracking on purchase success)
+  - prd.json (updated - PH-010 passes: true)
+- **Learnings for future iterations:**
+  - OnboardingView already uses isHardPaywall: false — was fixed in PH-003
+  - Track analytics events at the point of action (dismiss/purchase), not on view disappear, to avoid false positives
+  - PaywallView has two dismiss paths: Close button (soft paywall) and "Continue with Free Plan" (hard paywall) — both need tracking
+---

@@ -31,6 +31,7 @@ struct PaywallView: View {
 
                     if isHardPaywall {
                         Button {
+                            AnalyticsService.shared.trackPaywallDismissed()
                             dismiss()
                         } label: {
                             Text("Continue with Free Plan")
@@ -59,6 +60,7 @@ struct PaywallView: View {
                 if !isHardPaywall {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Close") {
+                            AnalyticsService.shared.trackPaywallDismissed()
                             dismiss()
                         }
                     }
@@ -320,6 +322,7 @@ struct PaywallView: View {
             let success = try await revenueCatService.purchase(package)
             if success {
                 AnalyticsService.shared.trackTrialStarted()
+                AnalyticsService.shared.trackPaywallConverted()
                 dismiss()
             }
         } catch {
