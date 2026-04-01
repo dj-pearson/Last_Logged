@@ -289,6 +289,7 @@ struct HomeView: View {
 struct TrackerRowView: View {
     let item: TrackerItem
     let onLog: () -> Void
+    @State private var isLogging = false
 
     private static let relativeFormatter: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
@@ -312,13 +313,26 @@ struct TrackerRowView: View {
                 .font(.subheadline)
 
             Button {
+                guard !isLogging else { return }
+                isLogging = true
                 onLog()
+                // Brief visual feedback before resetting
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(400))
+                    isLogging = false
+                }
             } label: {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.green)
+                if isLogging {
+                    ProgressView()
+                        .font(.title2)
+                } else {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.green)
+                }
             }
             .buttonStyle(.plain)
+            .disabled(isLogging)
             .frame(minWidth: 44, minHeight: 44)
             .accessibilityLabel("Log \(item.name)")
             .accessibilityHint("Double-tap to log completion now")

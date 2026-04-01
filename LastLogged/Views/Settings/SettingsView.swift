@@ -126,9 +126,18 @@ struct SettingsView: View {
                     }
                 }
 
-                Button("Sign Out", role: .destructive) {
+                Button(role: .destructive) {
                     viewModel.signOut()
+                } label: {
+                    HStack {
+                        Text("Sign Out")
+                        if viewModel.isSigningOut {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
                 }
+                .disabled(viewModel.isSigningOut)
             } else {
                 Button {
                     viewModel.showingAuth = true
@@ -198,8 +207,15 @@ struct SettingsView: View {
             Button(role: .destructive) {
                 viewModel.showClearDataConfirmation = true
             } label: {
-                Label("Clear All Data", systemImage: "trash")
+                HStack {
+                    Label("Clear All Data", systemImage: "trash")
+                    if viewModel.isClearingData {
+                        Spacer()
+                        ProgressView()
+                    }
+                }
             }
+            .disabled(viewModel.isClearingData)
             .accessibilityHint("Permanently delete all trackers and history")
             .confirmationDialog(
                 "Clear All Data?",

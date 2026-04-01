@@ -100,7 +100,9 @@ struct TrackerDetailView: View {
     private var historySection: some View {
         Section {
             if let viewModel {
-                if viewModel.completionLogs.isEmpty {
+                if viewModel.isLoadingLogs {
+                    ProgressView("Loading history…")
+                } else if viewModel.completionLogs.isEmpty {
                     ContentUnavailableView {
                         Label("No History", systemImage: "clock")
                     } description: {

@@ -668,3 +668,19 @@ Started: 2026-03-24
   - Widget timeline provider should check isPremium at timeline generation time, not just entry view
   - Placeholder/preview entries should show isPremium: true to showcase full widget in gallery
 ---
+
+## 2026-04-01 - PH-007
+- What was implemented: Added loading states to all async UI actions. TrackerRowView log button shows a spinner during the brief log operation and prevents double-taps. SettingsView sign-out and clear-data buttons show ProgressView spinners and disable during execution. TrackerDetailView shows "Loading history…" ProgressView while fetchCompletionLogs runs. AuthView already had loading states from PH-005.
+- Files changed:
+  - LastLogged/Views/Home/HomeView.swift (updated - TrackerRowView isLogging state with spinner and disabled button)
+  - LastLogged/Views/Settings/SettingsView.swift (updated - sign out and clear data buttons with ProgressView and disabled state)
+  - LastLogged/ViewModels/SettingsViewModel.swift (updated - added isClearingData, isSigningOut properties)
+  - LastLogged/Views/Detail/TrackerDetailView.swift (updated - isLoadingLogs ProgressView in history section)
+  - LastLogged/ViewModels/TrackerDetailViewModel.swift (updated - added isLoadingLogs property set during fetchCompletionLogs)
+  - prd.json (updated - PH-007 passes: true)
+- **Learnings for future iterations:**
+  - For synchronous operations that complete instantly, use a brief Task.sleep delay (400ms) to show visual feedback
+  - `guard !isLogging else { return }` pattern prevents double-taps on buttons
+  - AuthView already had isLoading + ProgressView + disabled button from PH-005 — no changes needed
+  - ShareLink in SwiftUI generates export synchronously, no loading state needed for it
+---
