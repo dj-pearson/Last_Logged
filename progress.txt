@@ -81,8 +81,11 @@ Started: 2026-03-24
 - AuthViewModel.sanitizeAuthError() maps raw Supabase auth errors to user-friendly strings — never expose raw errors to users
 - BiometricService.shared is the singleton for FaceID/TouchID — uses LAContext with deviceOwnerAuthentication (includes passcode fallback)
 - Edge function delete-account.ts follows same JWT auth pattern as export-data.ts — getUserIdFromAuth() for auth_id → user_id mapping
-- Highest pbxproj IDs: A1...002E (BuildFile), A2...0028 (FileRef), AA...0004 (ProductDependency)
 - ContentView handles biometric lock screen via scenePhase — locks on .background, authenticates on .active
+- InputSanitizer in Utilities/ — use sanitizeTrackerName/sanitizeCategoryName/sanitizeNotes before saving user text
+- KeychainService in Services/ — wraps Security framework; use kSecAttrAccessibleAfterFirstUnlock for background compat; always delete before add
+- SupabaseService.sessionExpired flag + client.auth.authStateChanges listener — handles JWT expiry with user-facing banner
+- Highest pbxproj IDs: A1...0030 (BuildFile), A2...002A (FileRef), AA...0004 (ProductDependency)
 - AppSecrets enum in Utilities/AppSecrets.swift — centralized API keys; services read from here, not hardcoded strings
 - AppSecrets.validate() called at app launch — warns in debug, fatalError in release if keys are still placeholders
 - SchemaVersions.swift in Models/ — SchemaV1 (VersionedSchema) + LastLoggedMigrationPlan; both app and widget targets use versioned schema
@@ -905,4 +908,59 @@ Started: 2026-03-24
   - toggleEnabled() should authenticate before enabling (confirm identity)
   - BiometricService must be added to pbxproj manually — both PBXFileReference and PBXBuildFile sections
   - opticID (Vision Pro) should be treated like faceID for UI purposes
+---
+
+## 2026-04-01 - PH-023: Input sanitization for user-generated content
+- What was implemented: InputSanitizer utility enum with sanitize(text:maxLength:) method. Strips control characters, zero-width characters, normalizes whitespace, enforces character limits. Character counter in AddTrackerView shown when approaching limit. saveTracker() uses InputSanitizer.sanitizeTrackerName().
+- Files changed:
+  - LastLogged/Utilities/InputSanitizer.swift (new)
+  - LastLogged/Views/Home/AddTrackerView.swift (added character counter, sanitization on save)
+  - LastLogged.xcodeproj/project.pbxproj (added InputSanitizer.swift)
+  - prd.json (PH-023 passes: true)
+- **Learnings for future iterations:**
+  - Use unicodeScalars.filter for stripping control characters — more reliable than regex
+  - Character counter should only appear when approaching the limit (e.g., within 10 chars)
+  - Zero-width chars: \u{200B}, \u{200C}, \u{200D}, \u{FEFF} — must be explicitly stripped
+---
+
+## 2026-04-01 - PH-024: Secure token storage with Keychain
+- What was implemented: KeychainService enum wrapping Security framework. String, Bool, Date read/write/delete operations. kSecAttrAccessibleAfterFirstUnlock for background sync compatibility. SupabaseService uses Keychain for lastSyncTimestamp. RevenueCat writes isPremium to both App Group UserDefaults (for widget) and Keychain. Migration helpers migrate existing UserDefaults values on first launch.
+- Files changed:
+  - LastLogged/Services/KeychainService.swift (new)
+  - LastLogged/Services/SupabaseService.swift (lastSyncTimestamp now uses KeychainService)
+  - LastLogged/Services/RevenueCatService.swift (writePremiumStatusToAppGroup also writes to Keychain)
+  - LastLogged/LastLoggedApp.swift (Keychain migration calls in init)
+  - LastLogged.xcodeproj/project.pbxproj (added KeychainService.swift)
+  - prd.json (PH-024 passes: true)
+- **Learnings for future iterations:**
+  - kSecAttrAccessibleAfterFirstUnlock is required for background sync — kSecAttrAccessibleWhenUnlocked would fail
+  - Always delete before add in Keychain (SecItemAdd fails on duplicate)
+  - Keep App Group UserDefaults for widget access — Keychain isn't shared with widget extensions
+  - Highest pbxproj IDs: A1...0030 (BuildFile), A2...002A (FileRef)
+---
+
+## 2026-04-01 - PH-025: Auth session expiry handling and token refresh
+- What was implemented: Auth state listener via client.auth.authStateChanges in SupabaseService. sessionExpired flag triggers orange banner in HomeView with "Sign In" button. withRetry detects 401/403/JWT expired errors and calls handleSessionExpiry() instead of retrying. Sync aborts early if session is expired.
+- Files changed:
+  - LastLogged/Services/SupabaseService.swift (added startAuthStateListener, handleSessionExpiry, clearSessionExpiredBanner, sessionExpired state, updated withRetry and sync)
+  - LastLogged/Views/Home/HomeView.swift (added sessionExpiredBanner overlay)
+  - prd.json (PH-025 passes: true)
+- **Learnings for future iterations:**
+  - client.auth.authStateChanges is an AsyncSequence — use for await loop in a Task
+  - Check for JWT errors in error message strings since Supabase errors aren't strongly typed
+  - Session expired banner should navigate to Settings (where Auth is) not just dismiss
+---
+
+## 2026-04-01 - PH-026: Terms of Service agreement on sign up
+- What was implemented: hasAgreedToTerms state in AuthViewModel. Checkbox with linked Terms/Privacy text in AuthView sign-up form. isFormValid requires agreement for sign-up. agreed_to_terms_at column added to users table via SQL migration. signUpEmail passes agreedToTerms flag. UserProfileRow includes agreedToTermsAt field.
+- Files changed:
+  - LastLogged/ViewModels/AuthViewModel.swift (added hasAgreedToTerms, updated isFormValid, updated submitEmailForm)
+  - LastLogged/Views/Settings/AuthView.swift (added terms checkbox UI with links)
+  - LastLogged/Services/SupabaseService.swift (updated signUpEmail, createOrUpdateUserProfile, UserProfileRow with agreedToTermsAt)
+  - supabase/migrations/20260401000003_agreed_to_terms.sql (new migration)
+  - prd.json (PH-026 passes: true)
+- **Learnings for future iterations:**
+  - Use Text concatenation with markdown links for inline linked text in SwiftUI
+  - agreed_to_terms_at should be nullable — existing users haven't agreed yet
+  - Index on NULL agreed_to_terms_at for efficient compliance queries
 ---

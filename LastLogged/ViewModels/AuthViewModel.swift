@@ -15,6 +15,7 @@ final class AuthViewModel {
     var showingEmailForm = false
     var showingForgotPassword = false
     var resetPasswordSent = false
+    var hasAgreedToTerms = false
 
     private let modelContext: ModelContext
     private var currentNonce: String?
@@ -61,7 +62,7 @@ final class AuthViewModel {
     }
 
     var isFormValid: Bool {
-        isEmailValid && isPasswordValid
+        isEmailValid && isPasswordValid && (!isSignUp || hasAgreedToTerms)
     }
 
     var isPasswordValid: Bool {
@@ -146,7 +147,7 @@ final class AuthViewModel {
             do {
                 if isSignUp {
                     try await SupabaseService.shared.signUpEmail(
-                        email: trimmedEmail, password: password
+                        email: trimmedEmail, password: password, agreedToTerms: hasAgreedToTerms
                     )
                 } else {
                     try await SupabaseService.shared.signInEmail(

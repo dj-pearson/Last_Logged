@@ -386,8 +386,8 @@
         "Typecheck passes"
       ],
       "priority": 23,
-      "passes": false,
-      "notes": "No input validation or sanitization exists on any user text fields."
+      "passes": true,
+      "notes": "InputSanitizer utility strips control/zero-width chars, normalizes whitespace, enforces length limits (100/50/500). Character counter in AddTrackerView. Applied to saveTracker."
     },
     {
       "id": "PH-024",
@@ -402,8 +402,8 @@
         "Typecheck passes"
       ],
       "priority": 24,
-      "passes": false,
-      "notes": "Premium status and sync tokens stored in plain UserDefaults, accessible to any app with the same App Group."
+      "passes": true,
+      "notes": "KeychainService wrapper with kSecAttrAccessibleAfterFirstUnlock. SupabaseService uses Keychain for lastSyncTimestamp. RevenueCat writes isPremium to both App Group UserDefaults and Keychain. Migration in LastLoggedApp.init()."
     },
     {
       "id": "PH-025",
@@ -418,8 +418,8 @@
         "Typecheck passes"
       ],
       "priority": 25,
-      "passes": false,
-      "notes": "No handling of JWT expiry — sync silently fails after token expires."
+      "passes": true,
+      "notes": "Auth state listener via client.auth.authStateChanges. Session expired banner in HomeView with Sign In button. withRetry detects 401/403/JWT errors. Sync aborts early on expired session."
     },
     {
       "id": "PH-026",
@@ -434,8 +434,8 @@
         "Typecheck passes"
       ],
       "priority": 26,
-      "passes": false,
-      "notes": "No terms agreement exists — legal risk for App Store distribution."
+      "passes": true,
+      "notes": "Checkbox with Terms/Privacy links in sign-up form. Sign-up button disabled until agreed. agreed_to_terms_at column in users table via migration. Timestamp stored on server via UserProfileRow."
     },
     {
       "id": "PH-027",

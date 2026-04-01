@@ -233,6 +233,35 @@ struct AuthView: View {
                 .padding(.horizontal)
             }
 
+            // Terms of Service agreement (sign-up only)
+            if viewModel.isSignUp {
+                HStack(alignment: .top, spacing: 10) {
+                    Button {
+                        viewModel.hasAgreedToTerms.toggle()
+                    } label: {
+                        Image(systemName: viewModel.hasAgreedToTerms ? "checkmark.square.fill" : "square")
+                            .foregroundStyle(viewModel.hasAgreedToTerms ? .accent : .secondary)
+                            .font(.title3)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(viewModel.hasAgreedToTerms ? "Terms agreed" : "Agree to terms")
+                    .accessibilityHint("Toggle agreement to Terms of Service and Privacy Policy")
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        (Text("I agree to the ")
+                            + Text("[Terms of Service](https://lastlogged.com/terms)")
+                                .underline()
+                            + Text(" and ")
+                            + Text("[Privacy Policy](https://lastlogged.com/privacy)")
+                                .underline())
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .tint(.accent)
+                    }
+                }
+                .padding(.horizontal)
+            }
+
             // Cooldown timer
             if viewModel.isLockedOut {
                 HStack(spacing: 8) {
