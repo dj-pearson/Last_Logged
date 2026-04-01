@@ -699,3 +699,17 @@ Started: 2026-03-24
   - App Store URL format: https://apps.apple.com/app/APP_NAME/idNUMBER — update the id once the app is published
   - CSP with 'unsafe-inline' for styles is needed since Astro uses inline styles
 ---
+
+## 2026-04-01 - PH-009
+- What was implemented: New SQL migration adding audit_log table (id, user_id, action, resource_type, resource_id, metadata JSONB, created_at) with RLS for user read-only access. Added deleted_at TIMESTAMPTZ column to completion_logs for soft delete. Updated completion_logs RLS policies to filter WHERE deleted_at IS NULL on SELECT. Added index on completion_logs(deleted_at). Updated export-data endpoint to filter out soft-deleted logs with `.is("deleted_at", null)`.
+- Files changed:
+  - supabase/migrations/20260401000001_audit_log_and_soft_delete.sql (new - audit log table, soft delete column, updated RLS)
+  - edge-functions/src/export-data.ts (updated - filter soft-deleted completion logs)
+  - prd.json (updated - PH-009 passes: true)
+- **Learnings for future iterations:**
+  - Use `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for idempotent column additions
+  - DROP POLICY IF EXISTS before CREATE POLICY for safe re-creation of RLS policies
+  - Supabase JS `.is("column", null)` generates `WHERE column IS NULL` — use for soft delete filtering
+  - Audit log uses service role for inserts (no user insert policy) — edge functions write via service role key
+  - Migration naming: YYYYMMDDHHMMSS format for sequential ordering
+---

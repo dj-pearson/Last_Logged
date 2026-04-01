@@ -34,6 +34,7 @@ async function fetchUserData(userId: string) {
       .from("completion_logs")
       .select("*")
       .eq("user_id", userId)
+      .is("deleted_at", null)
       .order("completed_at", { ascending: false }),
   ]);
 
