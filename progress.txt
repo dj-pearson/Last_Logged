@@ -654,3 +654,17 @@ Started: 2026-03-24
   - Timer.scheduledTimer needs RunLoop — use DispatchQueue.main.asyncAfter for simple delayed resets
   - Password validation messages array pattern: return only the requirements not yet met for clean inline UI
 ---
+
+## 2026-04-01 - PH-006
+- What was implemented: Widget premium tier enforcement. RevenueCatService now writes isPremium to App Group UserDefaults on every tier change. WidgetDataProvider reads this value. Free tier users: small widget only (max 1 overdue item), medium/large widgets show upgrade prompt. Premium users get full widget functionality across all sizes.
+- Files changed:
+  - LastLogged/Services/RevenueCatService.swift (updated - writePremiumStatusToAppGroup() called from updateTier())
+  - LastLogged/Widget/WidgetDataProvider.swift (updated - added isPremium computed property reading from App Group UserDefaults)
+  - LastLoggedWidget/LastLoggedWidget.swift (updated - isPremium in entry, provider limits items for free tier, upgrade prompt view for medium/large)
+  - prd.json (updated - PH-006 passes: true)
+- **Learnings for future iterations:**
+  - Widget extensions can't access RevenueCat SDK directly — share entitlement status via App Group UserDefaults
+  - Use `UserDefaults(suiteName: "group.com.pearsonmedia.lastlogged")` for shared App Group defaults
+  - Widget timeline provider should check isPremium at timeline generation time, not just entry view
+  - Placeholder/preview entries should show isPremium: true to showcase full widget in gallery
+---

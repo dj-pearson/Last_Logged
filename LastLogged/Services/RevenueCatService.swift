@@ -94,6 +94,13 @@ final class RevenueCatService: NSObject {
         } else {
             subscriptionTier = .free
         }
+        writePremiumStatusToAppGroup()
+    }
+
+    /// Writes isPremium to App Group UserDefaults so widgets can check entitlement
+    private func writePremiumStatusToAppGroup() {
+        guard let defaults = UserDefaults(suiteName: "group.com.pearsonmedia.lastlogged") else { return }
+        defaults.set(isPremium, forKey: "isPremium")
     }
 
     // MARK: - Offerings

@@ -42,6 +42,12 @@ class WidgetDataProvider {
 
     private init() {}
 
+    /// Reads premium status from App Group UserDefaults (written by RevenueCatService)
+    var isPremium: Bool {
+        let defaults = UserDefaults(suiteName: "group.com.pearsonmedia.lastlogged")
+        return defaults?.bool(forKey: "isPremium") ?? false
+    }
+
     func makeSharedModelContainer() -> ModelContainer? {
         let schema = Schema(versionedSchema: SchemaV1.self)
 
