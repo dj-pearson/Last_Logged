@@ -247,7 +247,7 @@
         "Typecheck passes"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "Currently 36+ trackers silently lose notifications with no user awareness."
     },
     {

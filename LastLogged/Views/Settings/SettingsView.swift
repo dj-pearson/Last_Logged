@@ -187,6 +187,25 @@ struct SettingsView: View {
                     ),
                     displayedComponents: .hourAndMinute
                 )
+
+                if NotificationService.shared.skippedItemCount > 0 {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(NotificationService.shared.skippedItemCount) tracker\(NotificationService.shared.skippedItemCount == 1 ? "" : "s") without reminders")
+                                .font(.subheadline)
+                                .foregroundStyle(.orange)
+                            if !viewModel.isPremium {
+                                Text("Upgrade to Premium for unlimited server-side reminders")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(NotificationService.shared.skippedItemCount) trackers without reminders due to iOS notification limit")
+                }
             }
         }
     }

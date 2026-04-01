@@ -10,6 +10,9 @@ final class NotificationService {
 
     private let center = UNUserNotificationCenter.current()
 
+    /// Number of tracker items that were skipped due to the 64-notification limit
+    private(set) var skippedItemCount: Int = 0
+
     private init() {
         registerCategory()
     }
@@ -77,13 +80,42 @@ final class NotificationService {
             duePriority(for: a) > duePriority(for: b)
         }
 
-        // Respect the 64 pending notification limit
-        let limit = min(sorted.count, 64)
-        for i in 0..<limit {
+        // Respect the 64 pending notification limit (reserve 1 slot for overflow warning)
+        let maxSlots = 64
+        let hasOverflow = sorted.count > maxSlots
+        let itemLimit = hasOverflow ? maxSlots - 1 : min(sorted.count, maxSlots)
+
+        for i in 0..<itemLimit {
             let item = sorted[i]
             if let request = makeNotificationRequest(for: item) {
                 try? await center.add(request)
             }
+        }
+
+        // Track how many items were skipped
+        skippedItemCount = max(0, sorted.count - itemLimit)
+
+        // Schedule a warning notification in the last slot if items were skipped
+        if hasOverflow {
+            let skipped = sorted.count - itemLimit
+            let content = UNMutableNotificationContent()
+            content.title = "Some Reminders Skipped"
+            content.body = "You have \(skipped) tracker\(skipped == 1 ? "" : "s") without reminders due to iOS limits. Open Last Logged to review."
+            content.sound = .default
+
+            // Schedule for tomorrow at preferred time
+            let calendar = Calendar.current
+            guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: Date()) else { return }
+            let scheduleDate = calendar.date(bySettingHour: preferredHour, minute: preferredMinute, second: 0, of: tomorrow) ?? tomorrow
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: scheduleDate)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+
+            let request = UNNotificationRequest(
+                identifier: "notification_limit_warning",
+                content: content,
+                trigger: trigger
+            )
+            try? await center.add(request)
         }
     }
 

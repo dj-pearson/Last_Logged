@@ -781,3 +781,16 @@ Started: 2026-03-24
   - Clear cache BEFORE async sign-in calls to avoid race conditions with concurrent sync
   - The computed `currentUserId` async property is called on every sync — caching saves one DB query per sync cycle
 ---
+
+## 2026-04-01 - PH-015
+- What was implemented: Graceful handling of 64-notification limit. NotificationService now reserves 1 slot for an overflow warning notification when items exceed 64. Tracks skippedItemCount property. Settings shows orange warning banner with count of skipped trackers and premium upsell for unlimited server-side reminders.
+- Files changed:
+  - LastLogged/Services/NotificationService.swift (updated - skippedItemCount, overflow warning notification in slot 64, reserve 1 slot for warning)
+  - LastLogged/Views/Settings/SettingsView.swift (updated - notification limit warning banner in notifications section)
+  - prd.json (updated - PH-015 passes: true)
+- **Learnings for future iterations:**
+  - iOS limits 64 pending local notifications per app — schedule by overdue priority
+  - Reserve the last notification slot for an informational overflow message
+  - Use "notification_limit_warning" as a fixed identifier so it replaces itself on reschedule
+  - Server-side push notifications (APNs via edge functions) have no per-app limit — premium upsell
+---
