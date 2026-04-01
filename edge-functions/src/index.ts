@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import cron from "node-cron";
 import { validateRequiredEnv } from "./validate-env.js";
+import { log, logError } from "./logger.js";
 import {
   rateLimit,
   corsMiddleware,
@@ -62,36 +63,19 @@ app.route("/", exportData);
 
 // Schedule daily reminder digest at 8:00 AM
 cron.schedule("0 8 * * *", async () => {
-  console.log(
-    JSON.stringify({
-      event: "cron_digest_start",
-      timestamp: new Date().toISOString(),
-    })
-  );
+  log("cron_digest_start");
   try {
     const stats = await sendReminderDigests();
-    console.log(
-      JSON.stringify({
-        event: "cron_digest_complete",
-        ...stats,
-        timestamp: new Date().toISOString(),
-      })
-    );
+    log("cron_digest_complete", stats);
   } catch (err) {
-    console.error(
-      JSON.stringify({
-        event: "cron_digest_error",
-        error: String(err),
-        timestamp: new Date().toISOString(),
-      })
-    );
+    logError("cron_digest_error", err);
   }
 });
 
 const port = parseInt(process.env.PORT ?? "3000", 10);
 
-console.log(`Last Logged edge functions starting on port ${port}...`);
-console.log("Reminder digest cron scheduled for daily 8:00 AM");
+log("server_starting", { port });
+log("cron_scheduled", { schedule: "0 8 * * *", job: "reminder_digest" });
 
 serve({
   fetch: app.fetch,

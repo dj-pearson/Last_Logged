@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { supabase } from "./supabase.js";
+import { log, logError } from "./logger.js";
 import { getApnProvider, buildDigestNotification, OverdueItem } from "./apns.js";
 
 const LOCAL_NOTIFICATION_LIMIT = 64;
@@ -28,7 +29,7 @@ async function getUsersWithDeviceTokens(): Promise<UserRow[]> {
     .not("device_token", "is", null);
 
   if (error) {
-    console.error("Error fetching users:", error.message);
+    logError("digest_fetch_users_failed", error.message);
     return [];
   }
 
@@ -45,7 +46,7 @@ async function getOverdueItemsForUser(userId: string): Promise<OverdueItem[]> {
     .not("last_completed_at", "is", null);
 
   if (error) {
-    console.error(`Error fetching items for user ${userId}:`, error.message);
+    logError("digest_fetch_items_failed", error.message, { userId });
     return [];
   }
 
@@ -114,16 +115,14 @@ export async function sendReminderDigests(): Promise<{
       const result = await provider.send(notification, user.device_token!);
 
       if (result.failed.length > 0) {
-        console.error(
-          `Failed to send to user ${user.id}:`,
-          result.failed[0].response
-        );
+        logError("digest_send_failed", result.failed[0].response, { userId: user.id });
         stats.errors++;
       } else {
+        log("digest_send_success", { userId: user.id, overdueCount: overdueItems.length });
         stats.sent++;
       }
     } catch (err) {
-      console.error(`Error processing user ${user.id}:`, err);
+      logError("digest_user_error", err, { userId: user.id });
       stats.errors++;
     }
   }
@@ -132,8 +131,8 @@ export async function sendReminderDigests(): Promise<{
 }
 
 reminderDigest.post("/send-reminder-digest", async (c) => {
-  console.log("Starting reminder digest...");
+  log("digest_start", {}, c);
   const stats = await sendReminderDigests();
-  console.log("Reminder digest complete:", stats);
+  log("digest_complete", stats, c);
   return c.json({ success: true, stats });
 });

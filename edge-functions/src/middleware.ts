@@ -1,4 +1,5 @@
 import { Context, Next } from "hono";
+import { logWarn } from "./logger.js";
 
 // ============================================================
 // Rate Limiting Middleware (in-memory, per-IP)
@@ -52,6 +53,7 @@ export function rateLimit(options: RateLimitOptions) {
     c.header("X-RateLimit-Reset", String(Math.ceil(entry.resetAt / 1000)));
 
     if (entry.count > max) {
+      logWarn("rate_limit_exceeded", { ip, keyPrefix, count: entry.count, max }, c);
       return c.json(
         { error: "Too many requests. Please try again later." },
         429
@@ -131,12 +133,14 @@ export async function requestLogger(c: Context, next: Next) {
   const status = c.res.status;
   console.log(
     JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: "info",
+      event: "http_request",
       requestId,
       method,
       path,
       status,
       durationMs: duration,
-      timestamp: new Date().toISOString(),
     })
   );
 }

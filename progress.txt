@@ -738,3 +738,20 @@ Started: 2026-03-24
   - Base64 encode .p8 key with `base64 -i AuthKey.p8` for env var injection
   - Buffer.from(string, "base64") decodes base64 to binary in Node.js
 ---
+
+## 2026-04-01 - PH-012
+- What was implemented: Created centralized logger.ts with log(), logError(), logWarn() functions producing structured JSON with timestamp, level, event, requestId, and context. Updated all edge function files to use structured logging: export-data.ts (auth failures, export success with counts), revenuecat-webhook.ts (signature failures with IP, tier updates), reminder-digest.ts (fetch errors, send success/failure per user), index.ts (cron start/complete/error, server start), middleware.ts (rate limit rejections with IP).
+- Files changed:
+  - edge-functions/src/logger.ts (new - centralized structured logging utility)
+  - edge-functions/src/export-data.ts (updated - structured logging for auth and export)
+  - edge-functions/src/revenuecat-webhook.ts (updated - structured logging for signature and tier updates)
+  - edge-functions/src/reminder-digest.ts (updated - structured logging for digest operations)
+  - edge-functions/src/index.ts (updated - structured logging for cron and server start)
+  - edge-functions/src/middleware.ts (updated - structured logging for rate limits and request log format)
+  - prd.json (updated - PH-012 passes: true)
+- **Learnings for future iterations:**
+  - Centralized logger with log/logError/logWarn keeps structured JSON format consistent
+  - Pass Hono Context (c) to logger to extract requestId from middleware
+  - Rate limit logging includes IP for abuse detection — use x-forwarded-for header
+  - Webhook signature failures should log IP for security monitoring
+---
