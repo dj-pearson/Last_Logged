@@ -236,6 +236,7 @@ struct SFSymbolPickerView: View {
                     }
                 }
                 .padding()
+                .accessibilityLabel("Icon picker grid")
             }
             .searchable(text: $searchText, prompt: "Search symbols")
             .navigationTitle("Choose Icon")

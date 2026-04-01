@@ -755,3 +755,18 @@ Started: 2026-03-24
   - Rate limit logging includes IP for abuse detection — use x-forwarded-for header
   - Webhook signature failures should log IP for security monitoring
 ---
+
+## 2026-04-01 - PH-013
+- What was implemented: Accessibility improvements across PaywallView (savings badge with "percent" label), toast view (UIAccessibility.post announcement, hidden redundant text, improved undo button labels), AddTrackerView (icon grid container label), and CancellationView (stat items with label-first read order).
+- Files changed:
+  - LastLogged/Views/Components/PaywallView.swift (updated - savings badge accessibilityLabel with % → percent)
+  - LastLogged/Views/Home/HomeView.swift (updated - toast UIAccessibility announcement, hidden redundant text, improved undo label)
+  - LastLogged/Views/Home/AddTrackerView.swift (updated - icon grid accessibilityLabel)
+  - LastLogged/Views/Components/CancellationView.swift (updated - statItem accessibilityLabel with label:value order)
+  - prd.json (updated - PH-013 passes: true)
+- **Learnings for future iterations:**
+  - UIAccessibility.post(notification: .announcement) announces text for VoiceOver without focus change — use for transient UI like toasts
+  - Use .accessibilityElement(children: .ignore) + explicit .accessibilityLabel for controlled read order
+  - Replace "%" with "percent" in accessibility labels for clearer VoiceOver pronunciation
+  - .accessibilityHidden(true) on decorative text prevents redundant announcements
+---

@@ -264,6 +264,7 @@ struct HomeView: View {
         HStack(spacing: 12) {
             Text("Logged!")
                 .fontWeight(.medium)
+                .accessibilityHidden(true)
             Button("Undo") {
                 if let toastInfo {
                     viewModel?.undoLog(toastInfo)
@@ -271,16 +272,17 @@ struct HomeView: View {
                 dismissToast()
             }
             .fontWeight(.semibold)
-            .accessibilityLabel("Undo")
-            .accessibilityHint("Undo the last log entry")
+            .accessibilityLabel("Undo log")
+            .accessibilityHint("Double-tap to undo the last log entry")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 4, y: 2)
         .padding(.bottom, 16)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Completion logged")
+        .onAppear {
+            UIAccessibility.post(notification: .announcement, argument: "Completion logged")
+        }
     }
 }
 

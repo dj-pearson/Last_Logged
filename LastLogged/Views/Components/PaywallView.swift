@@ -182,6 +182,7 @@ struct PaywallView: View {
                                 .background(.green)
                                 .foregroundStyle(.white)
                                 .clipShape(Capsule())
+                                .accessibilityLabel(badge.replacingOccurrences(of: "%", with: " percent"))
                         }
                     }
                     Text(detail)
