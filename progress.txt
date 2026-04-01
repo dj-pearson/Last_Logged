@@ -725,3 +725,16 @@ Started: 2026-03-24
   - Track analytics events at the point of action (dismiss/purchase), not on view disappear, to avoid false positives
   - PaywallView has two dismiss paths: Close button (soft paywall) and "Continue with Free Plan" (hard paywall) — both need tracking
 ---
+
+## 2026-04-01 - PH-011
+- What was implemented: APNs key loading from APNS_KEY_CONTENT environment variable (base64-encoded .p8 key). Falls back to APNS_KEY_PATH file read if not set. Updated .env.example with documentation and Dockerfile with env-based key comment.
+- Files changed:
+  - edge-functions/src/apns.ts (updated - resolveApnsKey() function, supports Buffer from base64 or file path string)
+  - edge-functions/.env.example (updated - APNS_KEY_CONTENT documentation)
+  - edge-functions/Dockerfile (updated - comment about env-based key option)
+  - prd.json (updated - PH-011 passes: true)
+- **Learnings for future iterations:**
+  - @parse/node-apn Provider token.key accepts string (file path) OR Buffer (key content)
+  - Base64 encode .p8 key with `base64 -i AuthKey.p8` for env var injection
+  - Buffer.from(string, "base64") decodes base64 to binary in Node.js
+---

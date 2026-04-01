@@ -18,6 +18,9 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
+# APNs key: set APNS_KEY_CONTENT env var with base64-encoded .p8 content
+# OR mount the key file and set APNS_KEY_PATH (default: ./certs/AuthKey.p8)
+
 EXPOSE 3000
 
 CMD ["node", "dist/index.js"]
