@@ -13,6 +13,7 @@ import {
 import { reminderDigest, sendReminderDigests } from "./reminder-digest.js";
 import { revenuecatWebhook } from "./revenuecat-webhook.js";
 import { exportData } from "./export-data.js";
+import { cleanup, runCleanup } from "./cleanup.js";
 
 // Validate environment before starting
 validateRequiredEnv();
@@ -35,10 +36,14 @@ app.use(
   "/export-data",
   rateLimit({ windowMs: 60_000, max: 10, keyPrefix: "export" })
 );
-// Digest trigger: very strict — only cron/admin
+// Digest/cleanup trigger: very strict — only cron/admin
 app.use(
   "/send-reminder-digest",
   rateLimit({ windowMs: 60_000, max: 2, keyPrefix: "digest" })
+);
+app.use(
+  "/cleanup-old-data",
+  rateLimit({ windowMs: 60_000, max: 2, keyPrefix: "cleanup" })
 );
 // Default for everything else
 app.use(
@@ -61,6 +66,10 @@ app.route("/", revenuecatWebhook);
 // Data export
 app.route("/", exportData);
 
+// Data cleanup (manual trigger requires cron secret)
+cleanup.use("/cleanup-old-data", cronAuth());
+app.route("/", cleanup);
+
 // Schedule daily reminder digest at 8:00 AM
 cron.schedule("0 8 * * *", async () => {
   log("cron_digest_start");
@@ -74,8 +83,20 @@ cron.schedule("0 8 * * *", async () => {
 
 const port = parseInt(process.env.PORT ?? "3000", 10);
 
+// Schedule weekly cleanup: Sunday 3:00 AM
+cron.schedule("0 3 * * 0", async () => {
+  log("cron_cleanup_start");
+  try {
+    const stats = await runCleanup();
+    log("cron_cleanup_complete", stats);
+  } catch (err) {
+    logError("cron_cleanup_error", err);
+  }
+});
+
 log("server_starting", { port });
 log("cron_scheduled", { schedule: "0 8 * * *", job: "reminder_digest" });
+log("cron_scheduled", { schedule: "0 3 * * 0", job: "data_cleanup" });
 
 serve({
   fetch: app.fetch,

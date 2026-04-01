@@ -794,3 +794,15 @@ Started: 2026-03-24
   - Use "notification_limit_warning" as a fixed identifier so it replaces itself on reschedule
   - Server-side push notifications (APNs via edge functions) have no per-app limit — premium upsell
 ---
+
+## 2026-04-01 - PH-016
+- What was implemented: Data retention edge function POST /cleanup-old-data. Permanently deletes soft-deleted completion_logs older than 90 days. Deletes archived tracker_items with no completion_logs newer than 180 days. Weekly cron (Sunday 3 AM). Protected by cron secret auth. Uses structured logging.
+- Files changed:
+  - edge-functions/src/cleanup.ts (new - cleanup endpoint and runCleanup function)
+  - edge-functions/src/index.ts (updated - import cleanup, rate limit, route registration, weekly cron)
+  - prd.json (updated - PH-016 passes: true)
+- **Learnings for future iterations:**
+  - Supabase JS .delete() with .select("id") returns deleted rows for counting
+  - Check for recent completion_logs before deleting archived items to avoid data loss
+  - Use separate cron schedule for cleanup (weekly) vs reminders (daily) — different operational cadences
+---
