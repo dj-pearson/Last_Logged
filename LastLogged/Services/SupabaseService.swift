@@ -338,7 +338,8 @@ final class SupabaseService {
                 sortOrder: item.sortOrder,
                 iconName: item.iconName,
                 isArchived: item.isArchived,
-                syncStatus: "synced"
+                syncStatus: "synced",
+                updatedAt: item.updatedAt
             )
             do {
                 try await withRetry(context: "push_item") {
@@ -450,15 +451,25 @@ final class SupabaseService {
                 let existing = try? modelContext.fetch(descriptor).first
 
                 if let existing {
-                    // Last-write-wins using updated_at from server
-                    existing.name = row.name
-                    existing.categoryId = row.categoryId
-                    existing.reminderIntervalDays = row.reminderIntervalDays
-                    existing.lastCompletedAt = row.lastCompletedAt
-                    existing.sortOrder = row.sortOrder
-                    existing.iconName = row.iconName
-                    existing.isArchived = row.isArchived
-                    existing.syncStatus = .synced
+                    let remoteUpdatedAt = row.updatedAt ?? .distantPast
+                    let localUpdatedAt = existing.updatedAt
+
+                    if localUpdatedAt > remoteUpdatedAt && existing.syncStatus != .synced {
+                        // Local is newer — keep local version, mark as pending for next push
+                        existing.syncStatus = .pending
+                        AnalyticsService.shared.trackSyncConflict(itemId: existing.id)
+                    } else {
+                        // Remote is newer or equal — overwrite local
+                        existing.name = row.name
+                        existing.categoryId = row.categoryId
+                        existing.reminderIntervalDays = row.reminderIntervalDays
+                        existing.lastCompletedAt = row.lastCompletedAt
+                        existing.sortOrder = row.sortOrder
+                        existing.iconName = row.iconName
+                        existing.isArchived = row.isArchived
+                        existing.syncStatus = .synced
+                        existing.updatedAt = remoteUpdatedAt
+                    }
                 } else {
                     let item = TrackerItem(
                         id: row.id,
@@ -470,7 +481,8 @@ final class SupabaseService {
                         sortOrder: row.sortOrder,
                         iconName: row.iconName,
                         isArchived: row.isArchived,
-                        syncStatus: .synced
+                        syncStatus: .synced,
+                        updatedAt: row.updatedAt ?? Date()
                     )
                     modelContext.insert(item)
                 }
@@ -568,6 +580,7 @@ struct TrackerItemRow: Codable {
     let iconName: String
     let isArchived: Bool
     let syncStatus: String
+    let updatedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -581,6 +594,7 @@ struct TrackerItemRow: Codable {
         case iconName = "icon_name"
         case isArchived = "is_archived"
         case syncStatus = "sync_status"
+        case updatedAt = "updated_at"
     }
 }
 

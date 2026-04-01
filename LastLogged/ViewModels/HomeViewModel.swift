@@ -113,6 +113,7 @@ final class HomeViewModel {
     func archiveItem(_ item: TrackerItem) {
         item.isArchived = true
         item.syncStatus = .pending
+        item.updatedAt = Date()
         save()
         fetchItems()
         scheduleNotifications()
@@ -133,6 +134,7 @@ final class HomeViewModel {
         modelContext.insert(log)
         item.lastCompletedAt = log.completedAt
         item.syncStatus = .pending
+        item.updatedAt = Date()
         save()
         fetchItems()
         scheduleNotifications()
@@ -145,6 +147,7 @@ final class HomeViewModel {
         modelContext.delete(info.completionLog)
         info.item.lastCompletedAt = info.previousLastCompletedAt
         info.item.syncStatus = .pending
+        info.item.updatedAt = Date()
         save()
         fetchItems()
         scheduleNotifications()
@@ -165,6 +168,7 @@ final class HomeViewModel {
         item.reminderIntervalDays = reminderIntervalDays
         item.iconName = iconName
         item.syncStatus = .pending
+        item.updatedAt = Date()
         save()
         fetchItems()
         scheduleNotifications()

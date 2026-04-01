@@ -806,3 +806,19 @@ Started: 2026-03-24
   - Check for recent completion_logs before deleting archived items to avoid data loss
   - Use separate cron schedule for cleanup (weekly) vs reminders (daily) — different operational cadences
 ---
+
+## 2026-04-01 - PH-017
+- What was implemented: Timestamp-based sync conflict detection. Added updatedAt field to TrackerItem model, set on every local mutation. SupabaseService pullTrackerItems now compares local updatedAt with remote updated_at — if local is newer and pending, local version is kept and pushed on next sync. Added trackSyncConflict analytics event. TrackerItemRow DTO updated with updatedAt field.
+- Files changed:
+  - LastLogged/Models/TrackerItem.swift (updated - added updatedAt: Date property)
+  - LastLogged/ViewModels/HomeViewModel.swift (updated - set updatedAt = Date() on archive, log, undo, update)
+  - LastLogged/ViewModels/TrackerDetailViewModel.swift (updated - set updatedAt on archive and update)
+  - LastLogged/Services/SupabaseService.swift (updated - pullTrackerItems compares timestamps, TrackerItemRow with updatedAt, push includes updatedAt)
+  - LastLogged/Services/AnalyticsService.swift (updated - added trackSyncConflict method)
+  - prd.json (updated - PH-017 passes: true)
+- **Learnings for future iterations:**
+  - Conflict detection: compare local updatedAt > remote updated_at AND syncStatus != .synced (both conditions needed)
+  - Keep local version on conflict by setting .pending — will push on next sync cycle
+  - SwiftData lightweight migration handles adding new fields with defaults automatically
+  - Track conflicts in analytics for monitoring — high conflict rate may indicate sync issues
+---

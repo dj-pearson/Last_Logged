@@ -50,6 +50,7 @@ final class TrackerDetailViewModel {
 
     func archiveItem() {
         item.isArchived = true
+        item.updatedAt = Date()
         save()
     }
 
@@ -63,6 +64,7 @@ final class TrackerDetailViewModel {
         item.categoryId = categoryId
         item.reminderIntervalDays = reminderIntervalDays
         item.iconName = iconName
+        item.updatedAt = Date()
         save()
     }
 

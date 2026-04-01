@@ -51,6 +51,13 @@ final class AnalyticsService {
         TelemetryDeck.signal("category_selected")
     }
 
+    func trackSyncConflict(itemId: UUID) {
+        TelemetryDeck.signal(
+            "sync_conflict",
+            parameters: ["itemId": itemId.uuidString]
+        )
+    }
+
     // MARK: - Error Tracking
 
     func trackError(_ context: String, error: Error) {
