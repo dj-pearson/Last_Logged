@@ -13,6 +13,8 @@ final class AuthViewModel {
     var isLoading = false
     var errorMessage: String?
     var showingEmailForm = false
+    var showingForgotPassword = false
+    var resetPasswordSent = false
 
     private let modelContext: ModelContext
     private var currentNonce: String?
@@ -45,9 +47,21 @@ final class AuthViewModel {
         SupabaseService.shared.currentUserEmail
     }
 
+    var isEmailValid: Bool {
+        let trimmed = email.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return false }
+        let emailRegex = #"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#
+        return trimmed.range(of: emailRegex, options: .regularExpression) != nil
+    }
+
+    var emailValidationMessage: String? {
+        let trimmed = email.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        return isEmailValid ? nil : "Enter a valid email address"
+    }
+
     var isFormValid: Bool {
-        !email.trimmingCharacters(in: .whitespaces).isEmpty
-            && isPasswordValid
+        isEmailValid && isPasswordValid
     }
 
     var isPasswordValid: Bool {
@@ -153,7 +167,41 @@ final class AuthViewModel {
                     errorMessage = "Too many failed attempts. Please wait \(Int(Self.cooldownDuration)) seconds."
                 } else {
                     let remaining = Self.maxFailedAttempts - failedAttemptCount
-                    errorMessage = "\(error.localizedDescription) (\(remaining) attempt\(remaining == 1 ? "" : "s") remaining)"
+                    let friendlyMessage = Self.sanitizeAuthError(error)
+                    errorMessage = "\(friendlyMessage) (\(remaining) attempt\(remaining == 1 ? "" : "s") remaining)"
+                }
+            }
+            isLoading = false
+        }
+    }
+
+    // MARK: - Password Reset
+
+    func resetPassword() {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespaces)
+        guard !trimmedEmail.isEmpty else {
+            errorMessage = "Please enter your email address."
+            return
+        }
+        guard !isLockedOut else {
+            errorMessage = "Too many attempts. Wait \(cooldownSecondsRemaining)s."
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        Task { @MainActor in
+            do {
+                try await SupabaseService.shared.resetPassword(email: trimmedEmail)
+                resetPasswordSent = true
+            } catch {
+                failedAttemptCount += 1
+                if failedAttemptCount >= Self.maxFailedAttempts {
+                    startCooldown()
+                    errorMessage = "Too many attempts. Please wait \(Int(Self.cooldownDuration)) seconds."
+                } else {
+                    errorMessage = "Unable to send reset link. Please check your email and try again."
                 }
             }
             isLoading = false
@@ -210,5 +258,36 @@ final class AuthViewModel {
         let inputData = Data(input.utf8)
         let hashed = SHA256.hash(data: inputData)
         return hashed.compactMap { String(format: "%02x", $0) }.joined()
+    }
+
+    // MARK: - Error Sanitization
+
+    static func sanitizeAuthError(_ error: Error) -> String {
+        let message = error.localizedDescription.lowercased()
+
+        if message.contains("invalid login credentials") || message.contains("invalid_credentials") {
+            return "Incorrect email or password. Please try again."
+        }
+        if message.contains("email not confirmed") {
+            return "Please confirm your email address before signing in. Check your inbox."
+        }
+        if message.contains("user already registered") || message.contains("already been registered") {
+            return "An account with this email already exists. Try signing in instead."
+        }
+        if message.contains("email rate limit") || message.contains("rate limit") {
+            return "Too many requests. Please wait a moment and try again."
+        }
+        if message.contains("network") || message.contains("connection") || message.contains("offline") {
+            return "Network error. Please check your connection and try again."
+        }
+        if message.contains("weak password") || message.contains("password") {
+            return "Password does not meet requirements. Please use a stronger password."
+        }
+        if message.contains("signup is disabled") {
+            return "Sign up is currently unavailable. Please try again later."
+        }
+
+        // Generic fallback — never expose raw error
+        return "Something went wrong. Please try again."
     }
 }

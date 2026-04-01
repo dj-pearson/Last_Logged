@@ -67,8 +67,11 @@ final class SettingsViewModel {
     // MARK: - Data
 
     var showClearDataConfirmation = false
+    var showDeleteAccountConfirmation = false
+    var deleteConfirmationText = ""
     var isExporting = false
     var isClearingData = false
+    var isDeletingAccount = false
     var isSigningOut = false
     var lastError: String?
 
@@ -111,6 +114,31 @@ final class SettingsViewModel {
                 AnalyticsService.shared.trackError("sign_out_failed", error: error)
             }
             isSigningOut = false
+        }
+    }
+
+    func deleteAccount() {
+        guard deleteConfirmationText == "DELETE" else {
+            lastError = "Type DELETE to confirm account deletion."
+            return
+        }
+        isDeletingAccount = true
+        Task { @MainActor in
+            do {
+                try await SupabaseService.shared.deleteAccount()
+                AnalyticsService.shared.trackAccountDeleted()
+                // Clear local data after server deletion
+                try? modelContext.delete(model: CompletionLog.self)
+                try? modelContext.delete(model: TrackerItem.self)
+                try? modelContext.delete(model: TrackerCategory.self)
+                try? modelContext.save()
+                deleteConfirmationText = ""
+                showDeleteAccountConfirmation = false
+            } catch {
+                lastError = "Failed to delete account. Please try again."
+                AnalyticsService.shared.trackError("delete_account_failed", error: error)
+            }
+            isDeletingAccount = false
         }
     }
 

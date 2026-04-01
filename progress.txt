@@ -78,6 +78,11 @@ Started: 2026-03-24
 - Website (lastlogged.com) is an Astro project in `website/` — static output, Cloudflare Pages deployment via wrangler.toml
 - Website layout in `website/src/layouts/BaseLayout.astro` — includes SEO meta, OG tags, JSON-LD; pages in `website/src/pages/`
 - Website CSS vars: --color-primary (#4f46e5), --color-accent (#10b981), --color-bg-alt (#f8f9fa) — defined in BaseLayout global styles
+- AuthViewModel.sanitizeAuthError() maps raw Supabase auth errors to user-friendly strings — never expose raw errors to users
+- BiometricService.shared is the singleton for FaceID/TouchID — uses LAContext with deviceOwnerAuthentication (includes passcode fallback)
+- Edge function delete-account.ts follows same JWT auth pattern as export-data.ts — getUserIdFromAuth() for auth_id → user_id mapping
+- Highest pbxproj IDs: A1...002E (BuildFile), A2...0028 (FileRef), AA...0004 (ProductDependency)
+- ContentView handles biometric lock screen via scenePhase — locks on .background, authenticates on .active
 - AppSecrets enum in Utilities/AppSecrets.swift — centralized API keys; services read from here, not hardcoded strings
 - AppSecrets.validate() called at app launch — warns in debug, fatalError in release if keys are still placeholders
 - SchemaVersions.swift in Models/ — SchemaV1 (VersionedSchema) + LastLoggedMigrationPlan; both app and widget targets use versioned schema
@@ -841,4 +846,63 @@ Started: 2026-03-24
   - Group devices by user_id to avoid duplicate overdue item queries per user
   - Filter stale devices with .gte("last_seen_at", cutoff) — 90 day retention
   - UIDevice.current.name gives user-friendly device name for the device_name column
+---
+
+## 2026-04-01 - PH-019: Password reset / forgot password flow
+- What was implemented: Added forgot password flow to AuthView with dedicated UI. SupabaseService.resetPassword() calls client.auth.resetPasswordForEmail(). AuthViewModel.resetPassword() method with rate limiting. Success shows confirmation screen with "Check Your Email" message and back-to-sign-in button.
+- Files changed:
+  - LastLogged/Services/SupabaseService.swift (added resetPassword method)
+  - LastLogged/ViewModels/AuthViewModel.swift (added showingForgotPassword, resetPasswordSent state, resetPassword() method)
+  - LastLogged/Views/Settings/AuthView.swift (added Forgot Password? button, forgotPasswordView with email input and success state)
+  - prd.json (PH-019 passes: true)
+- **Learnings for future iterations:**
+  - Use same rate limiting cooldown for password reset as sign-in to prevent email bombing
+  - Forgot password UI uses conditional view switching within signInView rather than a separate sheet
+  - resetPasswordForEmail doesn't throw on invalid emails (by design, prevents email enumeration)
+---
+
+## 2026-04-01 - PH-020: Email validation and sanitized auth error messages
+- What was implemented: Added isEmailValid computed property with regex validation. emailValidationMessage shown inline below email field. sanitizeAuthError() static method maps all Supabase auth errors to user-friendly messages. Submit button disabled when email invalid.
+- Files changed:
+  - LastLogged/ViewModels/AuthViewModel.swift (added isEmailValid, emailValidationMessage, sanitizeAuthError(); updated isFormValid to use isEmailValid; updated submitEmailForm error handling)
+  - LastLogged/Views/Settings/AuthView.swift (added inline email validation message below email field)
+  - prd.json (PH-020 passes: true)
+- **Learnings for future iterations:**
+  - Supabase error messages vary by version — match on lowercased contains() for robustness
+  - Never expose raw error.localizedDescription to users — always sanitize through a mapping function
+  - Email regex validation should happen client-side before any network request
+---
+
+## 2026-04-01 - PH-021: Account deletion flow with data cleanup
+- What was implemented: New edge function delete-account.ts that validates JWT, deletes all user data in FK order, then deletes auth user via admin API. SettingsView shows Delete Account button with confirmation dialog requiring "DELETE" text input. SupabaseService.deleteAccount() calls the edge function then signs out. Rate limited to 3 req/min.
+- Files changed:
+  - edge-functions/src/delete-account.ts (new - account deletion endpoint)
+  - edge-functions/src/index.ts (added delete-account route with rate limiting)
+  - LastLogged/Services/SupabaseService.swift (added deleteAccount() method)
+  - LastLogged/Services/AnalyticsService.swift (added trackAccountDeleted(), trackEvent() methods)
+  - LastLogged/ViewModels/SettingsViewModel.swift (added deleteAccount(), showDeleteAccountConfirmation, deleteConfirmationText, isDeletingAccount)
+  - LastLogged/Views/Settings/SettingsView.swift (added Delete Account button and confirmation alert)
+  - prd.json (PH-021 passes: true)
+- **Learnings for future iterations:**
+  - Delete user data in FK dependency order: completion_logs → tracker_items → tracker_categories → user_devices → audit_log → users → auth.users
+  - supabase.auth.admin.deleteUser() requires service role key — only available server-side
+  - Apple requires account deletion for App Store — this is a hard requirement
+  - Confirmation dialog with text input prevents accidental deletion
+---
+
+## 2026-04-01 - PH-022: Biometric authentication (FaceID/TouchID) for app access
+- What was implemented: BiometricService singleton using LocalAuthentication framework. Detects available biometric type (FaceID/TouchID/none). Lock screen shows on app launch and return from background. Security section in Settings with toggle. ContentView manages lock/unlock via scenePhase. NSFaceIDUsageDescription added to Info.plist.
+- Files changed:
+  - LastLogged/Services/BiometricService.swift (new - biometric authentication service)
+  - LastLogged/ContentView.swift (added lock screen overlay, scenePhase handling)
+  - LastLogged/Views/Settings/SettingsView.swift (added Security section with biometric toggle)
+  - LastLogged/Info.plist (added NSFaceIDUsageDescription)
+  - LastLogged.xcodeproj/project.pbxproj (added BiometricService.swift file reference and build file)
+  - prd.json (PH-022 passes: true)
+- **Learnings for future iterations:**
+  - Use .deviceOwnerAuthentication (not .deviceOwnerAuthenticationWithBiometrics) to include passcode fallback
+  - Lock on .background scenePhase, authenticate on .active — simple and reliable
+  - toggleEnabled() should authenticate before enabling (confirm identity)
+  - BiometricService must be added to pbxproj manually — both PBXFileReference and PBXBuildFile sections
+  - opticID (Vision Pro) should be treated like faceID for UI purposes
 ---

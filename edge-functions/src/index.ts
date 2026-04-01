@@ -14,6 +14,7 @@ import { reminderDigest, sendReminderDigests } from "./reminder-digest.js";
 import { revenuecatWebhook } from "./revenuecat-webhook.js";
 import { exportData } from "./export-data.js";
 import { cleanup, runCleanup } from "./cleanup.js";
+import { deleteAccount } from "./delete-account.js";
 
 // Validate environment before starting
 validateRequiredEnv();
@@ -65,6 +66,13 @@ app.route("/", revenuecatWebhook);
 
 // Data export
 app.route("/", exportData);
+
+// Account deletion
+app.use(
+  "/delete-account",
+  rateLimit({ windowMs: 60_000, max: 3, keyPrefix: "delete-account" })
+);
+app.route("/", deleteAccount);
 
 // Data cleanup (manual trigger requires cron secret)
 cleanup.use("/cleanup-old-data", cronAuth());

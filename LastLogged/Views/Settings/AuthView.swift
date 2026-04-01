@@ -85,6 +85,9 @@ struct AuthView: View {
 
     private func signInView(viewModel: AuthViewModel) -> some View {
         ScrollView {
+            if viewModel.showingForgotPassword {
+                forgotPasswordView(viewModel: viewModel)
+            } else {
             VStack(spacing: 24) {
                 // Header
                 VStack(spacing: 8) {
@@ -162,6 +165,7 @@ struct AuthView: View {
 
                 Spacer()
             }
+            } // end else (not forgotPassword)
         }
     }
 
@@ -183,6 +187,19 @@ struct AuthView: View {
                 .autocapitalization(.none)
                 .textFieldStyle(.roundedBorder)
                 .padding(.horizontal)
+
+            // Inline email validation
+            if let emailError = viewModel.emailValidationMessage {
+                HStack(spacing: 6) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                    Text(emailError)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal)
+            }
 
             SecureField("Password", text: $viewModel.password)
                 .textContentType(viewModel.isSignUp ? .newPassword : .password)
@@ -240,6 +257,117 @@ struct AuthView: View {
             .padding(.horizontal)
             .accessibilityLabel(viewModel.isSignUp ? "Create account" : "Sign in")
             .accessibilityHint(viewModel.isSignUp ? "Create a new account with your email" : "Sign in with your email and password")
+
+            // Forgot Password (sign-in only)
+            if !viewModel.isSignUp {
+                Button {
+                    withAnimation {
+                        viewModel.showingForgotPassword = true
+                    }
+                } label: {
+                    Text("Forgot Password?")
+                        .font(.subheadline)
+                        .foregroundStyle(.accent)
+                }
+                .padding(.top, 4)
+                .accessibilityLabel("Forgot password")
+                .accessibilityHint("Send a password reset link to your email")
+            }
+        }
+    }
+
+    // MARK: - Forgot Password View
+
+    private func forgotPasswordView(viewModel: AuthViewModel) -> some View {
+        VStack(spacing: 20) {
+            if viewModel.resetPasswordSent {
+                // Success state
+                Image(systemName: "envelope.badge.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.green)
+                    .padding(.top, 24)
+
+                Text("Check Your Email")
+                    .font(.title2.bold())
+
+                Text("We've sent a password reset link to your email address. Follow the link to reset your password.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+
+                Button {
+                    withAnimation {
+                        viewModel.showingForgotPassword = false
+                        viewModel.resetPasswordSent = false
+                    }
+                } label: {
+                    Text("Back to Sign In")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.horizontal)
+            } else {
+                // Input state
+                Image(systemName: "lock.rotation")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.accent)
+                    .padding(.top, 24)
+
+                Text("Reset Password")
+                    .font(.title2.bold())
+
+                Text("Enter your email address and we'll send you a link to reset your password.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+
+                TextField("Email", text: $viewModel.email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal)
+
+                if viewModel.isLockedOut {
+                    HStack(spacing: 8) {
+                        Image(systemName: "lock.fill")
+                            .foregroundStyle(.orange)
+                        Text("Try again in \(viewModel.cooldownSecondsRemaining)s")
+                            .font(.subheadline)
+                            .foregroundStyle(.orange)
+                    }
+                }
+
+                Button {
+                    viewModel.resetPassword()
+                } label: {
+                    Text("Send Reset Link")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.email.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isLoading || viewModel.isLockedOut)
+                .padding(.horizontal)
+                .accessibilityLabel("Send reset link")
+                .accessibilityHint("Send a password reset email")
+
+                Button {
+                    withAnimation {
+                        viewModel.showingForgotPassword = false
+                    }
+                } label: {
+                    Text("Back to Sign In")
+                        .font(.subheadline)
+                        .foregroundStyle(.accent)
+                }
+
+                if viewModel.isLoading {
+                    ProgressView()
+                }
+            }
         }
     }
 }

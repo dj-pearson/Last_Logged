@@ -297,6 +297,208 @@
       "priority": 18,
       "passes": true,
       "notes": "Current single device_token on users table only supports one device per user."
+    },
+    {
+      "id": "PH-019",
+      "title": "Password reset / forgot password flow",
+      "description": "As a user, I want to reset my password via email so I can recover my account if I forget my credentials.",
+      "acceptanceCriteria": [
+        "AuthView shows a 'Forgot Password?' button below the sign-in form",
+        "Tapping 'Forgot Password?' shows an email input field and a 'Send Reset Link' button",
+        "AuthViewModel gains a resetPassword(email:) method that calls SupabaseService",
+        "SupabaseService gains a resetPassword(email:) method that calls client.auth.resetPasswordForEmail()",
+        "Success shows a confirmation message: 'Check your email for a reset link'",
+        "Error messages are user-friendly (not raw Supabase errors)",
+        "Rate limiting applies to password reset requests (uses same cooldown as sign-in)",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": true,
+      "notes": "Forgot Password button in AuthView email form. Shows email input + send reset link. Uses same rate limiting as sign-in. Success shows confirmation screen."
+    },
+    {
+      "id": "PH-020",
+      "title": "Email validation and sanitized auth error messages",
+      "description": "As a user, I want clear feedback when my email is invalid and friendly error messages so I understand what went wrong without exposing internal details.",
+      "acceptanceCriteria": [
+        "AuthViewModel gains an isEmailValid computed property that validates email format via regex",
+        "Inline validation message shown below email field when format is invalid (e.g., 'Enter a valid email address')",
+        "Submit button disabled when email format is invalid",
+        "All Supabase auth error messages are mapped to user-friendly strings via a sanitizeAuthError() helper",
+        "Error messages never expose internal Supabase error codes or stack traces",
+        "Common errors mapped: invalid credentials, email already registered, network error, rate limited",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": true,
+      "notes": "isEmailValid regex validation with inline error. sanitizeAuthError() maps all Supabase errors to friendly messages. Submit disabled when email invalid."
+    },
+    {
+      "id": "PH-021",
+      "title": "Account deletion flow with data cleanup",
+      "description": "As a user, I want to delete my account and all associated data so I can exercise my right to data erasure (App Store requirement).",
+      "acceptanceCriteria": [
+        "SettingsView shows a 'Delete Account' button in the Account section (destructive style)",
+        "Tapping 'Delete Account' shows a confirmation dialog explaining consequences",
+        "Confirmation requires typing 'DELETE' to proceed (prevents accidental deletion)",
+        "SettingsViewModel gains a deleteAccount() method that calls SupabaseService",
+        "SupabaseService gains a deleteAccount() method that: deletes all user data from all tables, then signs out",
+        "New edge function endpoint POST /delete-account that: validates JWT, deletes user data across all tables, deletes auth.users entry via service role",
+        "Success signs user out and shows confirmation message",
+        "Analytics event tracked for account_deleted",
+        "Typecheck passes"
+      ],
+      "priority": 21,
+      "passes": true,
+      "notes": "Delete Account in Settings. Requires typing DELETE to confirm. Server-side edge function deletes all data + auth user. Rate limited to 3 req/min."
+    },
+    {
+      "id": "PH-022",
+      "title": "Biometric authentication (FaceID/TouchID) for app access",
+      "description": "As a user, I want to optionally lock the app with FaceID/TouchID so my tracked data stays private on shared devices.",
+      "acceptanceCriteria": [
+        "New BiometricService singleton using LocalAuthentication framework",
+        "BiometricService exposes available biometric type (faceID, touchID, none)",
+        "Settings toggle 'Require FaceID/TouchID' in a new Security section",
+        "When enabled, app shows a lock screen on launch and returning from background",
+        "Lock screen has biometric prompt button and fallback to device passcode",
+        "Setting stored in UserDefaults (biometricLockEnabled)",
+        "ContentView checks biometric lock state before showing main content",
+        "NSFaceIDUsageDescription added to Info.plist",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": true,
+      "notes": "BiometricService singleton with FaceID/TouchID. Lock screen on background/launch. Security section in Settings with toggle. NSFaceIDUsageDescription in Info.plist."
+    },
+    {
+      "id": "PH-023",
+      "title": "Input sanitization for user-generated content",
+      "description": "As a developer, I need all user-generated text fields sanitized before storage to prevent injection attacks and data corruption.",
+      "acceptanceCriteria": [
+        "New InputSanitizer utility with sanitize(text:maxLength:) method",
+        "Strips leading/trailing whitespace and normalizes internal whitespace",
+        "Enforces character limits: tracker name (100), category name (50), notes (500)",
+        "Strips control characters and zero-width characters",
+        "AddTrackerView applies sanitization before saving",
+        "CompletionLog notes sanitized before saving",
+        "Character counter shown in text fields approaching the limit",
+        "Typecheck passes"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": "No input validation or sanitization exists on any user text fields."
+    },
+    {
+      "id": "PH-024",
+      "title": "Secure token storage with Keychain",
+      "description": "As a developer, I need sensitive values (premium status, sync tokens) stored in Keychain instead of UserDefaults for security hardening.",
+      "acceptanceCriteria": [
+        "New KeychainService utility wrapping Security framework for read/write/delete",
+        "RevenueCatService stores isPremium flag in Keychain (in addition to App Group UserDefaults for widget)",
+        "SupabaseService stores lastSyncTimestamp in Keychain",
+        "Existing UserDefaults values migrated to Keychain on first launch after update",
+        "Keychain items use kSecAttrAccessibleAfterFirstUnlock for background sync compatibility",
+        "Typecheck passes"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": "Premium status and sync tokens stored in plain UserDefaults, accessible to any app with the same App Group."
+    },
+    {
+      "id": "PH-025",
+      "title": "Auth session expiry handling and token refresh",
+      "description": "As a user, I want the app to gracefully handle expired sessions by re-authenticating instead of silently failing syncs.",
+      "acceptanceCriteria": [
+        "SupabaseService detects 401/403 responses during sync and triggers re-authentication",
+        "On session expiry, a banner is shown: 'Your session has expired. Please sign in again.'",
+        "Auth state listener set up via client.auth.onAuthStateChange to react to token refresh events",
+        "Sign-out is triggered automatically if token refresh fails",
+        "Sync operations abort early if session is expired (not just if isSignedIn is false)",
+        "Typecheck passes"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": "No handling of JWT expiry — sync silently fails after token expires."
+    },
+    {
+      "id": "PH-026",
+      "title": "Terms of Service agreement on sign up",
+      "description": "As a developer, I need users to agree to Terms of Service and Privacy Policy during sign up to ensure legal compliance.",
+      "acceptanceCriteria": [
+        "AuthView shows a checkbox with links to Terms and Privacy Policy below the sign-up form",
+        "Sign-up button disabled until the checkbox is checked",
+        "Checkbox state tracked in AuthViewModel as hasAgreedToTerms",
+        "Links open in SFSafariViewController (in-app browser)",
+        "Agreement timestamp stored in user profile on the server (agreed_to_terms_at column on users table)",
+        "Typecheck passes"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": "No terms agreement exists — legal risk for App Store distribution."
+    },
+    {
+      "id": "PH-027",
+      "title": "Server-side auth rate limiting via Supabase",
+      "description": "As a developer, I need server-side rate limiting on auth endpoints so that brute force attacks are blocked even if the client is bypassed.",
+      "acceptanceCriteria": [
+        "New SQL migration creates auth_rate_limits table: ip_address, attempt_count, window_start, locked_until",
+        "New edge function POST /auth/check-rate-limit called before client auth attempts",
+        "Rate limit: 10 attempts per 15-minute window per IP",
+        "After limit exceeded, 5-minute lockout enforced",
+        "iOS app calls rate limit check before each auth attempt",
+        "Rate limit headers returned: X-Auth-RateLimit-Remaining, X-Auth-RateLimit-Reset",
+        "Typecheck passes"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": "Current rate limiting is client-side only — easily bypassed by calling Supabase directly."
+    },
+    {
+      "id": "PH-028",
+      "title": "Webhook replay attack prevention",
+      "description": "As a developer, I need RevenueCat webhook requests validated for freshness to prevent replay attacks.",
+      "acceptanceCriteria": [
+        "revenuecat-webhook.ts validates X-RevenueCat-Request-Timestamp header",
+        "Requests older than 5 minutes are rejected with 403",
+        "Rejected replay attempts logged with structured logging including IP and timestamp",
+        "Test coverage added for replay attack rejection",
+        "Typecheck passes"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": "Webhook validates HMAC signature but not request freshness — vulnerable to replay attacks."
+    },
+    {
+      "id": "PH-029",
+      "title": "HSTS and additional security headers for website",
+      "description": "As a developer, I need Strict-Transport-Security and other missing security headers on the website for defense in depth.",
+      "acceptanceCriteria": [
+        "Strict-Transport-Security header added: max-age=31536000; includeSubDomains; preload",
+        "Referrer-Policy header added: strict-origin-when-cross-origin",
+        "Permissions-Policy header added: camera=(), microphone=(), geolocation=()",
+        "Headers configured in Cloudflare _headers file or Astro middleware",
+        "Typecheck passes"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": "PH-008 added CSP, X-Content-Type-Options, X-Frame-Options but missed HSTS and Permissions-Policy."
+    },
+    {
+      "id": "PH-030",
+      "title": "Email confirmation guidance after sign up",
+      "description": "As a new user, I want clear guidance after signing up with email that I need to confirm my email address before I can sign in.",
+      "acceptanceCriteria": [
+        "After successful signUpEmail, AuthView shows a confirmation screen instead of the form",
+        "Confirmation screen shows email icon, the email address used, and instructions to check inbox",
+        "'Resend Confirmation Email' button available after 60-second cooldown",
+        "SupabaseService gains a resendConfirmation(email:) method",
+        "'Back to Sign In' button returns to the sign-in form",
+        "Typecheck passes"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": "After sign up, users see no guidance about email confirmation — many try to sign in immediately and get confused."
     }
   ]
 }

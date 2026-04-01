@@ -155,6 +155,44 @@ final class SupabaseService {
         await createOrUpdateUserProfile(session: session)
     }
 
+    // MARK: - Password Reset
+
+    func resetPassword(email: String) async throws {
+        try await client.auth.resetPasswordForEmail(email)
+    }
+
+    // MARK: - Account Deletion
+
+    func deleteAccount() async throws {
+        let session = try await client.auth.session
+        let token = session.accessToken
+
+        // Call server-side delete endpoint
+        let edgeFunctionURL = Self.supabaseURL.appendingPathComponent("delete-account")
+        var request = URLRequest(url: edgeFunctionURL)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NSError(domain: "DeleteAccount", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
+        }
+
+        if httpResponse.statusCode != 200 {
+            let body = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw NSError(domain: "DeleteAccount", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Account deletion failed: \(body)"])
+        }
+
+        // Sign out locally
+        try? await client.auth.signOut()
+        isSignedIn = false
+        currentUserEmail = nil
+        cachedUserId = nil
+
+        AnalyticsService.shared.trackEvent("account_deleted")
+    }
+
     // MARK: - Sign Out
 
     func signOut() async throws {

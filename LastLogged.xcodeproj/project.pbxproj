@@ -52,6 +52,7 @@
 		A1000000000000000000002B /* AppSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* AppSecrets.swift */; };
 		A1000000000000000000002C /* SchemaVersions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* SchemaVersions.swift */; };
 		A1000000000000000000002D /* SchemaVersions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* SchemaVersions.swift */; };
+		A1000000000000000000002E /* BiometricService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* BiometricService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -118,6 +119,7 @@
 		A20000000000000000000025 /* WidgetPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPromptView.swift; sourceTree = "<group>"; };
 		A20000000000000000000026 /* AppSecrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSecrets.swift; sourceTree = "<group>"; };
 		A20000000000000000000027 /* SchemaVersions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaVersions.swift; sourceTree = "<group>"; };
+		A20000000000000000000028 /* BiometricService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -258,6 +260,7 @@
 				A20000000000000000000012 /* NotificationService.swift */,
 				A20000000000000000000019 /* RevenueCatService.swift */,
 				A2000000000000000000001B /* SupabaseService.swift */,
+				A20000000000000000000028 /* BiometricService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -436,6 +439,7 @@
 				A1000000000000000000001D /* RevenueCatService.swift in Sources */,
 				A1000000000000000000001E /* PaywallView.swift in Sources */,
 				A1000000000000000000001F /* SupabaseService.swift in Sources */,
+				A1000000000000000000002E /* BiometricService.swift in Sources */,
 				A10000000000000000000020 /* AuthViewModel.swift in Sources */,
 				A10000000000000000000021 /* AuthView.swift in Sources */,
 				A10000000000000000000013 /* WidgetDataProvider.swift in Sources */,

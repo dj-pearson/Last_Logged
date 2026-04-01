@@ -58,6 +58,14 @@ final class AnalyticsService {
         )
     }
 
+    func trackAccountDeleted() {
+        TelemetryDeck.signal("account_deleted")
+    }
+
+    func trackEvent(_ name: String) {
+        TelemetryDeck.signal(name)
+    }
+
     // MARK: - Error Tracking
 
     func trackError(_ context: String, error: Error) {

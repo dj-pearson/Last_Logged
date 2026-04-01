@@ -52,6 +52,25 @@ struct SettingsView: View {
                 }
             }
         }
+        .alert("Delete Account", isPresented: Binding(
+            get: { viewModel?.showDeleteAccountConfirmation ?? false },
+            set: { viewModel?.showDeleteAccountConfirmation = $0 }
+        )) {
+            TextField("Type DELETE to confirm", text: Binding(
+                get: { viewModel?.deleteConfirmationText ?? "" },
+                set: { viewModel?.deleteConfirmationText = $0 }
+            ))
+            .autocapitalization(.allCharacters)
+            Button("Delete Permanently", role: .destructive) {
+                viewModel?.deleteAccount()
+            }
+            .disabled(viewModel?.deleteConfirmationText != "DELETE")
+            Button("Cancel", role: .cancel) {
+                viewModel?.deleteConfirmationText = ""
+            }
+        } message: {
+            Text("This will permanently delete your account and all associated data. This action cannot be undone. Type DELETE to confirm.")
+        }
     }
 
     // MARK: - Settings Form
@@ -79,6 +98,7 @@ struct SettingsView: View {
             }
 
             accountSection(viewModel: viewModel)
+            securitySection()
             notificationsSection(viewModel: viewModel)
             dataSection(viewModel: viewModel)
             aboutSection(viewModel: viewModel)
@@ -138,6 +158,19 @@ struct SettingsView: View {
                     }
                 }
                 .disabled(viewModel.isSigningOut)
+
+                Button(role: .destructive) {
+                    viewModel.showDeleteAccountConfirmation = true
+                } label: {
+                    HStack {
+                        Label("Delete Account", systemImage: "trash.circle")
+                        if viewModel.isDeletingAccount {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(viewModel.isDeletingAccount)
             } else {
                 Button {
                     viewModel.showingAuth = true
@@ -158,6 +191,38 @@ struct SettingsView: View {
                     } label: {
                         Label("Upgrade to Premium", systemImage: "star.fill")
                     }
+                }
+            }
+        }
+    }
+
+    // MARK: - Security Section
+
+    @State private var biometricService = BiometricService.shared
+
+    private func securitySection() -> some View {
+        Section("Security") {
+            if biometricService.availableBiometricType != .none {
+                Toggle(
+                    "Require \(biometricService.biometricName)",
+                    isOn: Binding(
+                        get: { biometricService.isEnabled },
+                        set: { _ in
+                            Task {
+                                await biometricService.toggleEnabled()
+                            }
+                        }
+                    )
+                )
+                .accessibilityLabel("Require \(biometricService.biometricName) to unlock")
+                .accessibilityHint("When enabled, the app requires authentication to open")
+            } else {
+                HStack {
+                    Image(systemName: "lock.slash")
+                        .foregroundStyle(.secondary)
+                    Text("Biometric authentication not available on this device")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
