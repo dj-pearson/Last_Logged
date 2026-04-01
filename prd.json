@@ -232,7 +232,7 @@
         "Typecheck passes"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "Currently queries users table on every single sync operation \u2014 wasteful and slow."
     },
     {

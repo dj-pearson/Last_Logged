@@ -770,3 +770,14 @@ Started: 2026-03-24
   - Replace "%" with "percent" in accessibility labels for clearer VoiceOver pronunciation
   - .accessibilityHidden(true) on decorative text prevents redundant announcements
 ---
+
+## 2026-04-01 - PH-014
+- What was implemented: User ID caching in SupabaseService. Added cachedUserId private property that stores the internal user ID after first database lookup. Cache cleared on sign out, session restore failure, and all sign-in methods (Apple, email sign-up, email sign-in) to handle account switching. Subsequent sync calls use cached value without querying users table.
+- Files changed:
+  - LastLogged/Services/SupabaseService.swift (updated - cachedUserId property, cache in currentUserId getter, cache clearing on auth state changes)
+  - prd.json (updated - PH-014 passes: true)
+- **Learnings for future iterations:**
+  - Cache invalidation on every auth state change (sign in, sign out, restore failure) prevents stale user IDs
+  - Clear cache BEFORE async sign-in calls to avoid race conditions with concurrent sync
+  - The computed `currentUserId` async property is called on every sync — caching saves one DB query per sync cycle
+---

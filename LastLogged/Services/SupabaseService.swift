@@ -21,6 +21,7 @@ final class SupabaseService {
     private(set) var isSignedIn = false
     private(set) var currentUserEmail: String?
     private(set) var isNetworkAvailable = true
+    private var cachedUserId: UUID?
     private var syncDebounceTask: Task<Void, Never>?
     private let syncDebounceInterval: TimeInterval = 2.0
     private var hasPendingSync = false
@@ -107,12 +108,14 @@ final class SupabaseService {
         } catch {
             isSignedIn = false
             currentUserEmail = nil
+            cachedUserId = nil
         }
     }
 
     // MARK: - Apple Sign In
 
     func signInWithApple(idToken: String, nonce: String) async throws {
+        cachedUserId = nil
         let session = try await client.auth.signInWithIdToken(
             credentials: .init(
                 provider: .apple,
@@ -128,6 +131,7 @@ final class SupabaseService {
     // MARK: - Email/Password Auth
 
     func signUpEmail(email: String, password: String) async throws {
+        cachedUserId = nil
         let session = try await client.auth.signUp(
             email: email,
             password: password
@@ -140,6 +144,7 @@ final class SupabaseService {
     }
 
     func signInEmail(email: String, password: String) async throws {
+        cachedUserId = nil
         let session = try await client.auth.signIn(
             email: email,
             password: password
@@ -155,6 +160,7 @@ final class SupabaseService {
         try await client.auth.signOut()
         isSignedIn = false
         currentUserEmail = nil
+        cachedUserId = nil
     }
 
     // MARK: - User Profile
@@ -195,6 +201,10 @@ final class SupabaseService {
 
     var currentUserId: UUID? {
         get async {
+            // Return cached value if available
+            if let cachedUserId {
+                return cachedUserId
+            }
             do {
                 let session = try await client.auth.session
                 let authId = session.user.id
@@ -204,7 +214,9 @@ final class SupabaseService {
                     .eq("auth_id", value: authId.uuidString)
                     .execute()
                     .value
-                return rows.first?.id
+                let userId = rows.first?.id
+                cachedUserId = userId
+                return userId
             } catch {
                 return nil
             }
