@@ -22,6 +22,7 @@ final class SupabaseService {
     private(set) var isSignedIn = false
     private(set) var currentUserEmail: String?
     private(set) var isNetworkAvailable = true
+    private(set) var sessionExpired = false
     private var cachedUserId: UUID?
     private var syncDebounceTask: Task<Void, Never>?
     private let syncDebounceInterval: TimeInterval = 2.0
@@ -41,8 +42,14 @@ final class SupabaseService {
     private static let hasPendingSyncKey = "com.pearsonmedia.lastlogged.hasPendingSync"
 
     private var lastSyncTimestamp: Date? {
-        get { UserDefaults.standard.object(forKey: Self.lastSyncTimestampKey) as? Date }
-        set { UserDefaults.standard.set(newValue, forKey: Self.lastSyncTimestampKey) }
+        get { KeychainService.getDate(forKey: Self.lastSyncTimestampKey) }
+        set {
+            if let newValue {
+                KeychainService.setDate(newValue, forKey: Self.lastSyncTimestampKey)
+            } else {
+                KeychainService.delete(forKey: Self.lastSyncTimestampKey)
+            }
+        }
     }
 
     // MARK: - Initialization
@@ -54,6 +61,46 @@ final class SupabaseService {
         )
         hasPendingSync = UserDefaults.standard.bool(forKey: Self.hasPendingSyncKey)
         startNetworkMonitoring()
+        startAuthStateListener()
+    }
+
+    // MARK: - Auth State Listener
+
+    private func startAuthStateListener() {
+        Task {
+            for await (event, session) in client.auth.authStateChanges {
+                await MainActor.run {
+                    switch event {
+                    case .signedIn:
+                        isSignedIn = true
+                        sessionExpired = false
+                        currentUserEmail = session?.user.email
+                    case .signedOut:
+                        isSignedIn = false
+                        currentUserEmail = nil
+                        cachedUserId = nil
+                        sessionExpired = false
+                    case .tokenRefreshed:
+                        sessionExpired = false
+                    default:
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    /// Called when a sync operation gets a 401/403 — session is expired
+    private func handleSessionExpiry() {
+        sessionExpired = true
+        isSignedIn = false
+        cachedUserId = nil
+        AnalyticsService.shared.trackEvent("session_expired")
+    }
+
+    /// Dismiss the session expired banner (after user signs in again)
+    func clearSessionExpiredBanner() {
+        sessionExpired = false
     }
 
     // MARK: - Network Monitoring
@@ -89,6 +136,14 @@ final class SupabaseService {
                 return try await operation()
             } catch {
                 lastError = error
+                // Check for auth errors (401/403) — don't retry, session is expired
+                let errorMessage = error.localizedDescription.lowercased()
+                if errorMessage.contains("401") || errorMessage.contains("403")
+                    || errorMessage.contains("jwt expired") || errorMessage.contains("invalid jwt")
+                    || errorMessage.contains("not authenticated") {
+                    await MainActor.run { handleSessionExpiry() }
+                    throw error
+                }
                 if attempt < Self.maxRetryAttempts - 1 {
                     let delay = Self.baseRetryDelay * pow(2.0, Double(attempt))
                     try? await Task.sleep(for: .seconds(delay))
@@ -131,7 +186,7 @@ final class SupabaseService {
 
     // MARK: - Email/Password Auth
 
-    func signUpEmail(email: String, password: String) async throws {
+    func signUpEmail(email: String, password: String, agreedToTerms: Bool = false) async throws {
         cachedUserId = nil
         let session = try await client.auth.signUp(
             email: email,
@@ -140,7 +195,7 @@ final class SupabaseService {
         if let session {
             isSignedIn = true
             currentUserEmail = session.user.email
-            await createOrUpdateUserProfile(session: session)
+            await createOrUpdateUserProfile(session: session, agreedToTerms: agreedToTerms)
         }
     }
 
@@ -155,6 +210,82 @@ final class SupabaseService {
         await createOrUpdateUserProfile(session: session)
     }
 
+    // MARK: - Server-side Auth Rate Limit Check
+
+    struct AuthRateLimitResponse: Decodable {
+        let allowed: Bool?
+        let remaining: Int?
+        let error: String?
+        let retryAfter: Int?
+    }
+
+    /// Check server-side rate limit before auth attempts. Returns true if allowed.
+    func checkAuthRateLimit() async -> Bool {
+        let edgeFunctionURL = Self.supabaseURL.appendingPathComponent("auth/check-rate-limit")
+        var request = URLRequest(url: edgeFunctionURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else { return true }
+
+            if httpResponse.statusCode == 429 {
+                return false
+            }
+
+            let result = try? JSONDecoder().decode(AuthRateLimitResponse.self, from: data)
+            return result?.allowed ?? true
+        } catch {
+            // If rate limit check fails, allow the attempt (fail open for availability)
+            return true
+        }
+    }
+
+    // MARK: - Password Reset
+
+    func resetPassword(email: String) async throws {
+        try await client.auth.resetPasswordForEmail(email)
+    }
+
+    // MARK: - Resend Confirmation Email
+
+    func resendConfirmation(email: String) async throws {
+        try await client.auth.resend(.signup, email: email)
+    }
+
+    // MARK: - Account Deletion
+
+    func deleteAccount() async throws {
+        let session = try await client.auth.session
+        let token = session.accessToken
+
+        // Call server-side delete endpoint
+        let edgeFunctionURL = Self.supabaseURL.appendingPathComponent("delete-account")
+        var request = URLRequest(url: edgeFunctionURL)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NSError(domain: "DeleteAccount", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
+        }
+
+        if httpResponse.statusCode != 200 {
+            let body = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw NSError(domain: "DeleteAccount", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Account deletion failed: \(body)"])
+        }
+
+        // Sign out locally
+        try? await client.auth.signOut()
+        isSignedIn = false
+        currentUserEmail = nil
+        cachedUserId = nil
+
+        AnalyticsService.shared.trackEvent("account_deleted")
+    }
+
     // MARK: - Sign Out
 
     func signOut() async throws {
@@ -166,7 +297,7 @@ final class SupabaseService {
 
     // MARK: - User Profile
 
-    private func createOrUpdateUserProfile(session: Session) async {
+    private func createOrUpdateUserProfile(session: Session, agreedToTerms: Bool = false) async {
         let authId = session.user.id
         let displayName = session.user.userMetadata["full_name"]?.stringValue
             ?? session.user.email
@@ -176,7 +307,8 @@ final class SupabaseService {
         let row = UserProfileRow(
             authId: authId,
             displayName: displayName,
-            subscriptionTier: tier
+            subscriptionTier: tier,
+            agreedToTermsAt: agreedToTerms ? Date() : nil
         )
         do {
             try await client.from("users")
@@ -275,7 +407,11 @@ final class SupabaseService {
 
     @MainActor
     func sync(modelContext: ModelContext) async {
-        guard await isAuthenticated else { return }
+        guard !sessionExpired else { return }
+        guard await isAuthenticated else {
+            handleSessionExpiry()
+            return
+        }
         guard !isSyncing else { return }
         guard isNetworkAvailable else {
             hasPendingSync = true
@@ -563,11 +699,13 @@ struct UserProfileRow: Encodable {
     let authId: UUID
     let displayName: String
     let subscriptionTier: String
+    let agreedToTermsAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case authId = "auth_id"
         case displayName = "display_name"
         case subscriptionTier = "subscription_tier"
+        case agreedToTermsAt = "agreed_to_terms_at"
     }
 }
 

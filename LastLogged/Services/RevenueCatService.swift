@@ -97,10 +97,11 @@ final class RevenueCatService: NSObject {
         writePremiumStatusToAppGroup()
     }
 
-    /// Writes isPremium to App Group UserDefaults so widgets can check entitlement
+    /// Writes isPremium to App Group UserDefaults (for widgets) and Keychain (for security)
     private func writePremiumStatusToAppGroup() {
         guard let defaults = UserDefaults(suiteName: "group.com.pearsonmedia.lastlogged") else { return }
         defaults.set(isPremium, forKey: "isPremium")
+        KeychainService.setBool(isPremium, forKey: "isPremium")
     }
 
     // MARK: - Offerings

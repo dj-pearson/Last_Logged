@@ -9,6 +9,11 @@ struct LastLoggedApp: App {
 
     init() {
         AppSecrets.validate()
+
+        // Migrate sensitive values from UserDefaults to Keychain (one-time)
+        KeychainService.migrateDateFromUserDefaults(key: "com.pearsonmedia.lastlogged.lastSyncTimestamp")
+        KeychainService.migrateBoolFromUserDefaults(key: "isPremium")
+
         AnalyticsService.shared.configure()
         RevenueCatService.shared.configure()
         let schema = Schema(versionedSchema: SchemaV1.self)

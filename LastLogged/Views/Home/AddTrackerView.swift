@@ -67,6 +67,16 @@ struct AddTrackerView: View {
             Form {
                 Section("Name") {
                     TextField("e.g. Oil Change, Haircut", text: $name)
+                        .onChange(of: name) { _, newValue in
+                            if newValue.count > InputSanitizer.maxTrackerNameLength {
+                                name = String(newValue.prefix(InputSanitizer.maxTrackerNameLength))
+                            }
+                        }
+                    if name.count >= InputSanitizer.maxTrackerNameLength - 10 {
+                        Text("\(InputSanitizer.remainingCharacters(text: name, maxLength: InputSanitizer.maxTrackerNameLength)) characters remaining")
+                            .font(.caption2)
+                            .foregroundStyle(name.count >= InputSanitizer.maxTrackerNameLength ? .red : .secondary)
+                    }
                 }
 
                 Section("Category") {
@@ -139,7 +149,7 @@ struct AddTrackerView: View {
     }
 
     private func saveTracker() {
-        let trimmedName = name.trimmingCharacters(in: .whitespaces)
+        let trimmedName = InputSanitizer.sanitizeTrackerName(name)
         guard !trimmedName.isEmpty, let categoryId = selectedCategoryId else { return }
         let intervalDays = hasReminder ? reminderUnit.toDays(reminderValue) : nil
         if let editingItem {

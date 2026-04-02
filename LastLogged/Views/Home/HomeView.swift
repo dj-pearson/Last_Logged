@@ -105,6 +105,12 @@ struct HomeView: View {
         } message: { item in
             Text("'\(item.name)' will be hidden from your home list.")
         }
+        .overlay(alignment: .top) {
+            if SupabaseService.shared.sessionExpired {
+                sessionExpiredBanner
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
         .overlay(alignment: .bottom) {
             if let error = viewModel?.lastError {
                 errorBanner(error)
@@ -256,6 +262,44 @@ struct HomeView: View {
         .padding(.bottom, 16)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Error: \(message)")
+    }
+
+    // MARK: - Session Expired Banner
+
+    private var sessionExpiredBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.shield.fill")
+                .foregroundStyle(.white)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Session Expired")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.white)
+                Text("Please sign in again to resume syncing.")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.9))
+            }
+            Spacer()
+            Button {
+                SupabaseService.shared.clearSessionExpiredBanner()
+                showingSettings = true
+            } label: {
+                Text("Sign In")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.white.opacity(0.25), in: RoundedRectangle(cornerRadius: 8))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.orange, in: RoundedRectangle(cornerRadius: 12))
+        .shadow(radius: 4, y: 2)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Your session has expired. Tap Sign In to re-authenticate.")
     }
 
     // MARK: - Toast View

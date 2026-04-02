@@ -70,6 +70,25 @@ revenuecatWebhook.post("/webhooks/revenuecat", async (c) => {
     return c.json({ error: "Invalid webhook signature" }, 401);
   }
 
+  // Validate request freshness (prevent replay attacks)
+  const requestTimestamp = c.req.header("X-RevenueCat-Request-Timestamp");
+  if (requestTimestamp) {
+    const timestampMs = parseInt(requestTimestamp, 10) * 1000;
+    const now = Date.now();
+    const maxAgeMs = 5 * 60 * 1000; // 5 minutes
+
+    if (isNaN(timestampMs) || Math.abs(now - timestampMs) > maxAgeMs) {
+      const ip = c.req.header("x-forwarded-for") ?? "unknown";
+      logWarn("webhook_replay_rejected", {
+        ip,
+        requestTimestamp,
+        serverTime: new Date().toISOString(),
+        ageMs: isNaN(timestampMs) ? "invalid" : Math.abs(now - timestampMs),
+      }, c);
+      return c.json({ error: "Request timestamp too old or invalid" }, 403);
+    }
+  }
+
   let payload: RevenueCatWebhookPayload;
   try {
     payload = JSON.parse(rawBody) as RevenueCatWebhookPayload;
