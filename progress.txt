@@ -964,3 +964,52 @@ Started: 2026-03-24
   - agreed_to_terms_at should be nullable — existing users haven't agreed yet
   - Index on NULL agreed_to_terms_at for efficient compliance queries
 ---
+
+## 2026-04-02 - PH-027: Server-side auth rate limiting via Supabase
+- What was implemented: auth_rate_limits DB table tracking per-IP attempts. Edge function POST /auth/check-rate-limit with 10 attempts per 15-minute window and 5-minute lockout. iOS app calls rate limit check before each auth attempt via SupabaseService.checkAuthRateLimit(). Rate limit headers returned in response.
+- Files changed:
+  - supabase/migrations/20260402000001_auth_rate_limits.sql (new migration)
+  - edge-functions/src/auth-rate-limit.ts (new endpoint)
+  - edge-functions/src/index.ts (registered auth rate limit route)
+  - LastLogged/Services/SupabaseService.swift (added checkAuthRateLimit method and AuthRateLimitResponse)
+  - LastLogged/ViewModels/AuthViewModel.swift (calls server-side rate limit before auth)
+  - prd.json (PH-027 passes: true)
+- **Learnings for future iterations:**
+  - Fail open (allow attempt) if rate limit check itself fails — availability over strictness for auth
+  - Use upsert for rate limit entries to avoid race conditions
+  - Client-side and server-side rate limiting complement each other — client prevents UI spam, server prevents API abuse
+---
+
+## 2026-04-02 - PH-028: Webhook replay attack prevention
+- What was implemented: Validates X-RevenueCat-Request-Timestamp header in revenuecat-webhook.ts. Rejects requests older than 5 minutes with 403. Logs rejected replay attempts with IP and timestamp via structured logging.
+- Files changed:
+  - edge-functions/src/revenuecat-webhook.ts (added timestamp validation after signature check)
+  - prd.json (PH-028 passes: true)
+- **Learnings for future iterations:**
+  - Check timestamp AFTER signature verification — signature proves authenticity, timestamp proves freshness
+  - Use Math.abs for timestamp comparison to handle clock skew in both directions
+  - RevenueCat sends X-RevenueCat-Request-Timestamp as Unix seconds (not milliseconds)
+---
+
+## 2026-04-02 - PH-029: HSTS and additional security headers for website
+- What was implemented: Added Strict-Transport-Security header (max-age=31536000; includeSubDomains; preload) to Cloudflare _headers file. Referrer-Policy and Permissions-Policy were already present from PH-008.
+- Files changed:
+  - website/public/_headers (added HSTS header)
+  - prd.json (PH-029 passes: true)
+- **Learnings for future iterations:**
+  - Check existing headers before adding — PH-008 already added Referrer-Policy and Permissions-Policy
+  - HSTS preload requires max-age >= 31536000 (1 year) and includeSubDomains
+---
+
+## 2026-04-02 - PH-030: Email confirmation guidance after sign up
+- What was implemented: After signUpEmail when session is nil (email confirm required), AuthView shows confirmation screen with email icon, the email used, instructions. Resend Confirmation Email button with 60-second cooldown. SupabaseService.resendConfirmation() method using client.auth.resend(.signup). Back to Sign In button.
+- Files changed:
+  - LastLogged/ViewModels/AuthViewModel.swift (added showingEmailConfirmation, signUpEmail_, resendCooldownSeconds, resendConfirmationEmail(), startResendCooldown(), dismissEmailConfirmation(); updated submitEmailForm sign-up success path)
+  - LastLogged/Views/Settings/AuthView.swift (added emailConfirmationView with resend button and cooldown)
+  - LastLogged/Services/SupabaseService.swift (added resendConfirmation method)
+  - prd.json (PH-030 passes: true)
+- **Learnings for future iterations:**
+  - Supabase signUp returns nil session when email confirmation is required — check isSignedIn after sign-up
+  - Use client.auth.resend(.signup, email:) to resend confirmation email
+  - 60-second cooldown on resend prevents email bombing
+---

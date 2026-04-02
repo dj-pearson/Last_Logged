@@ -85,7 +85,9 @@ struct AuthView: View {
 
     private func signInView(viewModel: AuthViewModel) -> some View {
         ScrollView {
-            if viewModel.showingForgotPassword {
+            if viewModel.showingEmailConfirmation {
+                emailConfirmationView(viewModel: viewModel)
+            } else if viewModel.showingForgotPassword {
                 forgotPasswordView(viewModel: viewModel)
             } else {
             VStack(spacing: 24) {
@@ -301,6 +303,75 @@ struct AuthView: View {
                 .padding(.top, 4)
                 .accessibilityLabel("Forgot password")
                 .accessibilityHint("Send a password reset link to your email")
+            }
+        }
+    }
+
+    // MARK: - Email Confirmation View
+
+    private func emailConfirmationView(viewModel: AuthViewModel) -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "envelope.badge.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.accent)
+                .padding(.top, 32)
+
+            Text("Confirm Your Email")
+                .font(.title2.bold())
+
+            Text("We've sent a confirmation link to:")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text(viewModel.signUpEmail_)
+                .font(.subheadline.bold())
+                .foregroundStyle(.primary)
+
+            Text("Check your inbox and tap the link to activate your account. Then come back here to sign in.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+
+            // Resend button with cooldown
+            Button {
+                viewModel.resendConfirmationEmail()
+            } label: {
+                if viewModel.resendCooldownSeconds > 0 {
+                    Text("Resend in \(viewModel.resendCooldownSeconds)s")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                } else {
+                    Text("Resend Confirmation Email")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                }
+            }
+            .buttonStyle(.bordered)
+            .disabled(viewModel.resendCooldownSeconds > 0 || viewModel.isLoading)
+            .padding(.horizontal)
+            .accessibilityLabel("Resend confirmation email")
+            .accessibilityHint(viewModel.resendCooldownSeconds > 0
+                ? "Available in \(viewModel.resendCooldownSeconds) seconds"
+                : "Send another confirmation email")
+
+            Button {
+                viewModel.dismissEmailConfirmation()
+            } label: {
+                Text("Back to Sign In")
+                    .font(.subheadline)
+                    .foregroundStyle(.accent)
+            }
+
+            if let error = viewModel.errorMessage {
+                Text(error)
+                    .foregroundStyle(.red)
+                    .font(.caption)
+                    .padding(.horizontal)
+            }
+
+            if viewModel.isLoading {
+                ProgressView()
             }
         }
     }

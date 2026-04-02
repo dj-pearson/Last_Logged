@@ -210,10 +210,48 @@ final class SupabaseService {
         await createOrUpdateUserProfile(session: session)
     }
 
+    // MARK: - Server-side Auth Rate Limit Check
+
+    struct AuthRateLimitResponse: Decodable {
+        let allowed: Bool?
+        let remaining: Int?
+        let error: String?
+        let retryAfter: Int?
+    }
+
+    /// Check server-side rate limit before auth attempts. Returns true if allowed.
+    func checkAuthRateLimit() async -> Bool {
+        let edgeFunctionURL = Self.supabaseURL.appendingPathComponent("auth/check-rate-limit")
+        var request = URLRequest(url: edgeFunctionURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else { return true }
+
+            if httpResponse.statusCode == 429 {
+                return false
+            }
+
+            let result = try? JSONDecoder().decode(AuthRateLimitResponse.self, from: data)
+            return result?.allowed ?? true
+        } catch {
+            // If rate limit check fails, allow the attempt (fail open for availability)
+            return true
+        }
+    }
+
     // MARK: - Password Reset
 
     func resetPassword(email: String) async throws {
         try await client.auth.resetPasswordForEmail(email)
+    }
+
+    // MARK: - Resend Confirmation Email
+
+    func resendConfirmation(email: String) async throws {
+        try await client.auth.resend(.signup, email: email)
     }
 
     // MARK: - Account Deletion

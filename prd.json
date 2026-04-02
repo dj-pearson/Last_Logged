@@ -451,8 +451,8 @@
         "Typecheck passes"
       ],
       "priority": 27,
-      "passes": false,
-      "notes": "Current rate limiting is client-side only — easily bypassed by calling Supabase directly."
+      "passes": true,
+      "notes": "auth_rate_limits DB table. Edge function POST /auth/check-rate-limit with 10 attempts per 15min window, 5min lockout. iOS calls before each auth attempt. Rate limit headers returned."
     },
     {
       "id": "PH-028",
@@ -466,8 +466,8 @@
         "Typecheck passes"
       ],
       "priority": 28,
-      "passes": false,
-      "notes": "Webhook validates HMAC signature but not request freshness — vulnerable to replay attacks."
+      "passes": true,
+      "notes": "Validates X-RevenueCat-Request-Timestamp header. Rejects requests older than 5 minutes with 403. Logs rejected replay attempts with IP and timestamp."
     },
     {
       "id": "PH-029",
@@ -481,8 +481,8 @@
         "Typecheck passes"
       ],
       "priority": 29,
-      "passes": false,
-      "notes": "PH-008 added CSP, X-Content-Type-Options, X-Frame-Options but missed HSTS and Permissions-Policy."
+      "passes": true,
+      "notes": "HSTS header added to _headers file. Referrer-Policy and Permissions-Policy were already present from PH-008. All three security headers now configured."
     },
     {
       "id": "PH-030",
@@ -497,8 +497,8 @@
         "Typecheck passes"
       ],
       "priority": 30,
-      "passes": false,
-      "notes": "After sign up, users see no guidance about email confirmation — many try to sign in immediately and get confused."
+      "passes": true,
+      "notes": "Email confirmation screen after sign-up shows email, instructions, resend button with 60s cooldown. SupabaseService.resendConfirmation() method. Back to Sign In button."
     }
   ]
 }

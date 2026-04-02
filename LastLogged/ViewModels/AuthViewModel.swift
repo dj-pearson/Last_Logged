@@ -16,6 +16,10 @@ final class AuthViewModel {
     var showingForgotPassword = false
     var resetPasswordSent = false
     var hasAgreedToTerms = false
+    var showingEmailConfirmation = false
+    var signUpEmail_: String = "" // Stores the email used for sign-up confirmation screen
+    var resendCooldownSeconds = 0
+    private var resendCooldownTimer: Task<Void, Never>?
 
     private let modelContext: ModelContext
     private var currentNonce: String?
@@ -144,11 +148,28 @@ final class AuthViewModel {
         let trimmedEmail = email.trimmingCharacters(in: .whitespaces)
 
         Task { @MainActor in
+            // Server-side rate limit check
+            let serverAllowed = await SupabaseService.shared.checkAuthRateLimit()
+            guard serverAllowed else {
+                errorMessage = "Too many authentication attempts. Please try again later."
+                isLoading = false
+                return
+            }
+
             do {
                 if isSignUp {
                     try await SupabaseService.shared.signUpEmail(
                         email: trimmedEmail, password: password, agreedToTerms: hasAgreedToTerms
                     )
+                    // If not auto-signed in, show email confirmation screen
+                    if !SupabaseService.shared.isSignedIn {
+                        signUpEmail_ = trimmedEmail
+                        showingEmailConfirmation = true
+                        startResendCooldown()
+                        password = ""
+                        isLoading = false
+                        return
+                    }
                 } else {
                     try await SupabaseService.shared.signInEmail(
                         email: trimmedEmail, password: password
@@ -174,6 +195,42 @@ final class AuthViewModel {
             }
             isLoading = false
         }
+    }
+
+    // MARK: - Email Confirmation
+
+    func resendConfirmationEmail() {
+        guard resendCooldownSeconds <= 0 else { return }
+        isLoading = true
+        errorMessage = nil
+
+        Task { @MainActor in
+            do {
+                try await SupabaseService.shared.resendConfirmation(email: signUpEmail_)
+                startResendCooldown()
+            } catch {
+                errorMessage = "Unable to resend confirmation. Please try again."
+            }
+            isLoading = false
+        }
+    }
+
+    private func startResendCooldown() {
+        resendCooldownSeconds = 60
+        resendCooldownTimer?.cancel()
+        resendCooldownTimer = Task { @MainActor in
+            while resendCooldownSeconds > 0 {
+                try? await Task.sleep(for: .seconds(1))
+                resendCooldownSeconds -= 1
+            }
+        }
+    }
+
+    func dismissEmailConfirmation() {
+        showingEmailConfirmation = false
+        signUpEmail_ = ""
+        resendCooldownTimer?.cancel()
+        resendCooldownSeconds = 0
     }
 
     // MARK: - Password Reset
