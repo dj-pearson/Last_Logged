@@ -2,6 +2,23 @@
 Started: 2026-03-24
 
 ## Codebase Patterns
+
+### Android App (android/)
+- Android project uses MVVM: data/local/{entity,dao,converter}/, data/repository/, di/, ui/{home,auth,settings,detail,onboarding,components,theme,navigation}/, service/, util/
+- Gradle Kotlin DSL with Compose BOM 2024.01.00, Hilt 2.50, Room 2.6.1, Supabase BOM 2.1.3
+- Application ID: com.pearsonmedia.lastlogged (matches iOS bundle ID)
+- Min SDK 26 (Android 8.0), Target SDK 34, Compile SDK 34
+- Secrets via BuildConfig from local.properties (SUPABASE_URL, SUPABASE_ANON_KEY, REVENUECAT_API_KEY)
+- Room entities use @ColumnInfo(name = "snake_case") to match Supabase columns
+- DAOs return Flow<List<T>> for reactive queries; ViewModels use .stateIn() to expose StateFlow
+- Hilt DI: @HiltAndroidApp on Application, @AndroidEntryPoint on Activity, @HiltViewModel on ViewModels
+- Navigation via NavHost with sealed NavRoutes class
+- SwipeToDismissBox for swipe-to-archive (M3 API)
+- EncryptedSharedPreferences for secure storage (Android Keychain equivalent)
+- network_security_config.xml disables cleartext; allows localhost for dev
+- ProGuard rules configured for Supabase, Ktor, Room, Kotlinx Serialization
+
+### iOS App (LastLogged/)
 - Xcode project uses MVVM folder structure: Models/, ViewModels/, Views/{Home,Detail,Onboarding,Settings,Components}/, Services/, Widget/, Utilities/
 - SPM dependencies declared in project.pbxproj via XCRemoteSwiftPackageReference (supabase-swift, purchases-ios, TelemetryDeck SwiftClient)
 - App Group identifier: group.com.pearsonmedia.lastlogged (configured in LastLogged.entitlements)
@@ -1012,4 +1029,43 @@ Started: 2026-03-24
   - Supabase signUp returns nil session when email confirmation is required — check isSignedIn after sign-up
   - Use client.auth.resend(.signup, email:) to resend confirmation email
   - 60-second cooldown on resend prevents email bombing
+---
+
+## 2026-04-03 - AND-001, AND-002, AND-003, AND-004
+- **What was implemented**: Full Android app build-out — scaffolded a complete Kotlin + Jetpack Compose project under `android/` with all 4 top priority stories implemented:
+  - **AND-001** (Project Scaffolding): Gradle Kotlin DSL with Compose BOM, Hilt DI, Room, Supabase Kotlin client, Navigation Compose, AndroidX Security, Biometric, DataStore. Min SDK 26, Target/Compile SDK 34. ProGuard rules, network security config (cleartext disabled), BuildConfig secrets from local.properties.
+  - **AND-002** (Room Database): TrackerItem, CompletionLog, TrackerCategory entities matching iOS SwiftData schema exactly. SyncStatus enum (SYNCED/PENDING/CONFLICT). Full DAOs with Flow-based reactive queries. TrackerRepository with CRUD, logCompletion, undoLog, clearAllData.
+  - **AND-003** (Home Screen UI): HomeScreen with LazyColumn grouped by category, urgency color indicators (green/yellow/red), haptic log button, swipe-to-archive via SwipeToDismissBox, undo snackbar (4s auto-dismiss), empty state, M3 theming with dynamic colors + dark mode. HomeViewModel with reactive StateFlow.
+  - **AND-004** (Authentication): AuthScreen with 4 modes (sign-in, sign-up, forgot-password, email-confirmation). Email regex validation, password complexity checks (8+ chars, uppercase, lowercase, digit) with inline validation messages. Rate limiting (5 attempts -> 30s cooldown). Terms checkbox for sign-up. Sanitized error messages. AuthViewModel with full state management.
+  - **Bonus**: SettingsScreen (Account, Subscription, Security, Notifications, Data, Legal, About sections), TrackerDetailScreen (completion history), AddTrackerScreen (create/edit with input sanitization), full Navigation graph.
+- **Also created**: 18 Android user stories in prd.json covering full feature parity with iOS app (UI, UX, security, performance, accessibility, testing).
+- **Unit tests**: InputSanitizerTest (12 tests), TimeFormatUtilTest (8 tests), AuthViewModelTest (16 tests) covering validation, sanitization, state management.
+- Files changed:
+  - prd.json (updated with 18 AND-xxx stories, first 4 marked passes: true)
+  - .gitignore (added Android-specific entries)
+  - android/ (new directory — 30+ files):
+    - build.gradle.kts, settings.gradle.kts, gradle.properties, gradlew
+    - app/build.gradle.kts, proguard-rules.pro
+    - AndroidManifest.xml, network_security_config.xml, strings.xml, themes.xml
+    - data/local/entity/ (TrackerItem, CompletionLog, TrackerCategory)
+    - data/local/dao/ (TrackerItemDao, CompletionLogDao, TrackerCategoryDao)
+    - data/local/AppDatabase.kt, converter/Converters.kt
+    - data/repository/TrackerRepository.kt
+    - di/AppModule.kt
+    - ui/MainActivity.kt, theme/Theme.kt, navigation/NavRoutes.kt, AppNavHost.kt
+    - ui/home/ (HomeScreen, HomeViewModel, AddTrackerScreen, AddTrackerViewModel)
+    - ui/auth/ (AuthScreen, AuthViewModel)
+    - ui/settings/ (SettingsScreen, SettingsViewModel)
+    - ui/detail/ (TrackerDetailScreen, TrackerDetailViewModel)
+    - util/ (InputSanitizer, TimeFormatUtil, CategoryTemplates)
+    - test/ (InputSanitizerTest, TimeFormatUtilTest, AuthViewModelTest)
+- **Learnings for future iterations:**
+  - Android project uses MVVM with Hilt + ViewModels + Compose + Room — mirrors iOS MVVM pattern
+  - Room entities use @ColumnInfo(name = "snake_case") to match Supabase column names
+  - DAOs return Flow<List<T>> for reactive UI updates — collected as StateFlow in ViewModels
+  - SwipeToDismissBox (M3) replaces the old SwipeToDismiss for swipe gestures
+  - BuildConfig fields injected from local.properties for secret management (Android equivalent of XCConfig)
+  - EncryptedSharedPreferences requires security-crypto library for secure storage (Android Keychain equivalent)
+  - Network security config in res/xml/ controls cleartext traffic and certificate pinning
+  - ExposedDropdownMenuBox requires MenuAnchorType.PrimaryNotEditable for read-only fields
 ---

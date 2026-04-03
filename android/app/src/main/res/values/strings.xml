@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Last Logged</string>
+    <string name="home_title">Last Logged</string>
+    <string name="settings_title">Settings</string>
+    <string name="auth_title">Sign In</string>
+    <string name="add_tracker_title">New Tracker</string>
+    <string name="edit_tracker_title">Edit Tracker</string>
+    <string name="tracker_detail_title">Tracker Detail</string>
+
+    <!-- Auth -->
+    <string name="email_label">Email</string>
+    <string name="password_label">Password</string>
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="send_reset_link">Send Reset Link</string>
+    <string name="google_sign_in">Sign in with Google</string>
+    <string name="email_invalid">Enter a valid email address</string>
+    <string name="password_requirements">Password must be 8+ characters with uppercase, lowercase, and a number</string>
+    <string name="rate_limit_message">Too many attempts. Try again in %d seconds.</string>
+    <string name="terms_agreement">I agree to the Terms of Service and Privacy Policy</string>
+    <string name="email_confirmation_title">Check Your Email</string>
+    <string name="email_confirmation_message">We sent a confirmation link to %s. Please check your inbox and confirm your email to sign in.</string>
+    <string name="resend_confirmation">Resend Confirmation Email</string>
+    <string name="back_to_sign_in">Back to Sign In</string>
+    <string name="reset_password_sent">Check your email for a reset link</string>
+
+    <!-- Home -->
+    <string name="empty_state_title">No Trackers Yet</string>
+    <string name="empty_state_message">Tap + to add your first tracker and start logging.</string>
+    <string name="log_action">Log</string>
+    <string name="undo">Undo</string>
+    <string name="logged_message">Logged!</string>
+    <string name="archive">Archive</string>
+    <string name="edit">Edit</string>
+    <string name="new_tracker">New Tracker</string>
+    <string name="add_from_templates">Add from Templates</string>
+
+    <!-- Settings -->
+    <string name="account_section">Account</string>
+    <string name="subscription_section">Subscription</string>
+    <string name="notifications_section">Notifications</string>
+    <string name="security_section">Security</string>
+    <string name="data_section">Data</string>
+    <string name="legal_section">Legal</string>
+    <string name="about_section">About</string>
+    <string name="delete_account">Delete Account</string>
+    <string name="delete_account_confirm">Type DELETE to confirm account deletion</string>
+    <string name="export_data">Export Data</string>
+    <string name="clear_all_data">Clear All Data</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="biometric_lock">Require Biometric Authentication</string>
+    <string name="enable_notifications">Enable Reminders</string>
+    <string name="reminder_time">Default Reminder Time</string>
+    <string name="version_label">Version %s (%d)</string>
+
+    <!-- Biometric -->
+    <string name="biometric_prompt_title">Unlock Last Logged</string>
+    <string name="biometric_prompt_subtitle">Use your biometric credential to access the app</string>
+    <string name="biometric_prompt_cancel">Use PIN</string>
+
+    <!-- General -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="session_expired">Your session has expired. Please sign in again.</string>
+</resources>

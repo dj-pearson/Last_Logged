@@ -41,3 +41,16 @@ Package.resolved
 
 # CocoaPods (if used)
 Pods/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/app/schemas/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/*.iml
+android/captures/
+android/.externalNativeBuild/
+android/.cxx/
