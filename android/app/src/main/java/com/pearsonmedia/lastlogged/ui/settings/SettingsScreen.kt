@@ -106,10 +106,16 @@ fun SettingsScreen(
             SectionHeader("Security")
             ListItem(
                 headlineContent = { Text("Require Biometric Authentication") },
+                supportingContent = {
+                    if (!uiState.biometricAvailable) {
+                        Text("Not available on this device", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
                 trailingContent = {
                     Switch(
                         checked = uiState.biometricLockEnabled,
-                        onCheckedChange = { viewModel.toggleBiometricLock(it) }
+                        onCheckedChange = { viewModel.toggleBiometricLock(it) },
+                        enabled = uiState.biometricAvailable
                     )
                 }
             )

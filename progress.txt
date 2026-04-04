@@ -17,6 +17,12 @@ Started: 2026-03-24
 - EncryptedSharedPreferences for secure storage (Android Keychain equivalent)
 - network_security_config.xml disables cleartext; allows localhost for dev
 - ProGuard rules configured for Supabase, Ktor, Room, Kotlinx Serialization
+- Services are @Singleton + @Inject constructor: SupabaseService, SecureStorageService, BiometricService, NotificationService
+- SupabaseService uses Mutex for sync exclusion, debounced sync via Job cancellation + delay
+- BiometricPrompt requires FragmentActivity — MainActivity extends FragmentActivity, not ComponentActivity
+- SecureStorageService wraps EncryptedSharedPreferences with AES256-GCM + MasterKeys fallback
+- NotificationReceiver is a BroadcastReceiver registered in AndroidManifest.xml (android:exported=false)
+- AlarmManager.setExactAndAllowWhileIdle for precise notification scheduling; catch SecurityException for API 31+ fallback
 
 ### iOS App (LastLogged/)
 - Xcode project uses MVVM folder structure: Models/, ViewModels/, Views/{Home,Detail,Onboarding,Settings,Components}/, Services/, Widget/, Utilities/
@@ -1068,4 +1074,34 @@ Started: 2026-03-24
   - EncryptedSharedPreferences requires security-crypto library for secure storage (Android Keychain equivalent)
   - Network security config in res/xml/ controls cleartext traffic and certificate pinning
   - ExposedDropdownMenuBox requires MenuAnchorType.PrimaryNotEditable for read-only fields
+---
+
+## 2026-04-04 - AND-005, AND-006, AND-007, AND-008, AND-009, AND-010
+- **What was implemented**: 6 more Android stories completed (AND-005/006 were already built, now marked passing; AND-007 through AND-010 newly implemented):
+  - **AND-005** (Settings): Already built — marked as passing.
+  - **AND-006** (Add/Edit Tracker): Already built — marked as passing.
+  - **AND-007** (Supabase Sync): Full SupabaseService with push/pull sync, exponential backoff retry (2/4/8/16s, 4 attempts max), ConnectivityManager network monitoring with auto-sync on reconnect, debounced sync (2s delay), conflict detection via SyncStatus, session expiry detection (401/403/JWT), auth state listener via sessionStatus flow, cached userId. Sync DTOs with @SerialName for Supabase column mapping.
+  - **AND-008** (Biometric Auth): BiometricService using AndroidX BiometricPrompt with DEVICE_CREDENTIAL fallback. Lock screen overlay in MainActivity. LifecycleEventObserver locks on ON_STOP, authenticates on ON_RESUME. Settings toggle with availability detection. MainActivity upgraded to FragmentActivity for BiometricPrompt compatibility.
+  - **AND-009** (Secure Storage): SecureStorageService wrapping EncryptedSharedPreferences with AES256-GCM encryption backed by Android Keystore MasterKey. Stores premium status, subscription tier, sync timestamps, biometric enabled, onboarding state, notification preferences. Graceful fallback to regular SharedPreferences if encryption init fails.
+  - **AND-010** (Notifications): NotificationService with AlarmManager-based local notification scheduling, 2 notification channels (reminders + overflow), 64-notification limit with overdue priority sorting, overflow notification for skipped items. NotificationReceiver BroadcastReceiver registered in manifest. Permission checks for POST_NOTIFICATIONS (API 33+) and SCHEDULE_EXACT_ALARM (API 31+).
+  - **Integration**: SettingsViewModel now uses real services (SupabaseService, SecureStorageService, BiometricService) instead of stubs. Auth state observed reactively. Delete account calls Supabase edge function.
+  - **Tests**: SyncRetryTest (6 tests) covering exponential backoff, auth error detection, retry exhaustion.
+- Files changed:
+  - prd.json (AND-005 through AND-010 marked passes: true)
+  - android/app/src/main/AndroidManifest.xml (added NotificationReceiver)
+  - android/app/src/main/java/.../service/SupabaseService.kt (new)
+  - android/app/src/main/java/.../service/SecureStorageService.kt (new)
+  - android/app/src/main/java/.../service/BiometricService.kt (new)
+  - android/app/src/main/java/.../service/NotificationService.kt (new)
+  - android/app/src/main/java/.../ui/MainActivity.kt (biometric lock, lifecycle, sync on foreground)
+  - android/app/src/main/java/.../ui/settings/SettingsViewModel.kt (real service integration)
+  - android/app/src/main/java/.../ui/settings/SettingsScreen.kt (biometric availability check)
+  - android/app/src/test/.../SyncRetryTest.kt (new)
+- **Learnings for future iterations:**
+  - BiometricPrompt requires FragmentActivity (not ComponentActivity) — use FragmentActivity as base for MainActivity
+  - EncryptedSharedPreferences can fail on some devices — always provide fallback
+  - ConnectivityManager.NetworkCallback fires onAvailable/onLost — good trigger point for sync
+  - SupabaseService sessionStatus is a Flow — collect in init{} for reactive auth state
+  - AlarmManager.setExactAndAllowWhileIdle needs SCHEDULE_EXACT_ALARM permission on API 31+, catch SecurityException and fallback to inexact
+  - NotificationReceiver must be registered in AndroidManifest.xml with android:exported="false"
 ---
