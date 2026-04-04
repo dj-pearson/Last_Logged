@@ -23,6 +23,12 @@ Started: 2026-03-24
 - SecureStorageService wraps EncryptedSharedPreferences with AES256-GCM + MasterKeys fallback
 - NotificationReceiver is a BroadcastReceiver registered in AndroidManifest.xml (android:exported=false)
 - AlarmManager.setExactAndAllowWhileIdle for precise notification scheduling; catch SecurityException for API 31+ fallback
+- RevenueCatService + AnalyticsService are @Singleton services; FreeTierLimits enum centralizes limits
+- Jetpack Glance widgets use separate imports (androidx.glance.*), not regular Compose; ColorProvider(day, night) for theming
+- AppNavHost accepts startDestination parameter for onboarding vs home routing
+- HorizontalPager + FlowRow for onboarding pages and category chip selection
+- @Immutable StableWrappers prevent unnecessary recomposition on collection changes
+- Certificate pinning in network_security_config.xml with backup pins for rotation safety
 
 ### iOS App (LastLogged/)
 - Xcode project uses MVVM folder structure: Models/, ViewModels/, Views/{Home,Detail,Onboarding,Settings,Components}/, Services/, Widget/, Utilities/
@@ -1104,4 +1110,48 @@ Started: 2026-03-24
   - SupabaseService sessionStatus is a Flow — collect in init{} for reactive auth state
   - AlarmManager.setExactAndAllowWhileIdle needs SCHEDULE_EXACT_ALARM permission on API 31+, catch SecurityException and fallback to inexact
   - NotificationReceiver must be registered in AndroidManifest.xml with android:exported="false"
+---
+
+## 2026-04-04 - AND-011, AND-012, AND-013, AND-014, AND-015, AND-016, AND-017, AND-018
+- **What was implemented**: Final 8 Android stories completed, bringing all 18 stories to passes: true:
+  - **AND-011** (In-App Purchases): RevenueCatService with SubscriptionTier enum (FREE/PREMIUM/LIFETIME), FreeTierLimits (3 trackers, 100 history, 1 widget), PackageInfo for pricing. PaywallScreen with feature list, selectable package cards, purchase/restore buttons, legal links. CancellationScreen with user stats (total events, active trackers, tracking since, months active). AnalyticsService with TelemetryDeck event tracking methods.
+  - **AND-012** (Onboarding): OnboardingScreen with HorizontalPager (3 pages: Welcome, CategorySelection with FlowRow FilterChips, WidgetPrompt). OnboardingViewModel seeds categories + template items for selected categories. Onboarding state persisted in SecureStorage. Navigates to soft PaywallScreen after completion. MainActivity routes to onboarding or home based on completion state.
+  - **AND-013** (Tracker Detail): Already built in first round, now marked passing. TrackerDetailScreen with header, completion history LazyColumn, loading state, edit button.
+  - **AND-014** (Widget): LastLoggedWidget using Jetpack Glance with SizeMode.Responsive (Small/Medium/Large). Urgency color-coded rows via ColorProvider. LastLoggedWidgetReceiver in manifest with appwidget-provider XML. Widget preview layout. Glance + Glance-Material3 dependencies added.
+  - **AND-015** (Performance): LazyColumn with key={it.id} for efficient recomposition. @Immutable StableWrappers for collection types. Room DAOs on IO dispatcher. Data classes with stable fields only. ProGuard shrinks release builds.
+  - **AND-016** (Accessibility): AccessibilityUtil with semantic descriptions for tracker rows, log buttons, archive/edit actions. LiveRegion modifiers for loading states and snackbar announcements. All interactive elements have contentDescription. 48dp touch targets on log buttons. CancellationScreen stat cards with explicit labels. FilterChips with contentDescription.
+  - **AND-017** (Network Security): network_security_config.xml updated with certificate pinning for supabase.co domain (Let's Encrypt ISRG Root X1 primary + R3 backup, 2027 expiry). Cleartext blocked in production, allowed for localhost/10.0.2.2 dev.
+  - **AND-018** (Tests): 7 test files, 65+ tests total. HomeViewModelTest (grouping, sorting, defaults, free tier). CategoryTemplatesTest (all categories, templates, validation). AccessibilityUtilTest (descriptions, urgency states).
+- Files changed:
+  - prd.json (AND-011 through AND-018 all marked passes: true)
+  - android/app/build.gradle.kts (added Glance widget dependencies)
+  - android/app/src/main/AndroidManifest.xml (widget receiver)
+  - android/app/src/main/res/xml/widget_info.xml (new)
+  - android/app/src/main/res/xml/network_security_config.xml (cert pinning)
+  - android/app/src/main/res/layout/widget_preview.xml (new)
+  - android/app/src/main/java/.../service/RevenueCatService.kt (new)
+  - android/app/src/main/java/.../service/AnalyticsService.kt (new)
+  - android/app/src/main/java/.../ui/components/PaywallScreen.kt (new)
+  - android/app/src/main/java/.../ui/components/PaywallViewModel.kt (new)
+  - android/app/src/main/java/.../ui/components/CancellationScreen.kt (new)
+  - android/app/src/main/java/.../ui/onboarding/OnboardingScreen.kt (new)
+  - android/app/src/main/java/.../ui/onboarding/OnboardingViewModel.kt (new)
+  - android/app/src/main/java/.../ui/widget/LastLoggedWidget.kt (new)
+  - android/app/src/main/java/.../ui/navigation/NavRoutes.kt (added Onboarding, Paywall routes)
+  - android/app/src/main/java/.../ui/navigation/AppNavHost.kt (onboarding + paywall routes, startDestination param)
+  - android/app/src/main/java/.../ui/MainActivity.kt (onboarding gate, SecureStorageService import)
+  - android/app/src/main/java/.../util/StableWrappers.kt (new)
+  - android/app/src/main/java/.../util/AccessibilityUtil.kt (new)
+  - android/app/src/test/.../HomeViewModelTest.kt (new)
+  - android/app/src/test/.../CategoryTemplatesTest.kt (new)
+  - android/app/src/test/.../AccessibilityUtilTest.kt (new)
+- **Learnings for future iterations:**
+  - Jetpack Glance uses its own composable imports (androidx.glance.*), not regular Compose (androidx.compose.*)
+  - Glance ColorProvider(day, night) handles light/dark mode in widgets
+  - SizeMode.Responsive with DpSize sets lets one widget class handle multiple sizes
+  - HorizontalPager from foundation.pager is the Compose equivalent of iOS TabView paging
+  - FlowRow from ExperimentalLayoutApi auto-wraps chips/tags without manual line breaking
+  - @Immutable annotation on wrapper data classes helps Compose skip recomposition
+  - Certificate pinning in network_security_config needs backup pins for rotation safety
+  - AppNavHost startDestination should be parameterized for onboarding vs home routing
 ---

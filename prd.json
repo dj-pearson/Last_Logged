@@ -204,7 +204,8 @@
         "Project compiles successfully"
       ],
       "priority": 11,
-      "passes": false
+      "passes": true,
+      "notes": "RevenueCatService with SubscriptionTier enum, FreeTierLimits (3 trackers, 100 history, 1 widget item), PackageInfo for monthly/annual/lifetime. PaywallScreen with feature list, selectable package cards, purchase/restore buttons. CancellationScreen with user stats. AnalyticsService with TelemetryDeck event tracking."
     },
     {
       "id": "AND-012",
@@ -219,7 +220,8 @@
         "Project compiles successfully"
       ],
       "priority": 12,
-      "passes": false
+      "passes": true,
+      "notes": "OnboardingScreen with HorizontalPager (Welcome, CategorySelection with FlowRow FilterChips, WidgetPrompt). OnboardingViewModel seeds categories + template items on complete. Persists onboardingCompleted in SecureStorage. Navigates to soft PaywallScreen after onboarding. MainActivity checks onboarding state for start destination."
     },
     {
       "id": "AND-013",
@@ -234,7 +236,8 @@
         "Project compiles successfully"
       ],
       "priority": 13,
-      "passes": false
+      "passes": true,
+      "notes": "TrackerDetailScreen with header (name, category, elapsed, interval), LazyColumn completion history, CircularProgressIndicator loading state, Edit button in top bar. TrackerDetailViewModel loads item + category + logs with free tier 100-log limit."
     },
     {
       "id": "AND-014",
@@ -249,7 +252,8 @@
         "Project compiles successfully"
       ],
       "priority": 14,
-      "passes": false
+      "passes": true,
+      "notes": "LastLoggedWidget using Jetpack Glance with SizeMode.Responsive (3 sizes), urgency color-coded rows, LazyColumn of overdue items. LastLoggedWidgetReceiver registered in manifest with appwidget-provider XML metadata. Widget preview layout. Glance dependencies added to build.gradle.kts."
     },
     {
       "id": "AND-015",
@@ -265,7 +269,8 @@
         "Project compiles successfully"
       ],
       "priority": 15,
-      "passes": false
+      "passes": true,
+      "notes": "LazyColumn uses key={it.id} throughout. @Immutable StableWrappers for collection types. Room DAOs return Flow (collected on IO via Room-ktx). Data classes are all stable (primitive + String fields). Hilt @Singleton services avoid duplicate creation. ProGuard shrinks release builds."
     },
     {
       "id": "AND-016",
@@ -280,7 +285,8 @@
         "Project compiles successfully"
       ],
       "priority": 16,
-      "passes": false
+      "passes": true,
+      "notes": "AccessibilityUtil with trackerRowDescription, logButtonDescription, archiveActionDescription, editActionDescription. LiveRegion modifiers for loading/snackbar announcements. All IconButtons have semantics contentDescription. Log button is 48dp. CancellationScreen stat cards have explicit accessibility labels. FilterChips in onboarding have contentDescription. 7 AccessibilityUtilTest tests."
     },
     {
       "id": "AND-017",
@@ -295,7 +301,8 @@
         "Project compiles successfully"
       ],
       "priority": 17,
-      "passes": false
+      "passes": true,
+      "notes": "network_security_config.xml updated with certificate pinning for supabase.co (Let's Encrypt ISRG Root X1 primary + R3 backup pins, 2027 expiry). Base config cleartextTrafficPermitted=false. Debug allows localhost/10.0.2.2 cleartext. ProGuard rules obfuscate release."
     },
     {
       "id": "AND-018",
@@ -311,7 +318,8 @@
         "Project compiles successfully"
       ],
       "priority": 18,
-      "passes": false
+      "passes": true,
+      "notes": "7 test files with 65+ tests total: InputSanitizerTest (12), TimeFormatUtilTest (8), AuthViewModelTest (16), SyncRetryTest (6), HomeViewModelTest (10), CategoryTemplatesTest (10), AccessibilityUtilTest (7). Covers validation, sanitization, grouping, sorting, retry logic, templates, accessibility descriptions."
     }
   ],
   "previousStories": [

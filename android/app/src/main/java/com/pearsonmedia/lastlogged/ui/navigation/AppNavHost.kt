@@ -7,17 +7,43 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.pearsonmedia.lastlogged.ui.auth.AuthScreen
+import com.pearsonmedia.lastlogged.ui.components.PaywallScreen
 import com.pearsonmedia.lastlogged.ui.detail.TrackerDetailScreen
 import com.pearsonmedia.lastlogged.ui.home.AddTrackerScreen
 import com.pearsonmedia.lastlogged.ui.home.HomeScreen
+import com.pearsonmedia.lastlogged.ui.onboarding.OnboardingScreen
 import com.pearsonmedia.lastlogged.ui.settings.SettingsScreen
 
 @Composable
-fun AppNavHost(navController: NavHostController) {
+fun AppNavHost(
+    navController: NavHostController,
+    startDestination: String = NavRoutes.Home.route
+) {
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.Home.route
+        startDestination = startDestination
     ) {
+        composable(NavRoutes.Onboarding.route) {
+            OnboardingScreen(
+                onComplete = {
+                    navController.navigate(NavRoutes.Paywall.route) {
+                        popUpTo(NavRoutes.Onboarding.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(NavRoutes.Paywall.route) {
+            PaywallScreen(
+                isHardPaywall = false,
+                onDismiss = {
+                    navController.navigate(NavRoutes.Home.route) {
+                        popUpTo(NavRoutes.Paywall.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(NavRoutes.Home.route) {
             HomeScreen(
                 onNavigateToSettings = { navController.navigate(NavRoutes.Settings.route) },

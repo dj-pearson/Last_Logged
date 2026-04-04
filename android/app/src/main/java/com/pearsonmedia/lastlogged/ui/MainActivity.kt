@@ -26,8 +26,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.compose.rememberNavController
 import com.pearsonmedia.lastlogged.service.BiometricService
+import com.pearsonmedia.lastlogged.service.SecureStorageService
 import com.pearsonmedia.lastlogged.service.SupabaseService
 import com.pearsonmedia.lastlogged.ui.navigation.AppNavHost
+import com.pearsonmedia.lastlogged.ui.navigation.NavRoutes
 import com.pearsonmedia.lastlogged.ui.theme.LastLoggedTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -37,6 +39,7 @@ class MainActivity : FragmentActivity() {
 
     @Inject lateinit var biometricService: BiometricService
     @Inject lateinit var supabaseService: SupabaseService
+    @Inject lateinit var secureStorageService: SecureStorageService
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,7 +81,15 @@ class MainActivity : FragmentActivity() {
                         )
                     } else {
                         val navController = rememberNavController()
-                        AppNavHost(navController = navController)
+                        val startDest = if (secureStorageService.getOnboardingCompleted()) {
+                            NavRoutes.Home.route
+                        } else {
+                            NavRoutes.Onboarding.route
+                        }
+                        AppNavHost(
+                            navController = navController,
+                            startDestination = startDest
+                        )
                     }
                 }
             }
