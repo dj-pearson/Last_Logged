@@ -7,6 +7,20 @@
         </trust-anchors>
     </base-config>
 
+    <!-- Certificate pinning for Supabase API -->
+    <domain-config>
+        <domain includeSubdomains="true">supabase.co</domain>
+        <pin-set expiration="2027-01-01">
+            <!-- Primary pin (Let's Encrypt ISRG Root X1) -->
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <!-- Backup pin (Let's Encrypt R3) -->
+            <pin digest="SHA-256">jQJTbIh0grw0/1TkHSumWb+Fs0Ggogr621gT3PvPKG0=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
     <!-- Allow cleartext for local development only -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>

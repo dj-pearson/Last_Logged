@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pearsonmedia.lastlogged.data.repository.TrackerRepository
+import com.pearsonmedia.lastlogged.service.BiometricService
+import com.pearsonmedia.lastlogged.service.SecureStorageService
+import com.pearsonmedia.lastlogged.service.SupabaseService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +24,7 @@ data class SettingsUiState(
     val defaultReminderHour: Int = 9,
     val defaultReminderMinute: Int = 0,
     val biometricLockEnabled: Boolean = false,
+    val biometricAvailable: Boolean = false,
     val appVersion: String = "",
     val appBuildNumber: Int = 0,
     val isExporting: Boolean = false,
@@ -34,6 +38,9 @@ data class SettingsUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val repository: TrackerRepository,
+    private val supabaseService: SupabaseService,
+    private val secureStorageService: SecureStorageService,
+    private val biometricService: BiometricService,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -42,6 +49,7 @@ class SettingsViewModel @Inject constructor(
 
     init {
         loadSettings()
+        observeAuthState()
     }
 
     private fun loadSettings() {
@@ -49,16 +57,38 @@ class SettingsViewModel @Inject constructor(
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             _uiState.value = _uiState.value.copy(
                 appVersion = packageInfo.versionName ?: "1.0.0",
-                appBuildNumber = packageInfo.longVersionCode.toInt()
+                appBuildNumber = packageInfo.longVersionCode.toInt(),
+                remindersEnabled = secureStorageService.getRemindersEnabled(),
+                defaultReminderHour = secureStorageService.getDefaultReminderHour(),
+                defaultReminderMinute = secureStorageService.getDefaultReminderMinute(),
+                biometricLockEnabled = biometricService.isEnabled,
+                biometricAvailable = biometricService.canUseBiometricOrDeviceCredential,
+                isPremium = secureStorageService.getIsPremium(),
+                subscriptionTier = secureStorageService.getSubscriptionTier()
+                    .replaceFirstChar { it.uppercase() }
             )
         } catch (_: Exception) { }
     }
 
+    private fun observeAuthState() {
+        viewModelScope.launch {
+            supabaseService.isSignedIn.collect { signedIn ->
+                _uiState.value = _uiState.value.copy(
+                    isSignedIn = signedIn,
+                    userEmail = supabaseService.currentUserEmail.value
+                )
+            }
+        }
+    }
+
     fun toggleReminders(enabled: Boolean) {
+        secureStorageService.setRemindersEnabled(enabled)
         _uiState.value = _uiState.value.copy(remindersEnabled = enabled)
     }
 
     fun setDefaultReminderTime(hour: Int, minute: Int) {
+        secureStorageService.setDefaultReminderHour(hour)
+        secureStorageService.setDefaultReminderMinute(minute)
         _uiState.value = _uiState.value.copy(
             defaultReminderHour = hour,
             defaultReminderMinute = minute
@@ -66,6 +96,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun toggleBiometricLock(enabled: Boolean) {
+        biometricService.setEnabled(enabled)
         _uiState.value = _uiState.value.copy(biometricLockEnabled = enabled)
     }
 
@@ -73,7 +104,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isExporting = true)
             try {
-                // TODO: Implement JSON export
+                // TODO: Implement JSON export to file
                 _uiState.value = _uiState.value.copy(isExporting = false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -117,7 +148,8 @@ class SettingsViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isDeletingAccount = true)
             try {
                 repository.clearAllData()
-                // TODO: Call SupabaseService.deleteAccount() and edge function
+                supabaseService.deleteAccount()
+                secureStorageService.clearAll()
                 _uiState.value = _uiState.value.copy(
                     isDeletingAccount = false,
                     showDeleteConfirmation = false,
@@ -135,8 +167,12 @@ class SettingsViewModel @Inject constructor(
 
     fun signOut() {
         viewModelScope.launch {
-            // TODO: Call SupabaseService.signOut()
-            _uiState.value = _uiState.value.copy(isSignedIn = false, userEmail = null)
+            try {
+                supabaseService.signOut()
+                _uiState.value = _uiState.value.copy(isSignedIn = false, userEmail = null)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Sign out failed: ${e.message}")
+            }
         }
     }
 
