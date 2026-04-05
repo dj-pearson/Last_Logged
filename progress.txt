@@ -29,6 +29,12 @@ Started: 2026-03-24
 - HorizontalPager + FlowRow for onboarding pages and category chip selection
 - @Immutable StableWrappers prevent unnecessary recomposition on collection changes
 - Certificate pinning in network_security_config.xml with backup pins for rotation safety
+- UrgencyColors object in ui/theme/Theme.kt centralizes tracker urgency color tokens (Good/DueSoon/Overdue + *Soft tints) — reuse across Home, Detail, widgets
+- AccessibilityUtil.rememberReduceMotion() / isReduceMotionEnabled(context) gates animations; reads Settings.Global.ANIMATOR_DURATION_SCALE
+- Card(onClick, interactionSource, ...) + collectIsPressedAsState() + animateFloatAsState + Modifier.scale() pattern for spring-press feedback on tappable list items
+- Rich haptics: View.performHapticFeedback(HapticFeedbackConstants.CONFIRM) on API 30+, VibrationEffect.createOneShot(50ms) fallback — wrap in a helper fun taking (Context, View)
+- Compose BOM 2024.01.00 DOES include SwipeToDismissBox and Card(onClick=) — do not bump BOM unless necessary
+- Kotlin sandbox has no Android SDK — verify compilation by careful code review against imports; previous iterations also skipped ./gradlew
 
 ### iOS App (LastLogged/)
 - Xcode project uses MVVM folder structure: Models/, ViewModels/, Views/{Home,Detail,Onboarding,Settings,Components}/, Services/, Widget/, Utilities/
@@ -1154,4 +1160,27 @@ Started: 2026-03-24
   - @Immutable annotation on wrapper data classes helps Compose skip recomposition
   - Certificate pinning in network_security_config needs backup pins for rotation safety
   - AppNavHost startDestination should be parameterized for onboarding vs home routing
+---
+
+## 2026-04-05 - MOBILE UI/UX PLANNING + UIUX-001
+- **Planning**: Designed 12 premium UI/UX improvement user stories (UIUX-001..UIUX-012) covering Android & iOS to elevate the app experience above competitors. Appended to prd.json userStories array (priorities 19–30). Stories cover: premium tracker cards, delightful empty states, animated paywall, pull-to-refresh, streak celebrations, onboarding polish, Material You surfaces, quick-log bottom sheet, iOS Live Activity/Dynamic Island, hero detail screen, reduced-motion gating, optional success sound.
+- **Implemented UIUX-001** (Premium tracker cards with urgency gradients and spring animations — Android):
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/ui/home/HomeScreen.kt — rewrote TrackerRow as Material 3 Card (rounded 20.dp, tonal 1.dp elevation, surfaceVariant container) with: leading 44.dp circular icon badge tinted by urgency, horizontal gradient background (urgency soft tint → transparent), title/label hierarchy, 52.dp log IconButton with bounce-scale success flash (1.25f) + checkmark swap for 500ms. Press-scale (0.97f, low-bouncy spring) via collectIsPressedAsState + animateFloatAsState. Upgraded EmptyState with 96.dp badge + FilledTonalButton CTA.
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/ui/theme/Theme.kt — added UrgencyColors object (Good/DueSoon/Overdue + soft 10% tints) as shared tokens.
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/util/AccessibilityUtil.kt — added isReduceMotionEnabled(context) and @Composable rememberReduceMotion() helpers (reads Settings.Global.ANIMATOR_DURATION_SCALE).
+  - Richer haptics: performLogHaptic() helper uses View.performHapticFeedback(HapticFeedbackConstants.CONFIRM) on API 30+, VibrationEffect fallback on older.
+  - All animations gated behind reduceMotion flag — degrade to tween(0) instant transitions.
+- **Files changed**:
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/ui/home/HomeScreen.kt (major rewrite)
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/ui/theme/Theme.kt (added UrgencyColors)
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/util/AccessibilityUtil.kt (added reduce-motion helpers)
+  - prd.json (added 12 UIUX-* stories; marked UIUX-001 passes:true)
+- **Learnings for future iterations**:
+  - Compose BOM 2024.01.00 resolves material3 with SwipeToDismissBox + Card(onClick=) available — don't bump unnecessarily.
+  - surfaceContainerHigh is NOT in BOM 2024.01.00 — use surfaceVariant instead (or bump BOM to 2024.02.00+ for Material3 1.2 tonal tokens).
+  - material-icons-extended is already a dep — Icons.Outlined.TaskAlt etc. are available.
+  - Spring animations on list rows: use low-bouncy damping + medium-low stiffness for tactile feel; medium-bouncy for success bounce.
+  - Always gate animations behind AccessibilityUtil.rememberReduceMotion() — replace with tween(0) for reduced-motion users.
+  - Kotlin sandbox has no Android SDK — manual code-review verification only. Check imports carefully.
+  - 11 UIUX stories remain: UIUX-002..UIUX-012 for future iterations.
 ---

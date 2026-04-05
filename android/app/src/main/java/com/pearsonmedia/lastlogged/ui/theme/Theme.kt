@@ -16,6 +16,19 @@ val BrandAccent = Color(0xFF10B981)
 val BrandError = Color(0xFFEF4444)
 val BrandWarning = Color(0xFFF59E0B)
 
+/**
+ * Centralized urgency color tokens. Used by TrackerRow, TrackerDetail, and widgets.
+ * Keep in sync with iOS urgency colors.
+ */
+object UrgencyColors {
+    val Good = Color(0xFF10B981)      // emerald-500
+    val GoodSoft = Color(0x1A10B981)  // 10% tint
+    val DueSoon = Color(0xFFF59E0B)   // amber-500
+    val DueSoonSoft = Color(0x1AF59E0B)
+    val Overdue = Color(0xFFEF4444)   // red-500
+    val OverdueSoft = Color(0x1AEF4444)
+}
+
 private val LightColorScheme = lightColorScheme(
     primary = BrandPrimary,
     secondary = BrandAccent,

@@ -123,7 +123,7 @@
       "title": "Supabase data sync with offline queue and retry logic",
       "description": "As a user, I want my data to sync reliably with the cloud even when my network is unreliable so I never lose tracked data.",
       "acceptanceCriteria": [
-        "SupabaseService handles push (local→cloud) and pull (cloud→local) sync",
+        "SupabaseService handles push (local\u2192cloud) and pull (cloud\u2192local) sync",
         "Pending operations stored persistently and retried with exponential backoff (2s, 4s, 8s, 16s, max 4 attempts)",
         "Network connectivity monitored via ConnectivityManager",
         "Sync triggers automatically when connectivity returns",
@@ -320,6 +320,199 @@
       "priority": 18,
       "passes": true,
       "notes": "7 test files with 65+ tests total: InputSanitizerTest (12), TimeFormatUtilTest (8), AuthViewModelTest (16), SyncRetryTest (6), HomeViewModelTest (10), CategoryTemplatesTest (10), AccessibilityUtilTest (7). Covers validation, sanitization, grouping, sorting, retry logic, templates, accessibility descriptions."
+    },
+    {
+      "id": "UIUX-001",
+      "title": "Premium tracker cards with urgency gradients and spring animations (Android)",
+      "description": "As a user, I want tracker rows that look and feel premium \u2014 rich Material 3 cards with dynamic urgency gradients, leading rounded icon badges, spring-scale press feedback, and a satisfying animated log button \u2014 so the app feels delightful and worth paying for.",
+      "acceptanceCriteria": [
+        "TrackerRow replaced with Material 3 Card (tonal elevation, rounded 20.dp corners) with 12.dp horizontal + 6.dp vertical margins",
+        "Leading circular icon badge tinted by urgency (green/amber/red) with subtle background container",
+        "Card background uses a soft gradient tinted by urgency level (surfaceContainer blended with urgency color)",
+        "Press interaction uses animateFloatAsState spring scale (1f -> 0.97f) with low stiffness for tactile feel",
+        "Log button animates: scale bounce + rotating checkmark success flash for 500ms after tap",
+        "Richer haptics via HapticFeedbackConstants.CONFIRM (API 30+) with graceful fallback",
+        "Urgency color tokens centralized in theme (UrgencyColors object) and reused across screens",
+        "Text hierarchy improved: name in titleMedium, relative time in labelMedium with urgency tint",
+        "Reduced-motion aware: animations respect accessibility settings (AccessibilityUtil hook)",
+        "Project compiles successfully with ./gradlew assembleDebug"
+      ],
+      "priority": 19,
+      "passes": true,
+      "notes": "Android HomeScreen TrackerRow redesigned as a Material 3 Card (rounded 20.dp, tonal elevation) with leading circular icon badge tinted by urgency, horizontal urgency gradient background, spring scale-on-press (0.97f, low bouncy), log button bounce-and-success flash (1.25f scale, checkmark swap for 500ms). Centralized UrgencyColors token object in Theme.kt. Richer haptics via HapticFeedbackConstants.CONFIRM (API 30+) with Vibrator fallback. Reduced-motion aware via AccessibilityUtil.rememberReduceMotion(). Empty state upgraded with icon badge and primary CTA button."
+    },
+    {
+      "id": "UIUX-002",
+      "title": "Delightful empty states with illustrations and CTAs (Android & iOS)",
+      "description": "As a user, I want empty states that feel welcoming and actionable with illustrated iconography, playful copy, and a clear primary CTA so I understand the value immediately.",
+      "acceptanceCriteria": [
+        "Android: EmptyState composable with large stylized icon (rounded container), headline, supporting copy, and filled primary 'Add your first tracker' button",
+        "iOS: HomeView empty state mirrors Android layout with SF Symbols, multiline copy, and prominent button",
+        "Copy is friendly and benefits-oriented ('Start tracking the small things that matter')",
+        "Secondary 'Browse templates' action opens template picker (where available)",
+        "Respects dark mode and dynamic type / dynamic color",
+        "Both projects compile successfully"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "UIUX-003",
+      "title": "Animated premium paywall with value proof and shimmer (Android & iOS)",
+      "description": "As a user considering upgrading, I want the paywall to feel premium with animated feature carousel, social proof, shimmering highlight on the recommended plan, and clear value comparison \u2014 so the paid tier feels genuinely worth it.",
+      "acceptanceCriteria": [
+        "Feature carousel with auto-advancing pages (5s interval) and page indicator dots",
+        "Recommended plan card has animated shimmer border effect (infinite transition)",
+        "Spring animated 'Most popular' badge with subtle bounce on entry",
+        "Social proof row (e.g. '\u2605\u2605\u2605\u2605\u2605 Loved by thousands of trackers')",
+        "Clear free vs premium comparison table with checkmark icons",
+        "CTA button has gradient fill and scale press animation",
+        "Dismiss via swipe-down on Android, pull-to-dismiss already present on iOS",
+        "Both projects compile successfully"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "UIUX-004",
+      "title": "Pull-to-refresh with branded custom indicator (Android)",
+      "description": "As a user, I want to pull down on the home list to manually sync my data with a branded spinner that reinforces the Last Logged identity.",
+      "acceptanceCriteria": [
+        "PullToRefreshBox wraps the LazyColumn on HomeScreen",
+        "Custom indicator uses brand primary color",
+        "Refresh triggers SupabaseService.sync() via HomeViewModel",
+        "Loading state reflected in isRefreshing StateFlow on HomeViewModel",
+        "Haptic tick when refresh completes",
+        "Project compiles successfully"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "UIUX-005",
+      "title": "Streak celebrations and milestone micro-animations (Android & iOS)",
+      "description": "As a user, I want to be celebrated when I hit streaks (3, 7, 14, 30, 100 logs) with tasteful animations and badges so the app feels rewarding and I keep coming back.",
+      "acceptanceCriteria": [
+        "Streak calculated per tracker (consecutive on-time logs) and stored in-memory via repository aggregation",
+        "When a milestone is hit on log, a modal with confetti + trophy icon + haptic celebration appears (2s auto-dismiss)",
+        "TrackerDetailScreen shows current streak with flame icon in header",
+        "HomeScreen shows a subtle flame badge on rows with streak \u2265 3",
+        "Animations respect reduced-motion setting",
+        "Both projects compile successfully"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "UIUX-006",
+      "title": "Polished onboarding with animated illustrations and progress (Android)",
+      "description": "As a new user, I want an onboarding flow that feels cinematic with smooth page transitions, animated illustrations, progress bar, and a skippable path \u2014 so my first impression is premium.",
+      "acceptanceCriteria": [
+        "HorizontalPager page change uses tween easing + parallax icon translation",
+        "Animated linear progress indicator at top reflecting page position",
+        "Each page features a large themed icon that scales/fades in on first visible",
+        "'Skip' TextButton in top-right until final page",
+        "Final page has primary gradient CTA 'Get Started'",
+        "Project compiles successfully"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "UIUX-007",
+      "title": "Material You / dynamic color polish and tonal surfaces (Android)",
+      "description": "As a user on Android 12+, I want the app to adapt to my wallpaper palette with proper tonal surfaces throughout so it feels natively integrated and premium.",
+      "acceptanceCriteria": [
+        "All hard-coded surface colors replaced with MaterialTheme.colorScheme.surfaceContainer* tokens",
+        "Brand accent colors fall back only on API < 31",
+        "TopAppBar uses mediumTopAppBarColors with surfaceContainer",
+        "Category headers and dividers use proper tonal variants",
+        "Status bar + navigation bar tinted via edge-to-edge with correct contrast",
+        "Project compiles successfully"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "UIUX-008",
+      "title": "Quick-log bottom sheet with gesture dismiss (Android & iOS)",
+      "description": "As a user, I want to long-press a tracker to open a quick-log bottom sheet where I can add notes, pick a past date, and confirm \u2014 so logging feels flexible and premium without leaving the home screen.",
+      "acceptanceCriteria": [
+        "Long-press on tracker row opens ModalBottomSheet (Android) / .sheet with .presentationDetents (iOS)",
+        "Sheet contains: tracker name, date picker (default now), notes TextField, Log button",
+        "Swipe-down dismisses; confirm button calls logCompletion with notes + custom date",
+        "Haptic on open and on confirm",
+        "Both projects compile successfully"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "UIUX-009",
+      "title": "iOS Live Activity and Dynamic Island for recent log",
+      "description": "As an iOS user, I want a Live Activity to appear briefly after I log a tracker showing the tracker name and 'Logged just now' with undo \u2014 and a Dynamic Island compact view for the next few minutes \u2014 so logging feels high-tech and premium.",
+      "acceptanceCriteria": [
+        "ActivityKit Live Activity extension added with compact, expanded, and minimal presentations",
+        "Started on successful log, auto-ends after 5 minutes or manual dismiss",
+        "Dynamic Island shows tracker icon + name in compact; expanded shows undo button",
+        "Gated by iOS 16.1+ availability check",
+        "Project compiles successfully on iOS 17 SDK"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "UIUX-010",
+      "title": "Redesigned TrackerDetail with hero header and history timeline (Android)",
+      "description": "As a user, I want the detail screen to have a hero header with large icon, urgency gradient, key stats (streak, total logs, avg interval), and a timeline-style history \u2014 so the detail view feels premium and insightful.",
+      "acceptanceCriteria": [
+        "Collapsible large top app bar with gradient tinted by urgency",
+        "Stats row: streak, total logs, avg interval (three cards)",
+        "Completion history rendered as vertical timeline with date stamps and optional notes",
+        "Log button is a prominent extended FAB at bottom",
+        "Project compiles successfully"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "UIUX-011",
+      "title": "Reduced-motion and accessibility polish across animations (Android & iOS)",
+      "description": "As a user with motion sensitivity, I want all new animations to gracefully degrade when reduced motion is enabled, with preserved haptic/visual feedback via non-animated alternatives.",
+      "acceptanceCriteria": [
+        "AccessibilityUtil.isReduceMotionEnabled() checked before all spring/shimmer/parallax animations",
+        "When reduced: animations replaced with instant state change or simple fade",
+        "Unit tests cover the gating helper",
+        "Both projects compile successfully"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "UIUX-012",
+      "title": "Premium sound design: subtle success chime on log (opt-in)",
+      "description": "As a user, I want an optional tasteful success sound when I log a tracker (off by default, toggle in Settings) \u2014 so logging feels extra rewarding without being intrusive.",
+      "acceptanceCriteria": [
+        "Short royalty-free success chime asset bundled (<50kb)",
+        "SoundPool plays the chime on log when setting enabled",
+        "Settings screen exposes a 'Success sound' toggle with description",
+        "Setting persisted via SecureStorageService/UserDefaults",
+        "Respects device silent mode",
+        "Both projects compile successfully"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": ""
     }
   ],
   "previousStories": [
