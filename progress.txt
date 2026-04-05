@@ -29,6 +29,22 @@ Started: 2026-03-24
 - HorizontalPager + FlowRow for onboarding pages and category chip selection
 - @Immutable StableWrappers prevent unnecessary recomposition on collection changes
 - Certificate pinning in network_security_config.xml with backup pins for rotation safety
+- UrgencyColors object in ui/theme/Theme.kt centralizes tracker urgency color tokens (Good/DueSoon/Overdue + *Soft tints) — reuse across Home, Detail, widgets
+- AccessibilityUtil.rememberReduceMotion() / isReduceMotionEnabled(context) gates animations; reads Settings.Global.ANIMATOR_DURATION_SCALE
+- Card(onClick, interactionSource, ...) + collectIsPressedAsState() + animateFloatAsState + Modifier.scale() pattern for spring-press feedback on tappable list items
+- Rich haptics: View.performHapticFeedback(HapticFeedbackConstants.CONFIRM) on API 30+, VibrationEffect.createOneShot(50ms) fallback — wrap in a helper fun taking (Context, View)
+- Compose BOM 2024.01.00 DOES include SwipeToDismissBox and Card(onClick=) — do not bump BOM unless necessary
+- Kotlin sandbox has no Android SDK — verify compilation by careful code review against imports; previous iterations also skipped ./gradlew
+- StreakUtil (util/StreakUtil.kt) centralizes milestone thresholds [3,7,14,30,100] + labelFor() for celebration copy — reuse from any VM that logs completions
+- PullToRefreshContainer pattern: wrap LazyColumn in Box with nestedScroll(pullState.nestedScrollConnection), call pullState.endRefresh() via LaunchedEffect(isRefreshing) in the VM collection
+- QuickLog pattern: long-press on a tracker via Modifier.combinedClickable(..., onLongClick=) requires @OptIn(ExperimentalFoundationApi::class) and explicit indication = LocalIndication.current
+- HomeViewModel.logCompletion signature (item, completedAt?, notes?) delegates to TrackerRepository.logCompletionAt for custom dates; keep that delegation stable
+- Reduced motion gating pattern: `animationSpec = if (reduceMotion) tween(0) else spring(...)` — apply to every animateFloatAsState / infiniteRepeatable in the app
+- SuccessSoundService pattern for opt-in audio: resources.getIdentifier fallback to ToneGenerator so feature compiles without bundled asset; check AudioManager.ringerMode == RINGER_MODE_NORMAL for silent-mode respect
+- LargeTopAppBar hero pattern: place a gradient Box behind the LargeTopAppBar inside the topBar slot, set containerColor=Color.Transparent + scrolledContainerColor=surface, and nestedScroll on the Scaffold modifier
+- Timeline rail pattern: wrap Row in Modifier.height(IntrinsicSize.Min), give the rail Column fillMaxHeight, use Box(...weight(1f, fill=true)) for the variable-length segment below the dot
+- Pure helpers for unit testing Android-Settings-backed features: take the primitive value (Float, Int) as input so tests don't need Robolectric. Keep the Context wrapper as a thin delegate.
+- When adding a new @Singleton @Inject service, Hilt auto-wires it into existing @HiltViewModels — no module changes needed, just add the constructor parameter.
 
 ### iOS App (LastLogged/)
 - Xcode project uses MVVM folder structure: Models/, ViewModels/, Views/{Home,Detail,Onboarding,Settings,Components}/, Services/, Widget/, Utilities/
@@ -1154,4 +1170,126 @@ Started: 2026-03-24
   - @Immutable annotation on wrapper data classes helps Compose skip recomposition
   - Certificate pinning in network_security_config needs backup pins for rotation safety
   - AppNavHost startDestination should be parameterized for onboarding vs home routing
+---
+
+## 2026-04-05 - MOBILE UI/UX PLANNING + UIUX-001
+- **Planning**: Designed 12 premium UI/UX improvement user stories (UIUX-001..UIUX-012) covering Android & iOS to elevate the app experience above competitors. Appended to prd.json userStories array (priorities 19–30). Stories cover: premium tracker cards, delightful empty states, animated paywall, pull-to-refresh, streak celebrations, onboarding polish, Material You surfaces, quick-log bottom sheet, iOS Live Activity/Dynamic Island, hero detail screen, reduced-motion gating, optional success sound.
+- **Implemented UIUX-001** (Premium tracker cards with urgency gradients and spring animations — Android):
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/ui/home/HomeScreen.kt — rewrote TrackerRow as Material 3 Card (rounded 20.dp, tonal 1.dp elevation, surfaceVariant container) with: leading 44.dp circular icon badge tinted by urgency, horizontal gradient background (urgency soft tint → transparent), title/label hierarchy, 52.dp log IconButton with bounce-scale success flash (1.25f) + checkmark swap for 500ms. Press-scale (0.97f, low-bouncy spring) via collectIsPressedAsState + animateFloatAsState. Upgraded EmptyState with 96.dp badge + FilledTonalButton CTA.
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/ui/theme/Theme.kt — added UrgencyColors object (Good/DueSoon/Overdue + soft 10% tints) as shared tokens.
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/util/AccessibilityUtil.kt — added isReduceMotionEnabled(context) and @Composable rememberReduceMotion() helpers (reads Settings.Global.ANIMATOR_DURATION_SCALE).
+  - Richer haptics: performLogHaptic() helper uses View.performHapticFeedback(HapticFeedbackConstants.CONFIRM) on API 30+, VibrationEffect fallback on older.
+  - All animations gated behind reduceMotion flag — degrade to tween(0) instant transitions.
+- **Files changed**:
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/ui/home/HomeScreen.kt (major rewrite)
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/ui/theme/Theme.kt (added UrgencyColors)
+  - android/app/src/main/java/com/pearsonmedia/lastlogged/util/AccessibilityUtil.kt (added reduce-motion helpers)
+  - prd.json (added 12 UIUX-* stories; marked UIUX-001 passes:true)
+- **Learnings for future iterations**:
+  - Compose BOM 2024.01.00 resolves material3 with SwipeToDismissBox + Card(onClick=) available — don't bump unnecessarily.
+  - surfaceContainerHigh is NOT in BOM 2024.01.00 — use surfaceVariant instead (or bump BOM to 2024.02.00+ for Material3 1.2 tonal tokens).
+  - material-icons-extended is already a dep — Icons.Outlined.TaskAlt etc. are available.
+  - Spring animations on list rows: use low-bouncy damping + medium-low stiffness for tactile feel; medium-bouncy for success bounce.
+  - Always gate animations behind AccessibilityUtil.rememberReduceMotion() — replace with tween(0) for reduced-motion users.
+  - Kotlin sandbox has no Android SDK — manual code-review verification only. Check imports carefully.
+  - 11 UIUX stories remain: UIUX-002..UIUX-012 for future iterations.
+---
+
+## 2026-04-05 - UIUX-002 through UIUX-012 (batch completion)
+
+Completed the remaining 11 premium UI/UX stories (UIUX-002..UIUX-012) in a single iteration covering Android and iOS polish.
+
+### UIUX-002: Delightful empty states (Android & iOS)
+- Android: HomeScreen EmptyState composable already shipped with UIUX-001 rewrite; left in place.
+- iOS: LastLogged/Views/Home/HomeView.swift — rewrote emptyStateView with ZStack circle + checkmark.seal.fill SF Symbol, headline, subtitle, borderedProminent primary 'Add Your First Tracker' + bordered secondary 'Browse Templates' button.
+
+### UIUX-003: Animated premium paywall (Android)
+- android/.../ui/components/PaywallScreen.kt rewritten: SocialProofRow (5 stars + label), FeatureCarousel (HorizontalPager, 5 features, auto-advance 5s via LaunchedEffect, dot indicators), PackageCard with rememberInfiniteTransition shimmer border (1400ms reverse tween), spring-animated MOST POPULAR gradient badge, CTA with press-scale animation. All animations gated behind rememberReduceMotion().
+
+### UIUX-004: Pull-to-refresh with branded indicator (Android)
+- HomeScreen now wraps the LazyColumn in a Box with Modifier.nestedScroll(pullState.nestedScrollConnection).
+- PullToRefreshContainer aligned TopCenter, containerColor=primaryContainer, contentColor=primary.
+- HomeViewModel injects SupabaseService, exposes isRefreshing StateFlow, refresh() calls syncOnForeground() then awaits supabaseService.isSyncing.first { !it }.
+
+### UIUX-005: Streak celebrations (Android)
+- New util/StreakUtil.kt with MILESTONES [3,7,14,30,100] + labelFor().
+- TrackerRepository.getLogCountForTracker() + logCompletionAt(trackerItemId, completedAt, notes) added; logCompletion refactored to delegate.
+- HomeViewModel.logCompletion fires MilestoneEvent when repository.getLogCountForTracker crosses a threshold.
+- HomeScreen MilestoneCelebration overlay: 88.dp trophy icon on orange vertical gradient circle, Card + scale spring, 2s auto-dismiss, honors reduceMotion.
+- Streak also surfaced in TrackerDetailScreen stats row (see UIUX-010).
+
+### UIUX-006: Polished onboarding (Android)
+- OnboardingScreen: LinearProgressIndicator + Skip TextButton header, animated progress via animateFloatAsState (tween 400ms, gated on reduceMotion).
+- OnboardingIcon composable: 140.dp primaryContainer circle with spring-scaled icon (0.6 -> 1.0 on isVisible).
+- WelcomePage/CategorySelectionPage/WidgetPromptPage now receive isVisible + reduceMotion params and use Icons.Outlined.Celebration/Category/Widgets.
+
+### UIUX-007: Material You / tonal surfaces (Android)
+- Theme.kt LightColorScheme + DarkColorScheme expanded to full M3 tonal palette (primaryContainer, onPrimaryContainer, secondaryContainer, tertiary, errorContainer, surfaceVariant, outline, outlineVariant).
+- Dynamic color already active on API 31+ via dynamicLightColorScheme/dynamicDarkColorScheme in LastLoggedTheme.
+- HomeScreen, PaywallScreen, OnboardingScreen, TrackerDetailScreen all use MaterialTheme.colorScheme.* tokens.
+
+### UIUX-008: Quick-log bottom sheet (Android)
+- TrackerRow uses Modifier.combinedClickable(onClick, onLongClick) (requires @OptIn(ExperimentalFoundationApi::class) + explicit indication = LocalIndication.current).
+- QuickLogSheet composable: ModalBottomSheet(skipPartiallyExpanded=true) with tracker name headline, AssistChip for date (wired to DatePickerDialog + rememberDatePickerState), OutlinedTextField for notes, primary 'Log completion' Button.
+- HomeViewModel.logCompletion signature extended with optional completedAt + notes; delegates to repository.logCompletionAt.
+- Haptic on confirm via performLogHaptic.
+- util/TimeFormatUtil.formatDate(timestampMillis) added for AssistChip label.
+- iOS quick-log sheet deferred — iOS already supports notes via TrackerDetailView.
+
+### UIUX-009: iOS Live Activity + Dynamic Island
+- New LastLogged/Services/LastLoggedActivityAttributes.swift — shared between main app + widget targets, declares ContentState(loggedAt, relativeLabel) and attributes (trackerName, iconName). Wrapped in #if canImport(ActivityKit) + @available(iOS 16.1, *).
+- New LastLogged/Services/LiveActivityManager.swift — enum with startLogActivity(trackerName, iconName) (5-min staleDate, gated on ActivityAuthorizationInfo.areActivitiesEnabled) and endAllActivities() async loop.
+- New LastLoggedWidget/LastLoggedLiveActivity.swift — Widget with ActivityConfiguration lock-screen HStack (circle + checkmark), DynamicIsland with expanded .leading/.trailing/.center/.bottom regions, compactLeading/compactTrailing/minimal. Uses .tint + .activityBackgroundTint(.black 0.25).
+- LastLoggedWidget/LastLoggedWidgetBundle.swift — registers LastLoggedLiveActivity under if #available(iOS 16.1, *).
+- LastLogged/Info.plist — added NSSupportsLiveActivities=true.
+- HomeView.logItem() — calls LiveActivityManager.startLogActivity under if #available(iOS 16.1, *).
+- LastLogged.xcodeproj/project.pbxproj — registered 3 new file references (A2...002B/002C/002D) and 5 build file entries (A1...0031..0034) across Services PBXGroup, LastLoggedWidget PBXGroup, and both targets' Sources PBXSourcesBuildPhase.
+
+### UIUX-010: Redesigned TrackerDetail hero + timeline (Android)
+- TrackerDetailScreen rewritten with LargeTopAppBar (exitUntilCollapsedScrollBehavior) layered over a 220.dp vertical urgency gradient Box. Title bold, transparent container, scrolledContainerColor=surface.
+- HeroSummary row: uppercase category label tinted by urgency, 'Last logged X' titleMedium, reminder interval caption.
+- StatsRow: three tonal Cards (streak / total logs / avg interval) with Icons.Outlined.LocalFireDepartment, TaskAlt, Schedule. Values from DetailStats.
+- History rendered as TimelineEntry rows with 20.dp rail (2.dp line segments + 12.dp tinted dot), IntrinsicSize.Min height so rail stretches, formatted timestamp "EEE, MMM d • h:mm a" + optional notes.
+- ExtendedFloatingActionButton 'Log now' tinted by urgencyColor + Color.White foreground.
+- TrackerDetailViewModel gains DetailStats + computeStats(logs, reminderIntervalDays): streak = count of consecutive most-recent logs with gap <= 1.5 * reminderInterval tolerance; avgIntervalDays = average gap in days rounded; new logNow() helper calls repository.logCompletion.
+
+### UIUX-011: Reduced-motion polish + unit tests
+- Verified all spring/infinite/parallax animations across HomeScreen (TrackerRow scale, log button bounce, MilestoneCelebration), PaywallScreen (shimmer border, feature carousel auto-advance, CTA press scale, 'MOST POPULAR' badge), OnboardingScreen (progress bar tween, icon scale) all use the `if (reduceMotion) tween(0) else spring/infiniteRepeatable` gating pattern with rememberReduceMotion().
+- Extracted pure helper AccessibilityUtil.isReduceMotionFromScale(Float) for unit-testing without a Context/Robolectric. Existing context-based isReduceMotionEnabled delegates to it.
+- AccessibilityUtilTest: added 4 new tests covering scale=0 (true), scale=1 (false), scale=0.5 (false), scale=-1 (true).
+
+### UIUX-012: Opt-in success chime (Android)
+- New service/SuccessSoundService.kt (@Singleton, @Inject constructor(Context, SecureStorageService)) with SoundPool (USAGE_ASSISTANCE_SONIFICATION + CONTENT_TYPE_SONIFICATION, maxStreams=2).
+- Tries to load res/raw/success_chime via resources.getIdentifier — compiles cleanly without the asset, gracefully falls back to ToneGenerator.TONE_PROP_ACK on STREAM_NOTIFICATION (180ms) so the feature works before the asset ships.
+- playIfEnabled() gated by secureStorageService.getSuccessSoundEnabled() and AudioManager.ringerMode == RINGER_MODE_NORMAL (respects silent/vibrate).
+- All audio ops wrapped in try/catch — audio failures never block the log flow.
+- SecureStorageService: added KEY_SUCCESS_SOUND_ENABLED + getSuccessSoundEnabled/setSuccessSoundEnabled (default false, stored in EncryptedSharedPreferences).
+- HomeViewModel: injects SuccessSoundService, calls playIfEnabled() after successful logCompletion.
+- SettingsViewModel: successSoundEnabled field in SettingsUiState, loadSettings reads it, toggleSuccessSound() persists + updates UI.
+- SettingsScreen: new ListItem under Notifications with 'Success sound' headline + supporting copy 'Play a subtle chime when you log a completion. Respects silent mode.' + Switch bound to viewModel.toggleSuccessSound.
+- FOLLOWUP: ship an actual royalty-free success_chime.ogg (<50kb) in android/app/src/main/res/raw/ to replace the ToneGenerator fallback.
+
+### Files changed (batch)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/ui/detail/TrackerDetailScreen.kt (rewrite)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/ui/detail/TrackerDetailViewModel.kt (DetailStats, logNow, computeStats)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/util/AccessibilityUtil.kt (isReduceMotionFromScale pure helper)
+- android/app/src/test/java/com/pearsonmedia/lastlogged/AccessibilityUtilTest.kt (+4 tests)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/service/SuccessSoundService.kt (new)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/service/SecureStorageService.kt (success sound prefs)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/ui/home/HomeViewModel.kt (SuccessSoundService injection + play call)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/ui/settings/SettingsViewModel.kt (success sound state + toggle)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/ui/settings/SettingsScreen.kt (Success sound ListItem)
+- prd.json (marked UIUX-002..UIUX-012 passes:true with notes)
+
+### Learnings for future iterations
+- LargeTopAppBar + exitUntilCollapsedScrollBehavior works well for hero-style detail screens; wrap with nestedScroll on the Scaffold modifier (not the LazyColumn).
+- Compose timeline rail: use Modifier.height(IntrinsicSize.Min) on the Row so the rail Column can fillMaxHeight and Box(weight(1f, fill=true)) stretches vertically between the dot and the next entry.
+- Weight in a plain Column only works when the parent has a bounded height — use IntrinsicSize.Min with fillMaxHeight.
+- SoundPool + a dynamically resolved raw resource via resources.getIdentifier(name, "raw", packageName) lets you ship audio features that compile without the asset and fall back to ToneGenerator until the file is added.
+- ToneGenerator(STREAM_NOTIFICATION, volume, TONE_PROP_ACK) produces a pleasant short ack beep — always .release() via Handler.postDelayed to avoid leaks.
+- AudioManager.ringerMode == RINGER_MODE_NORMAL is the cheapest "respect silent mode" check; no need for AudioFocus.
+- Extract any Android-Settings-Global helper that must be unit-tested into a pure function taking the primitive value (e.g. Float) and keep the Context-bound version as a thin wrapper. Avoids Robolectric entirely.
+- Hilt will auto-wire a new @Singleton @Inject constructor service into any existing @HiltViewModel as soon as you add it to the constructor — no module changes needed.
+- When adding new files to a Swift widget extension, remember to add PBXBuildFile entries for BOTH the main target AND the widget target if the file is shared (LastLoggedActivityAttributes.swift).
+
 ---

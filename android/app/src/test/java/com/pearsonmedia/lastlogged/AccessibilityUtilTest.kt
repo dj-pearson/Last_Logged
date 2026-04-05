@@ -67,4 +67,24 @@ class AccessibilityUtilTest {
         assertTrue(desc.contains("Dental"))
         assertTrue(desc.contains("Edit"))
     }
+
+    @Test
+    fun `isReduceMotionFromScale true when scale is zero`() {
+        assertTrue(AccessibilityUtil.isReduceMotionFromScale(0f))
+    }
+
+    @Test
+    fun `isReduceMotionFromScale false when scale is one`() {
+        assertTrue(!AccessibilityUtil.isReduceMotionFromScale(1f))
+    }
+
+    @Test
+    fun `isReduceMotionFromScale false for half scale`() {
+        assertTrue(!AccessibilityUtil.isReduceMotionFromScale(0.5f))
+    }
+
+    @Test
+    fun `isReduceMotionFromScale true for negative scale`() {
+        assertTrue(AccessibilityUtil.isReduceMotionFromScale(-1f))
+    }
 }

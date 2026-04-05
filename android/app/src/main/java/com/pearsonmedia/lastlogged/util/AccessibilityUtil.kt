@@ -1,6 +1,11 @@
 package com.pearsonmedia.lastlogged.util
 
+import android.content.Context
+import android.provider.Settings
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
@@ -47,5 +52,36 @@ object AccessibilityUtil {
     fun Modifier.liveRegionAssertive(description: String): Modifier = this.semantics {
         contentDescription = description
         liveRegion = LiveRegionMode.Assertive
+    }
+
+    /**
+     * Returns true when the user has reduced the system animator duration scale to 0,
+     * i.e. "Remove animations" accessibility setting is enabled. Premium animations
+     * should be gated behind !isReduceMotionEnabled(context).
+     */
+    fun isReduceMotionEnabled(context: Context): Boolean {
+        return try {
+            val scale = Settings.Global.getFloat(
+                context.contentResolver,
+                Settings.Global.ANIMATOR_DURATION_SCALE,
+                1f
+            )
+            isReduceMotionFromScale(scale)
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    /**
+     * Pure helper for unit-testing the reduced-motion policy independently of
+     * Android's Settings.Global. Treats any scale <= 0 as "animations removed".
+     */
+    fun isReduceMotionFromScale(animatorDurationScale: Float): Boolean =
+        animatorDurationScale <= 0f
+
+    @Composable
+    fun rememberReduceMotion(): Boolean {
+        val context = LocalContext.current
+        return remember(context) { isReduceMotionEnabled(context) }
     }
 }

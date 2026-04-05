@@ -1,19 +1,34 @@
 package com.pearsonmedia.lastlogged.ui.onboarding
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Celebration
+import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,12 +38,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pearsonmedia.lastlogged.util.AccessibilityUtil
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
@@ -40,19 +57,54 @@ fun OnboardingScreen(
     val selectedCategories by viewModel.selectedCategories.collectAsState()
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
+    val reduceMotion = AccessibilityUtil.rememberReduceMotion()
+
+    val progress by animateFloatAsState(
+        targetValue = (pagerState.currentPage + 1) / 3f,
+        animationSpec = if (reduceMotion) tween(0) else tween(400),
+        label = "onboardingProgress"
+    )
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // Progress + Skip header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(4.dp)
+            )
+            if (pagerState.currentPage < 2) {
+                TextButton(onClick = {
+                    viewModel.completeOnboarding()
+                    onComplete()
+                }) {
+                    Text("Skip")
+                }
+            } else {
+                Spacer(modifier = Modifier.size(48.dp))
+            }
+        }
+
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
+            val isVisible = pagerState.currentPage == page
             when (page) {
-                0 -> WelcomePage()
+                0 -> WelcomePage(isVisible = isVisible, reduceMotion = reduceMotion)
                 1 -> CategorySelectionPage(
                     selectedCategories = selectedCategories,
-                    onToggleCategory = { viewModel.toggleCategory(it) }
+                    onToggleCategory = { viewModel.toggleCategory(it) },
+                    isVisible = isVisible,
+                    reduceMotion = reduceMotion
                 )
-                2 -> WidgetPromptPage()
+                2 -> WidgetPromptPage(isVisible = isVisible, reduceMotion = reduceMotion)
             }
         }
 
@@ -106,7 +158,40 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun WelcomePage() {
+private fun OnboardingIcon(
+    isVisible: Boolean,
+    reduceMotion: Boolean,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.6f,
+        animationSpec = if (reduceMotion) tween(0) else spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "iconScale"
+    )
+    Box(
+        modifier = Modifier
+            .size(140.dp)
+            .scale(scale)
+            .background(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(72.dp)
+        )
+    }
+}
+
+@Composable
+private fun WelcomePage(isVisible: Boolean, reduceMotion: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -114,18 +199,20 @@ private fun WelcomePage() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        OnboardingIcon(isVisible, reduceMotion, Icons.Outlined.Celebration)
+        Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = "Last Logged",
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = "When did I last...?",
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.primary
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = "Track maintenance tasks, health checkups, and life events so you never forget when something was last done.",
             style = MaterialTheme.typography.bodyLarge,
@@ -139,7 +226,9 @@ private fun WelcomePage() {
 @Composable
 private fun CategorySelectionPage(
     selectedCategories: Set<String>,
-    onToggleCategory: (String) -> Unit
+    onToggleCategory: (String) -> Unit,
+    isVisible: Boolean,
+    reduceMotion: Boolean
 ) {
     val categories = listOf(
         "Home Maintenance" to "home",
@@ -156,7 +245,9 @@ private fun CategorySelectionPage(
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+        OnboardingIcon(isVisible, reduceMotion, Icons.Outlined.Category)
+        Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = "What do you want to track?",
             style = MaterialTheme.typography.headlineSmall,
@@ -192,7 +283,7 @@ private fun CategorySelectionPage(
 }
 
 @Composable
-private fun WidgetPromptPage() {
+private fun WidgetPromptPage(isVisible: Boolean, reduceMotion: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -200,6 +291,8 @@ private fun WidgetPromptPage() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        OnboardingIcon(isVisible, reduceMotion, Icons.Outlined.Widgets)
+        Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = "Add a Widget",
             style = MaterialTheme.typography.headlineSmall,

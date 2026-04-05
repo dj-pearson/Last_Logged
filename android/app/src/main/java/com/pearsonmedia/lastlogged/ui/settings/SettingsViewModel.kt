@@ -25,6 +25,7 @@ data class SettingsUiState(
     val defaultReminderMinute: Int = 0,
     val biometricLockEnabled: Boolean = false,
     val biometricAvailable: Boolean = false,
+    val successSoundEnabled: Boolean = false,
     val appVersion: String = "",
     val appBuildNumber: Int = 0,
     val isExporting: Boolean = false,
@@ -63,6 +64,7 @@ class SettingsViewModel @Inject constructor(
                 defaultReminderMinute = secureStorageService.getDefaultReminderMinute(),
                 biometricLockEnabled = biometricService.isEnabled,
                 biometricAvailable = biometricService.canUseBiometricOrDeviceCredential,
+                successSoundEnabled = secureStorageService.getSuccessSoundEnabled(),
                 isPremium = secureStorageService.getIsPremium(),
                 subscriptionTier = secureStorageService.getSubscriptionTier()
                     .replaceFirstChar { it.uppercase() }
@@ -98,6 +100,11 @@ class SettingsViewModel @Inject constructor(
     fun toggleBiometricLock(enabled: Boolean) {
         biometricService.setEnabled(enabled)
         _uiState.value = _uiState.value.copy(biometricLockEnabled = enabled)
+    }
+
+    fun toggleSuccessSound(enabled: Boolean) {
+        secureStorageService.setSuccessSoundEnabled(enabled)
+        _uiState.value = _uiState.value.copy(successSoundEnabled = enabled)
     }
 
     fun exportData() {
