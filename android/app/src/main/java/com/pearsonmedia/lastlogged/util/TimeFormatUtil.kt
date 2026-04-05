@@ -1,8 +1,18 @@
 package com.pearsonmedia.lastlogged.util
 
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 object TimeFormatUtil {
+
+    private val dateFormatter: SimpleDateFormat by lazy {
+        SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+    }
+
+    fun formatDate(timestampMillis: Long): String =
+        dateFormatter.format(Date(timestampMillis))
 
     fun elapsedTimeString(lastCompletedAt: Long?): String {
         if (lastCompletedAt == null) return "Never"

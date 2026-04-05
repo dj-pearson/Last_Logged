@@ -64,16 +64,22 @@ class TrackerRepository @Inject constructor(
         trackerItemDao.archiveItem(id)
     }
 
-    suspend fun logCompletion(trackerItemId: String, notes: String? = null): CompletionLog {
-        val now = System.currentTimeMillis()
+    suspend fun logCompletion(trackerItemId: String, notes: String? = null): CompletionLog =
+        logCompletionAt(trackerItemId, System.currentTimeMillis(), notes)
+
+    suspend fun logCompletionAt(
+        trackerItemId: String,
+        completedAt: Long,
+        notes: String? = null
+    ): CompletionLog {
         val log = CompletionLog(
             id = UUID.randomUUID().toString(),
             trackerItemId = trackerItemId,
-            completedAt = now,
+            completedAt = completedAt,
             notes = notes
         )
         completionLogDao.insert(log)
-        trackerItemDao.markCompleted(trackerItemId, now)
+        trackerItemDao.markCompleted(trackerItemId, completedAt)
         return log
     }
 
@@ -96,6 +102,9 @@ class TrackerRepository @Inject constructor(
 
     fun getLogsForTrackerLimited(trackerItemId: String, limit: Int): Flow<List<CompletionLog>> =
         completionLogDao.getLogsForTrackerLimited(trackerItemId, limit)
+
+    suspend fun getLogCountForTracker(trackerItemId: String): Int =
+        completionLogDao.getLogCountForTracker(trackerItemId)
 
     // --- TrackerCategory ---
 

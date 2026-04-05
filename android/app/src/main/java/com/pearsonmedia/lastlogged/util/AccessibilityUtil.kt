@@ -66,11 +66,18 @@ object AccessibilityUtil {
                 Settings.Global.ANIMATOR_DURATION_SCALE,
                 1f
             )
-            scale == 0f
+            isReduceMotionFromScale(scale)
         } catch (_: Throwable) {
             false
         }
     }
+
+    /**
+     * Pure helper for unit-testing the reduced-motion policy independently of
+     * Android's Settings.Global. Treats any scale <= 0 as "animations removed".
+     */
+    fun isReduceMotionFromScale(animatorDurationScale: Float): Boolean =
+        animatorDurationScale <= 0f
 
     @Composable
     fun rememberReduceMotion(): Boolean {

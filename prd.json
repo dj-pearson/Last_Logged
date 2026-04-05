@@ -354,8 +354,8 @@
         "Both projects compile successfully"
       ],
       "priority": 20,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Android EmptyState composable with 96.dp primaryContainer circular icon badge (Icons.Outlined.TaskAlt), headline 'Start Tracking What Matters', supporting copy, FilledTonalButton primary CTA. iOS HomeView.emptyStateView rewritten with ZStack circle + checkmark.seal.fill, headline, subtitle, borderedProminent 'Add Your First Tracker' + bordered 'Browse Templates' secondary button. Both respect dark mode and dynamic type."
     },
     {
       "id": "UIUX-003",
@@ -372,8 +372,8 @@
         "Both projects compile successfully"
       ],
       "priority": 21,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Android PaywallScreen rewritten: SocialProofRow (5 stars + 'Loved by thousands'), FeatureCarousel (HorizontalPager of 5 features, auto-advance every 5s via LaunchedEffect, dots indicator), PackageCard with rememberInfiniteTransition shimmer border on recommended tier, spring-animated 'MOST POPULAR' gradient badge, CTA with press-scale animation. All animations gated behind rememberReduceMotion()."
     },
     {
       "id": "UIUX-004",
@@ -388,8 +388,8 @@
         "Project compiles successfully"
       ],
       "priority": 22,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "HomeScreen wraps LazyColumn in Box with nestedScroll(pullState.nestedScrollConnection) and PullToRefreshContainer using primaryContainer/primary branding. rememberPullToRefreshState + LaunchedEffect wire to HomeViewModel.refresh() which calls SupabaseService.syncOnForeground() and awaits isSyncing=false via .first { !it }. pullState.endRefresh() triggered on isRefreshing=false."
     },
     {
       "id": "UIUX-005",
@@ -404,8 +404,8 @@
         "Both projects compile successfully"
       ],
       "priority": 23,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "StreakUtil helper with MILESTONES [3,7,14,30,100] and labelFor(). HomeViewModel fires MilestoneEvent when logCompletion crosses a threshold (via repository.getLogCountForTracker). HomeScreen MilestoneCelebration overlay (trophy on orange gradient, 2s auto-dismiss, spring scale honoring reduceMotion). TrackerDetail shows streak via DetailStats.streak computed in TrackerDetailViewModel."
     },
     {
       "id": "UIUX-006",
@@ -420,8 +420,8 @@
         "Project compiles successfully"
       ],
       "priority": 24,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "OnboardingScreen gains a LinearProgressIndicator + Skip button header, animated progress via animateFloatAsState, and an OnboardingIcon helper that spring-scales 0.6->1.0 on first visible. Welcome/Category/Widget pages receive isVisible and reduceMotion params, gating the icon scale animation. Respects reduced motion via tween(0) short-circuit."
     },
     {
       "id": "UIUX-007",
@@ -436,8 +436,8 @@
         "Project compiles successfully"
       ],
       "priority": 25,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Theme.kt LightColorScheme + DarkColorScheme expanded with full M3 tonal tokens (primaryContainer, onPrimaryContainer, secondaryContainer, tertiary, errorContainer, surfaceVariant, outline, outlineVariant). Dynamic color already wired via dynamicLightColorScheme/dynamicDarkColorScheme on API 31+. HomeScreen, PaywallScreen, OnboardingScreen, TrackerDetailScreen all use MaterialTheme.colorScheme.* tokens instead of hardcoded colors (except UrgencyColors which are intentionally brand-consistent across themes)."
     },
     {
       "id": "UIUX-008",
@@ -451,8 +451,8 @@
         "Both projects compile successfully"
       ],
       "priority": 26,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Android: long-press on TrackerRow (via Modifier.combinedClickable onLongClick) opens QuickLogSheet — a ModalBottomSheet with tracker name, AssistChip date picker (DatePickerDialog), OutlinedTextField notes, and Log confirmation Button. HomeViewModel.logCompletion extended with optional completedAt + notes, delegating to TrackerRepository.logCompletionAt. Haptic on confirm via performLogHaptic. iOS already supports long-press via .contextMenu + TrackerDetail for note editing; quick-log sheet via presentationDetents deferred to a follow-up iOS story."
     },
     {
       "id": "UIUX-009",
@@ -466,8 +466,8 @@
         "Project compiles successfully on iOS 17 SDK"
       ],
       "priority": 27,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "New LastLoggedActivityAttributes (shared between main app and widget extension) declaring ContentState (loggedAt, relativeLabel) and trackerName/iconName attributes. LiveActivityManager enum with startLogActivity (5-min staleDate, gated by ActivityAuthorizationInfo.areActivitiesEnabled) and endAllActivities. LastLoggedLiveActivity Widget with ActivityConfiguration lock-screen HStack + DynamicIsland compact/expanded/minimal presentations. NSSupportsLiveActivities=true in Info.plist. HomeView.logItem calls LiveActivityManager.startLogActivity gated by #available(iOS 16.1, *). All new source files registered in LastLogged.xcodeproj/project.pbxproj for both main and widget targets."
     },
     {
       "id": "UIUX-010",
@@ -481,8 +481,8 @@
         "Project compiles successfully"
       ],
       "priority": 28,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "TrackerDetailScreen rewritten with LargeTopAppBar + exitUntilCollapsedScrollBehavior over a vertical urgency gradient header background. StatsRow shows three tonal Cards: streak (flame), total logs (checkmark), avg interval (schedule). History rendered as TimelineEntry rows with a rail (2.dp line + 12.dp colored dot) and formatted timestamps. ExtendedFloatingActionButton 'Log now' tinted by urgency at bottom. TrackerDetailViewModel.computeStats calculates streak via 1.5x reminder-interval tolerance and avg gap in days."
     },
     {
       "id": "UIUX-011",
@@ -495,8 +495,8 @@
         "Both projects compile successfully"
       ],
       "priority": 29,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "AccessibilityUtil.rememberReduceMotion() consumed in HomeScreen (TrackerRow press scale, log button bounce, MilestoneCelebration), PaywallScreen (shimmer border, carousel autoadvance, CTA scale, badge bounce), OnboardingScreen (progress bar tween, icon scale). All gates use `if (reduceMotion) tween(0) else spring(...)` pattern. New pure helper isReduceMotionFromScale(Float) extracted for unit testing, with 4 new tests in AccessibilityUtilTest."
     },
     {
       "id": "UIUX-012",
@@ -511,8 +511,8 @@
         "Both projects compile successfully"
       ],
       "priority": 30,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "New SuccessSoundService (@Singleton, Hilt-injected) uses SoundPool with USAGE_ASSISTANCE_SONIFICATION attributes. Attempts to load res/raw/success_chime via resources.getIdentifier (compiles cleanly without the asset); falls back to ToneGenerator.TONE_PROP_ACK on STREAM_NOTIFICATION so the feature works even before the asset ships. Gated by SecureStorageService.getSuccessSoundEnabled (off by default) and AudioManager.RINGER_MODE_NORMAL check (respects silent/vibrate). HomeViewModel calls successSoundService.playIfEnabled() after each successful log. Settings screen exposes a 'Success sound' Switch with description. Setting persisted via EncryptedSharedPreferences. FOLLOWUP: ship an actual royalty-free success_chime.ogg (<50kb) in android/app/src/main/res/raw/ to replace the ToneGenerator fallback."
     }
   ],
   "previousStories": [

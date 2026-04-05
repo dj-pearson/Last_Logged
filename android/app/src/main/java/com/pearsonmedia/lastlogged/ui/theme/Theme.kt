@@ -31,26 +31,52 @@ object UrgencyColors {
 
 private val LightColorScheme = lightColorScheme(
     primary = BrandPrimary,
-    secondary = BrandAccent,
-    error = BrandError,
-    surface = Color(0xFFFFFBFE),
-    background = Color(0xFFFFFBFE),
     onPrimary = Color.White,
+    primaryContainer = Color(0xFFE0E7FF),
+    onPrimaryContainer = Color(0xFF1E1B4B),
+    secondary = BrandAccent,
     onSecondary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F)
+    secondaryContainer = Color(0xFFD1FAE5),
+    onSecondaryContainer = Color(0xFF064E3B),
+    tertiary = Color(0xFFF59E0B),
+    onTertiary = Color.White,
+    error = BrandError,
+    onError = Color.White,
+    errorContainer = Color(0xFFFEE2E2),
+    onErrorContainer = Color(0xFF7F1D1D),
+    surface = Color(0xFFFFFBFE),
+    onSurface = Color(0xFF1C1B1F),
+    surfaceVariant = Color(0xFFF3F4F6),
+    onSurfaceVariant = Color(0xFF4B5563),
+    outline = Color(0xFF9CA3AF),
+    outlineVariant = Color(0xFFE5E7EB),
+    background = Color(0xFFFFFBFE),
+    onBackground = Color(0xFF1C1B1F)
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = Color(0xFF9D97FF),
+    onPrimary = Color(0xFF1E1B4B),
+    primaryContainer = Color(0xFF3730A3),
+    onPrimaryContainer = Color(0xFFE0E7FF),
     secondary = Color(0xFF6EE7B7),
+    onSecondary = Color(0xFF064E3B),
+    secondaryContainer = Color(0xFF065F46),
+    onSecondaryContainer = Color(0xFFD1FAE5),
+    tertiary = Color(0xFFFCD34D),
+    onTertiary = Color(0xFF78350F),
     error = Color(0xFFFCA5A5),
+    onError = Color(0xFF7F1D1D),
+    errorContainer = Color(0xFF991B1B),
+    onErrorContainer = Color(0xFFFEE2E2),
     surface = Color(0xFF1C1B1F),
+    onSurface = Color(0xFFE6E1E5),
+    surfaceVariant = Color(0xFF2A2930),
+    onSurfaceVariant = Color(0xFFCAC4D0),
+    outline = Color(0xFF6B7280),
+    outlineVariant = Color(0xFF3F3F46),
     background = Color(0xFF1C1B1F),
-    onPrimary = Color(0xFF1C1B1F),
-    onSecondary = Color(0xFF1C1B1F),
-    onBackground = Color(0xFFE6E1E5),
-    onSurface = Color(0xFFE6E1E5)
+    onBackground = Color(0xFFE6E1E5)
 )
 
 @Composable

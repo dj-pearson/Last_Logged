@@ -4,5 +4,7 @@
 <dict>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Last Logged uses Face ID to protect your data and keep your tracked items private.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>

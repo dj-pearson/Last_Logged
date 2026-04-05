@@ -12,7 +12,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +39,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.Card
@@ -54,7 +58,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -94,8 +101,18 @@ fun HomeScreen(
     val itemsByCategory by viewModel.itemsByCategory.collectAsState()
     val undoState by viewModel.undoState.collectAsState()
     val error by viewModel.error.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val milestone by viewModel.milestoneEvent.collectAsState()
     var showAddMenu by remember { mutableStateOf(false) }
+    var quickLogItem by remember { mutableStateOf<TrackerItem?>(null) }
     val reduceMotion = AccessibilityUtil.rememberReduceMotion()
+    val pullState = rememberPullToRefreshState()
+    if (pullState.isRefreshing) {
+        LaunchedEffect(Unit) { viewModel.refresh() }
+    }
+    LaunchedEffect(isRefreshing) {
+        if (!isRefreshing) pullState.endRefresh()
+    }
 
     Scaffold(
         topBar = {
@@ -141,6 +158,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .nestedScroll(pullState.nestedScrollConnection)
         ) {
             if (itemsByCategory.isEmpty() || itemsByCategory.values.all { it.isEmpty() }) {
                 EmptyState(
@@ -166,6 +184,7 @@ fun HomeScreen(
                                 reduceMotion = reduceMotion,
                                 onLog = { viewModel.logCompletion(trackerItem) },
                                 onClick = { onNavigateToDetail(trackerItem.id) },
+                                onLongClick = { quickLogItem = trackerItem },
                                 onArchive = { viewModel.archiveItem(trackerItem) }
                             )
                         }
@@ -173,6 +192,23 @@ fun HomeScreen(
                     item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
+
+            // Milestone celebration overlay
+            milestone?.let { ev ->
+                MilestoneCelebration(
+                    event = ev,
+                    reduceMotion = reduceMotion,
+                    onDismiss = { viewModel.clearMilestone() }
+                )
+            }
+
+            // Branded pull-to-refresh indicator
+            PullToRefreshContainer(
+                state = pullState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary
+            )
 
             // Undo Snackbar
             AnimatedVisibility(
@@ -192,6 +228,18 @@ fun HomeScreen(
                 ) {
                     Text("Logged!")
                 }
+            }
+
+            // Quick-log bottom sheet (long-press on a tracker row)
+            quickLogItem?.let { item ->
+                QuickLogSheet(
+                    item = item,
+                    onDismiss = { quickLogItem = null },
+                    onConfirm = { completedAt, notes ->
+                        viewModel.logCompletion(item, completedAt = completedAt, notes = notes)
+                        quickLogItem = null
+                    }
+                )
             }
 
             // Error Snackbar
@@ -242,16 +290,19 @@ private fun urgencyPaletteFor(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TrackerRow(
     item: TrackerItem,
     reduceMotion: Boolean,
     onLog: () -> Unit,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     onArchive: () -> Unit
 ) {
     val context = LocalContext.current
     val view = LocalView.current
+    val indication = androidx.compose.foundation.LocalIndication.current
     val palette = urgencyPaletteFor(item.lastCompletedAt, item.reminderIntervalDays)
     val elapsedText = TimeFormatUtil.elapsedTimeString(item.lastCompletedAt)
 
@@ -317,20 +368,23 @@ private fun TrackerRow(
         enableDismissFromStartToEnd = false
     ) {
         Card(
-            onClick = onClick,
-            interactionSource = interactionSource,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp)
                 .scale(scale)
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = indication,
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                )
                 .semantics { contentDescription = AccessibilityUtil.trackerRowDescription(item) },
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant
             ),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = 1.dp,
-                pressedElevation = 0.dp
+                defaultElevation = 1.dp
             )
         ) {
             Row(
@@ -472,6 +526,195 @@ private fun EmptyState(
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Add your first tracker")
+        }
+    }
+}
+
+/**
+ * Quick-log bottom sheet: long-press a tracker row to log with optional
+ * custom completion time and notes, without leaving the home screen.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun QuickLogSheet(
+    item: TrackerItem,
+    onDismiss: () -> Unit,
+    onConfirm: (completedAt: Long, notes: String?) -> Unit
+) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+    val context = LocalContext.current
+    val view = LocalView.current
+    var notes by remember { mutableStateOf("") }
+    var completedAt by remember { mutableStateOf(System.currentTimeMillis()) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Log this completion",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Date row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("When:", style = MaterialTheme.typography.labelLarge)
+                Spacer(modifier = Modifier.width(12.dp))
+                androidx.compose.material3.AssistChip(
+                    onClick = { showDatePicker = true },
+                    label = { Text(TimeFormatUtil.formatDate(completedAt)) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            androidx.compose.material3.OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                label = { Text("Notes (optional)") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 4
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            androidx.compose.material3.Button(
+                onClick = {
+                    performLogHaptic(context, view)
+                    onConfirm(completedAt, notes.ifBlank { null })
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+            ) {
+                Icon(Icons.Default.Check, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Log completion", fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        if (showDatePicker) {
+            val datePickerState = androidx.compose.material3.rememberDatePickerState(
+                initialSelectedDateMillis = completedAt
+            )
+            androidx.compose.material3.DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { completedAt = it }
+                        showDatePicker = false
+                    }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                }
+            ) {
+                androidx.compose.material3.DatePicker(state = datePickerState)
+            }
+        }
+    }
+}
+
+/**
+ * Tasteful milestone celebration shown when a tracker crosses a streak threshold
+ * (3/7/14/30/100 logs). Auto-dismisses after 2 seconds. Honors reduced motion.
+ */
+@Composable
+private fun MilestoneCelebration(
+    event: MilestoneEvent,
+    reduceMotion: Boolean,
+    onDismiss: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = if (reduceMotion) tween(0) else spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "milestoneScale"
+    )
+
+    LaunchedEffect(event) {
+        delay(2000)
+        onDismiss()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.35f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier
+                .padding(32.dp)
+                .scale(scale)
+        ) {
+            Column(
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(88.dp)
+                        .background(
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    Color(0xFFFFC107),
+                                    Color(0xFFFF9800)
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = event.label,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = event.trackerName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

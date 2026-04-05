@@ -145,6 +145,18 @@ fun SettingsScreen(
                     )
                 }
             )
+            ListItem(
+                headlineContent = { Text("Success sound") },
+                supportingContent = {
+                    Text("Play a subtle chime when you log a completion. Respects silent mode.")
+                },
+                trailingContent = {
+                    Switch(
+                        checked = uiState.successSoundEnabled,
+                        onCheckedChange = { viewModel.toggleSuccessSound(it) }
+                    )
+                }
+            )
 
             HorizontalDivider()
 

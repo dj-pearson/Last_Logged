@@ -23,6 +23,7 @@ class SecureStorageService @Inject constructor(
         private const val KEY_REMINDERS_ENABLED = "reminders_enabled"
         private const val KEY_REMINDER_HOUR = "default_reminder_hour"
         private const val KEY_REMINDER_MINUTE = "default_reminder_minute"
+        private const val KEY_SUCCESS_SOUND_ENABLED = "success_sound_enabled"
     }
 
     private val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
@@ -100,6 +101,13 @@ class SecureStorageService @Inject constructor(
 
     fun setDefaultReminderMinute(minute: Int) {
         prefs.edit().putInt(KEY_REMINDER_MINUTE, minute).apply()
+    }
+
+    // Opt-in success chime when logging a completion (off by default).
+    fun getSuccessSoundEnabled(): Boolean = prefs.getBoolean(KEY_SUCCESS_SOUND_ENABLED, false)
+
+    fun setSuccessSoundEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SUCCESS_SOUND_ENABLED, enabled).apply()
     }
 
     // --- Bulk Clear ---

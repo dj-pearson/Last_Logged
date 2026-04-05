@@ -135,27 +135,56 @@ struct HomeView: View {
     // MARK: - Empty State
 
     private var emptyStateView: some View {
-        ContentUnavailableView {
-            Label("No Trackers Yet", systemImage: "checkmark.circle.fill")
-        } description: {
-            Text("Start tracking your recurring life events by adding your first tracker.")
-        } actions: {
-            Button {
-                showingAddTracker = true
-            } label: {
-                Text("Add Your First Tracker")
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.15))
+                    .frame(width: 120, height: 120)
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 54, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityHidden(true)
             }
-            .buttonStyle(.borderedProminent)
-            .accessibilityHint("Create a custom tracker")
+            .padding(.bottom, 4)
 
-            Button {
-                showingTemplatePicker = true
-            } label: {
-                Text("Browse Templates")
+            Text("Start Tracking What Matters")
+                .font(.title2.bold())
+                .multilineTextAlignment(.center)
+
+            Text("Add your first tracker and never forget the small things again.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            VStack(spacing: 10) {
+                Button {
+                    showingAddTracker = true
+                } label: {
+                    Label("Add Your First Tracker", systemImage: "plus.circle.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .accessibilityHint("Create a custom tracker")
+
+                Button {
+                    showingTemplatePicker = true
+                } label: {
+                    Label("Browse Templates", systemImage: "list.bullet.rectangle")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .accessibilityHint("Choose from pre-built tracker templates")
             }
-            .buttonStyle(.bordered)
-            .accessibilityHint("Choose from pre-built tracker templates")
+            .padding(.horizontal, 40)
+            .padding(.top, 8)
         }
+        .padding()
+        .accessibilityElement(children: .contain)
     }
 
     // MARK: - Tracker List
@@ -212,6 +241,15 @@ struct HomeView: View {
         generator.impactOccurred()
         let info = viewModel.logCompletion(for: item)
         showToast(info: info)
+
+        // Start a Live Activity / Dynamic Island acknowledgement for a
+        // premium confirmation cue (iOS 16.1+, gracefully no-ops on older).
+        if #available(iOS 16.1, *) {
+            LiveActivityManager.startLogActivity(
+                trackerName: item.name,
+                iconName: item.iconName
+            )
+        }
     }
 
     private func showToast(info: HomeViewModel.LogUndoInfo) {
