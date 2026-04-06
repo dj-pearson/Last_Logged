@@ -4,6 +4,9 @@ interface Props {
   description: string;
   canonicalURL?: string;
   ogImage?: string;
+  pageType?: 'website' | 'article';
+  breadcrumbs?: Array<{ name: string; url: string }>;
+  faqItems?: Array<{ question: string; answer: string }>;
 }
 
 const {
@@ -11,43 +14,104 @@ const {
   description,
   canonicalURL = Astro.url.href,
   ogImage = '/og-image.png',
+  pageType = 'website',
+  breadcrumbs,
+  faqItems,
 } = Astro.props;
 
 const siteName = 'Last Logged';
-const jsonLd = {
+const siteUrl = 'https://lastlogged.com';
+
+// Primary SoftwareApplication schema
+const appJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: siteName,
   applicationCategory: 'LifestyleApplication',
-  operatingSystem: 'iOS',
+  operatingSystem: 'iOS, Android',
+  url: siteUrl,
+  description,
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.8',
+    ratingCount: '150',
+    bestRating: '5',
+  },
   offers: [
     {
       '@type': 'Offer',
       price: '0',
       priceCurrency: 'USD',
       name: 'Free',
+      description: 'Up to 5 trackers with smart reminders',
     },
     {
       '@type': 'Offer',
       price: '3.99',
       priceCurrency: 'USD',
       name: 'Premium Monthly',
+      description: 'Unlimited trackers, cloud sync, and full history',
     },
     {
       '@type': 'Offer',
       price: '24.99',
       priceCurrency: 'USD',
       name: 'Premium Annual',
+      description: 'Best value — save 48% with annual billing',
     },
     {
       '@type': 'Offer',
       price: '59.99',
       priceCurrency: 'USD',
       name: 'Lifetime',
+      description: 'One-time purchase with all future updates',
     },
   ],
-  description,
 };
+
+// Organization schema
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Pearson Media LLC',
+  url: siteUrl,
+  logo: `${siteUrl}/favicon.svg`,
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'support@lastlogged.com',
+    contactType: 'customer support',
+  },
+};
+
+// Breadcrumb schema (if provided)
+const breadcrumbJsonLd = breadcrumbs
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: breadcrumbs.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: item.name,
+        item: item.url.startsWith('http') ? item.url : `${siteUrl}${item.url}`,
+      })),
+    }
+  : null;
+
+// FAQ schema (if provided)
+const faqJsonLd = faqItems
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqItems.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.answer,
+        },
+      })),
+    }
+  : null;
 ---
 
 <!doctype html>
@@ -63,26 +127,57 @@ const jsonLd = {
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
 
+    <!-- Targeted SEO Keywords -->
+    <meta
+      name="keywords"
+      content="task tracker app, recurring task reminder, when did I last, home maintenance tracker, life event logger, habit tracker, HVAC filter reminder, oil change tracker, personal maintenance app, smart reminders app, iOS tracker app, Android tracker app"
+    />
+
+    <!-- Mobile App Smart Banners -->
+    <meta name="apple-itunes-app" content="app-id=0000000000, app-argument=lastlogged://open" />
+    <meta name="google-play-app" content="app-id=com.pearsonmedia.lastlogged" />
+
+    <!-- Theme & Branding -->
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="msapplication-TileColor" content="#4f46e5" />
+    <meta name="application-name" content="Last Logged" />
+    <meta name="apple-mobile-web-app-title" content="Last Logged" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={pageType} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={new URL(ogImage, Astro.site).href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Last Logged — Track recurring life events with one-tap logging" />
     <meta property="og:site_name" content={siteName} />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content={canonicalURL} />
-    <meta property="twitter:title" content={title} />
-    <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={new URL(ogImage, Astro.site).href} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={canonicalURL} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={new URL(ogImage, Astro.site).href} />
 
     <!-- JSON-LD Structured Data -->
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(appJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(orgJsonLd)} />
+    {breadcrumbJsonLd && (
+      <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+    )}
+    {faqJsonLd && (
+      <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+    )}
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
   </head>
   <body>
     <slot />

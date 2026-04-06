@@ -1,0 +1,9 @@
+# https://lastlogged.com robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://lastlogged.com/sitemap-index.xml
+
+# Crawl-delay (optional, respected by some bots)
+Crawl-delay: 1
