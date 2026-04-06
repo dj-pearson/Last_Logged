@@ -1,19 +1,61 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const title = 'Last Logged — When did I last...?';
+const title = 'Last Logged — When Did I Last...? | Recurring Task Tracker App';
 const description =
-  'Track recurring life events with one-tap logging, smart reminders, and home screen widgets. Never forget when you last changed the HVAC filter, got a haircut, or called your parents.';
+  'Track recurring life events with one-tap logging, smart reminders, and home screen widgets. Never forget when you last changed the HVAC filter, got a haircut, or called your parents. Free for iOS and Android.';
+
+const faqItems = [
+  {
+    question: 'What is Last Logged?',
+    answer:
+      'Last Logged is a simple app for tracking recurring life events and tasks. With one tap, you log when you did something — changed an air filter, got a haircut, visited the dentist — and the app tracks how long it has been and reminds you when it is time to do it again.',
+  },
+  {
+    question: 'Is Last Logged free?',
+    answer:
+      'Yes! Last Logged is free to download and use with up to 5 trackers, smart reminders, and one widget style. Premium unlocks unlimited trackers, full completion history, cloud sync, and all widget styles starting at $3.99/month.',
+  },
+  {
+    question: 'What can I track with Last Logged?',
+    answer:
+      'You can track any recurring task or event: home maintenance (HVAC filters, gutter cleaning), health appointments (dentist, eye exams, haircuts), car maintenance (oil changes, tire rotations), pet care (vet visits, flea treatments), and personal tasks (calling family, date nights).',
+  },
+  {
+    question: 'Is Last Logged available on Android?',
+    answer:
+      'Yes! Last Logged is available on both iOS and Android. Both apps feature cloud sync so your data stays in sync across all your devices.',
+  },
+  {
+    question: 'Does Last Logged sync across devices?',
+    answer:
+      'Premium subscribers get cloud sync powered by Supabase. Your trackers and completion history sync automatically across your iPhone, iPad, and Android devices.',
+  },
+  {
+    question: 'How is Last Logged different from a to-do app?',
+    answer:
+      'Unlike to-do apps that focus on one-time tasks, Last Logged is built for things you do repeatedly on a schedule. It shows elapsed time since your last completion, color-coded urgency, and automatically reminds you when tasks are due again — no manual rescheduling needed.',
+  },
+];
+
+const breadcrumbs = [{ name: 'Home', url: '/' }];
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout
+  title={title}
+  description={description}
+  faqItems={faqItems}
+  breadcrumbs={breadcrumbs}
+>
   <!-- Header -->
   <header class="header">
     <div class="container">
       <a href="/" class="logo">Last Logged</a>
       <nav>
         <a href="#features">Features</a>
+        <a href="/use-cases">Use Cases</a>
         <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
       </nav>
     </div>
   </header>
@@ -25,16 +67,22 @@ const description =
         <h1>When did I last&hellip;?</h1>
         <p class="hero-tagline">
           Track recurring life events with one tap. Get smart reminders so you
-          never forget the things that matter.
+          never forget the things that matter &mdash; from HVAC filters to vet
+          visits.
         </p>
-        <a href="https://apps.apple.com/app/last-logged/id0000000000" class="app-store-badge" aria-label="Download on the App Store" target="_blank" rel="noopener noreferrer">
-          <img
-            src="/app-store-badge.svg"
-            alt="Download on the App Store"
-            width="180"
-            height="60"
-          />
-        </a>
+        <div class="hero-badges">
+          <a href="https://apps.apple.com/app/last-logged/id0000000000" class="app-store-badge" aria-label="Download on the App Store" target="_blank" rel="noopener noreferrer">
+            <img
+              src="/app-store-badge.svg"
+              alt="Download Last Logged on the App Store"
+              width="180"
+              height="60"
+            />
+          </a>
+          <a href="https://play.google.com/store/apps/details?id=com.pearsonmedia.lastlogged" class="play-store-badge" aria-label="Get it on Google Play" target="_blank" rel="noopener noreferrer">
+            Get on Google Play
+          </a>
+        </div>
       </div>
       <div class="hero-image">
         <div class="screenshot-placeholder">
@@ -44,10 +92,20 @@ const description =
     </div>
   </section>
 
+  <!-- Social Proof -->
+  <section class="social-proof">
+    <div class="container social-proof-inner">
+      <p>Trusted by people who track the small things that matter</p>
+    </div>
+  </section>
+
   <!-- Features -->
   <section id="features" class="features">
     <div class="container">
       <h2>Everything you need to stay on track</h2>
+      <p class="features-subtitle">
+        Simple one-tap logging meets powerful reminders and widgets.
+      </p>
       <div class="features-grid">
         <div class="feature-card">
           <div class="feature-icon" aria-hidden="true">&#x2714;&#xFE0F;</div>
@@ -81,7 +139,76 @@ const description =
             widgets let you log completions right from your home screen.
           </p>
         </div>
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">&#x2601;&#xFE0F;</div>
+          <h3>Cloud Sync</h3>
+          <p>
+            Keep your trackers in sync across all your devices. Works on both
+            iOS and Android with automatic syncing.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">&#x1F512;</div>
+          <h3>Privacy First</h3>
+          <p>
+            Your data is encrypted and secure. Optional biometric lock keeps
+            your tracking history private, even on shared devices.
+          </p>
+        </div>
       </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="how-it-works">
+    <div class="container">
+      <h2>How Last Logged works</h2>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-number" aria-hidden="true">1</div>
+          <h3>Add a tracker</h3>
+          <p>
+            Create a tracker for anything recurring &mdash; &ldquo;Changed HVAC
+            filter,&rdquo; &ldquo;Oil change,&rdquo; &ldquo;Called Mom.&rdquo;
+            Set how often you want to be reminded.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-number" aria-hidden="true">2</div>
+          <h3>Tap to log</h3>
+          <p>
+            When you complete the task, tap once to log it. The timer resets and
+            your history is recorded automatically.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-number" aria-hidden="true">3</div>
+          <h3>Get reminded</h3>
+          <p>
+            When it&rsquo;s time to do it again, you&rsquo;ll get a
+            notification. Color-coded urgency on the home screen shows
+            what&rsquo;s overdue at a glance.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Use Cases Preview -->
+  <section class="use-cases-preview">
+    <div class="container">
+      <h2>What people track with Last Logged</h2>
+      <div class="use-cases-grid">
+        <div class="use-case-chip">&#x1F3E0; Home Maintenance</div>
+        <div class="use-case-chip">&#x1FA7A; Health & Wellness</div>
+        <div class="use-case-chip">&#x1F697; Car Maintenance</div>
+        <div class="use-case-chip">&#x1F43E; Pet Care</div>
+        <div class="use-case-chip">&#x1F465; Social & Family</div>
+        <div class="use-case-chip">&#x1F3CB;&#xFE0F; Fitness & Habits</div>
+      </div>
+      <p class="use-cases-cta">
+        <a href="/use-cases">See all use cases &rarr;</a>
+      </p>
     </div>
   </section>
 
@@ -143,6 +270,42 @@ const description =
     </div>
   </section>
 
+  <!-- FAQ -->
+  <section id="faq" class="faq">
+    <div class="container">
+      <h2>Frequently asked questions</h2>
+      <div class="faq-grid">
+        {faqItems.map((item) => (
+          <details class="faq-item">
+            <summary>{item.question}</summary>
+            <p>{item.answer}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="final-cta">
+    <div class="container">
+      <h2>Never forget the things that matter</h2>
+      <p>Download Last Logged free and start tracking today.</p>
+      <div class="hero-badges" style="justify-content: center;">
+        <a href="https://apps.apple.com/app/last-logged/id0000000000" class="app-store-badge" aria-label="Download on the App Store" target="_blank" rel="noopener noreferrer">
+          <img
+            src="/app-store-badge.svg"
+            alt="Download Last Logged on the App Store"
+            width="180"
+            height="60"
+          />
+        </a>
+        <a href="https://play.google.com/store/apps/details?id=com.pearsonmedia.lastlogged" class="play-store-badge" aria-label="Get it on Google Play" target="_blank" rel="noopener noreferrer">
+          Get on Google Play
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="container footer-inner">
@@ -151,6 +314,7 @@ const description =
         <p>&copy; {new Date().getFullYear()} Pearson Media LLC</p>
       </div>
       <nav class="footer-links">
+        <a href="/use-cases">Use Cases</a>
         <a href="/privacy">Privacy Policy</a>
         <a href="/terms">Terms of Service</a>
         <a href="mailto:support@lastlogged.com">Contact</a>
@@ -243,8 +407,31 @@ const description =
     max-width: 480px;
   }
 
+  .hero-badges {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
   .app-store-badge img {
     display: block;
+  }
+
+  .play-store-badge {
+    display: inline-block;
+    padding: 0.7rem 1.5rem;
+    background: var(--color-text);
+    color: #fff !important;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: opacity 0.15s;
+  }
+
+  .play-store-badge:hover {
+    opacity: 0.85;
+    text-decoration: none;
   }
 
   .hero-image {
@@ -267,6 +454,23 @@ const description =
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
   }
 
+  /* Social Proof */
+  .social-proof {
+    padding: 1.5rem 0;
+    background: var(--color-bg-alt);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .social-proof-inner {
+    text-align: center;
+  }
+
+  .social-proof p {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
   /* Features */
   .features {
     padding: 5rem 0;
@@ -276,12 +480,19 @@ const description =
     text-align: center;
     font-size: 2rem;
     font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .features-subtitle {
+    text-align: center;
+    color: var(--color-text-muted);
     margin-bottom: 3rem;
+    font-size: 1.1rem;
   }
 
   .features-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 2rem;
   }
 
@@ -307,6 +518,95 @@ const description =
     font-size: 0.95rem;
     color: var(--color-text-muted);
     line-height: 1.5;
+  }
+
+  /* How It Works */
+  .how-it-works {
+    padding: 5rem 0;
+    background: var(--color-bg-alt);
+  }
+
+  .how-it-works h2 {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 3rem;
+  }
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+
+  .step {
+    text-align: center;
+    padding: 1.5rem;
+  }
+
+  .step-number {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .step h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .step p {
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+
+  /* Use Cases Preview */
+  .use-cases-preview {
+    padding: 4rem 0;
+  }
+
+  .use-cases-preview h2 {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+  }
+
+  .use-cases-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  .use-case-chip {
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: 2rem;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .use-cases-cta {
+    text-align: center;
+    margin-top: 1.5rem;
+  }
+
+  .use-cases-cta a {
+    font-weight: 600;
+    font-size: 1rem;
   }
 
   /* Pricing */
@@ -406,6 +706,82 @@ const description =
     margin-right: 0.5rem;
   }
 
+  /* FAQ */
+  .faq {
+    padding: 5rem 0;
+  }
+
+  .faq h2 {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 2.5rem;
+  }
+
+  .faq-grid {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .faq-item {
+    border-bottom: 1px solid var(--color-border);
+    padding: 1.25rem 0;
+  }
+
+  .faq-item summary {
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .faq-item summary::after {
+    content: '+';
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--color-text-muted);
+    transition: transform 0.2s;
+  }
+
+  .faq-item[open] summary::after {
+    transform: rotate(45deg);
+  }
+
+  .faq-item p {
+    margin-top: 0.75rem;
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+    line-height: 1.7;
+  }
+
+  /* Final CTA */
+  .final-cta {
+    padding: 5rem 0;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    text-align: center;
+    color: #fff;
+  }
+
+  .final-cta h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .final-cta p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+  }
+
+  .final-cta .play-store-badge {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+
   /* Footer */
   .footer {
     padding: 2.5rem 0;
@@ -454,12 +830,16 @@ const description =
       margin-right: auto;
     }
 
-    .app-store-badge img {
-      margin: 0 auto;
+    .hero-badges {
+      justify-content: center;
     }
 
     .features-grid {
       grid-template-columns: repeat(2, 1fr);
+    }
+
+    .steps-grid {
+      grid-template-columns: 1fr;
     }
 
     .pricing-grid {

@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.pearsonmedia.lastlogged",
+        "paths": [
+          "/tracker/*",
+          "/open",
+          "/share/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "TEAMID.com.pearsonmedia.lastlogged"
+    ]
+  }
+}

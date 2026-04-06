@@ -1,0 +1,426 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'Use Cases — Last Logged | Track Home Maintenance, Health, Car & More';
+const description =
+  'Discover how Last Logged helps you track home maintenance schedules, health appointments, car service intervals, pet care, and personal tasks. Never forget when you last did something important.';
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Use Cases', url: '/use-cases' },
+];
+---
+
+<BaseLayout title={title} description={description} breadcrumbs={breadcrumbs}>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <a href="/" class="logo">Last Logged</a>
+      <nav>
+        <a href="/#features">Features</a>
+        <a href="/use-cases" aria-current="page">Use Cases</a>
+        <a href="/#pricing">Pricing</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="use-cases-hero">
+    <div class="container">
+      <h1>Track everything that matters in your life</h1>
+      <p class="hero-sub">
+        From HVAC filters to vet visits, Last Logged keeps you on top of the
+        recurring tasks that are easy to forget but important to remember.
+      </p>
+    </div>
+  </section>
+
+  <!-- Use Case Sections -->
+  <section class="use-case-section">
+    <div class="container">
+      <div class="use-case-block">
+        <div class="use-case-icon" aria-hidden="true">&#x1F3E0;</div>
+        <div class="use-case-content">
+          <h2>Home Maintenance Tracker</h2>
+          <p>
+            Stop guessing when you last changed the HVAC filter, cleaned the
+            gutters, or replaced the water filter. Last Logged acts as your
+            <strong>home maintenance reminder app</strong>, tracking every
+            recurring household task with one tap. Set custom intervals and get
+            notified when it's time to act.
+          </p>
+          <ul>
+            <li>HVAC filter replacement reminders</li>
+            <li>Gutter cleaning schedule</li>
+            <li>Water filter and softener maintenance</li>
+            <li>Smoke detector battery replacement</li>
+            <li>Lawn care and fertilizer tracking</li>
+            <li>Appliance maintenance logs</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="use-case-block reverse">
+        <div class="use-case-icon" aria-hidden="true">&#x1FA7A;</div>
+        <div class="use-case-content">
+          <h2>Health & Wellness Tracking</h2>
+          <p>
+            Keep track of recurring health appointments and personal care
+            routines. Whether it's your last dentist visit, eye exam, or
+            haircut, Last Logged is a simple
+            <strong>health appointment tracker</strong> that reminds you when
+            it's time to schedule again.
+          </p>
+          <ul>
+            <li>Dental cleaning reminders (every 6 months)</li>
+            <li>Annual physical and eye exam tracking</li>
+            <li>Haircut and grooming schedules</li>
+            <li>Prescription refill reminders</li>
+            <li>Flu shot and vaccination tracking</li>
+            <li>Skincare and wellness routine logs</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="use-case-block">
+        <div class="use-case-icon" aria-hidden="true">&#x1F697;</div>
+        <div class="use-case-content">
+          <h2>Car & Vehicle Maintenance</h2>
+          <p>
+            Never miss an oil change or tire rotation again. Last Logged works
+            as a <strong>car maintenance tracker app</strong> that logs every
+            service event so you always know where you stand with your
+            vehicle's maintenance schedule.
+          </p>
+          <ul>
+            <li>Oil change interval tracking</li>
+            <li>Tire rotation and replacement reminders</li>
+            <li>Brake inspection schedules</li>
+            <li>Car wash and detailing logs</li>
+            <li>Registration and insurance renewal alerts</li>
+            <li>State inspection reminders</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="use-case-block reverse">
+        <div class="use-case-icon" aria-hidden="true">&#x1F43E;</div>
+        <div class="use-case-content">
+          <h2>Pet Care Reminders</h2>
+          <p>
+            Your pets depend on you for regular care. Use Last Logged as a
+            <strong>pet care tracker</strong> to remember vet visits, flea
+            treatments, grooming appointments, and more. Color-coded urgency
+            indicators show what's overdue at a glance.
+          </p>
+          <ul>
+            <li>Vet checkup and vaccination tracking</li>
+            <li>Flea and tick treatment schedules</li>
+            <li>Grooming and nail trimming reminders</li>
+            <li>Pet food and supply reorder tracking</li>
+            <li>Heartworm medication schedules</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="use-case-block">
+        <div class="use-case-icon" aria-hidden="true">&#x1F465;</div>
+        <div class="use-case-content">
+          <h2>Social & Personal Life</h2>
+          <p>
+            Don't let important relationships slip through the cracks. Track
+            when you last called your parents, caught up with a friend, or
+            took a date night. Last Logged helps you be more
+            <strong>intentional about staying connected</strong> with the
+            people who matter most.
+          </p>
+          <ul>
+            <li>Family call and visit tracking</li>
+            <li>Friend catch-up reminders</li>
+            <li>Date night scheduling</li>
+            <li>Thank-you note and gift tracking</li>
+            <li>Community and volunteer commitments</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <h2>Start tracking what matters</h2>
+      <p>Free to download with up to 5 trackers. No account required.</p>
+      <div class="cta-buttons">
+        <a href="https://apps.apple.com/app/last-logged/id0000000000" class="cta-button" target="_blank" rel="noopener noreferrer">
+          Download for iOS
+        </a>
+        <a href="https://play.google.com/store/apps/details?id=com.pearsonmedia.lastlogged" class="cta-button cta-secondary" target="_blank" rel="noopener noreferrer">
+          Get on Google Play
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="logo">Last Logged</span>
+        <p>&copy; {new Date().getFullYear()} Pearson Media LLC</p>
+      </div>
+      <nav class="footer-links">
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+        <a href="mailto:support@lastlogged.com">Contact</a>
+      </nav>
+    </div>
+  </footer>
+</BaseLayout>
+
+<style>
+  /* Header */
+  .header {
+    position: sticky;
+    top: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--color-border);
+    z-index: 100;
+  }
+
+  .header .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .logo:hover {
+    text-decoration: none;
+  }
+
+  .header nav {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .header nav a {
+    color: var(--color-text-muted);
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  .header nav a:hover,
+  .header nav a[aria-current='page'] {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  /* Hero */
+  .use-cases-hero {
+    padding: 5rem 0 3rem;
+    background: linear-gradient(135deg, #f0f0ff 0%, #e8faf0 100%);
+    text-align: center;
+  }
+
+  .use-cases-hero h1 {
+    font-size: 2.75rem;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+
+  .hero-sub {
+    font-size: 1.2rem;
+    color: var(--color-text-muted);
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  /* Use Case Sections */
+  .use-case-section {
+    padding: 4rem 0;
+  }
+
+  .use-case-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 3rem;
+    margin-bottom: 4rem;
+    padding-bottom: 4rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .use-case-block:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .use-case-block.reverse {
+    flex-direction: row-reverse;
+  }
+
+  .use-case-icon {
+    font-size: 4rem;
+    flex-shrink: 0;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-alt);
+    border-radius: 1.5rem;
+  }
+
+  .use-case-content h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+
+  .use-case-content p {
+    font-size: 1.05rem;
+    color: var(--color-text-muted);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+
+  .use-case-content ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 2rem;
+  }
+
+  .use-case-content li {
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+    padding: 0.25rem 0;
+  }
+
+  .use-case-content li::before {
+    content: '\2713';
+    color: var(--color-accent);
+    font-weight: 700;
+    margin-right: 0.5rem;
+  }
+
+  /* CTA */
+  .cta-section {
+    padding: 5rem 0;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    text-align: center;
+    color: #fff;
+  }
+
+  .cta-section h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .cta-section p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .cta-button {
+    display: inline-block;
+    padding: 0.85rem 2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    background: #fff;
+    color: var(--color-primary);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .cta-button:hover {
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .cta-button.cta-secondary {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+
+  /* Footer */
+  .footer {
+    padding: 2.5rem 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .footer-brand p {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-links a {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  .footer-links a:hover {
+    color: var(--color-primary);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .use-cases-hero h1 {
+      font-size: 2rem;
+    }
+
+    .use-case-block,
+    .use-case-block.reverse {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .use-case-content ul {
+      grid-template-columns: 1fr;
+    }
+
+    .footer-inner {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+</style>
