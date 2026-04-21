@@ -1,5 +1,6 @@
 package com.pearsonmedia.lastlogged
 
+import com.pearsonmedia.lastlogged.service.GoogleSignInService
 import com.pearsonmedia.lastlogged.service.PushTokenService
 import com.pearsonmedia.lastlogged.service.RevenueCatService
 import com.pearsonmedia.lastlogged.service.SupabaseService
@@ -25,7 +26,8 @@ class AuthViewModelTest {
         }
         val revenueCat = mockk<RevenueCatService>(relaxed = true)
         val pushTokens = mockk<PushTokenService>(relaxed = true)
-        viewModel = AuthViewModel(supabase, revenueCat, pushTokens)
+        val googleSignIn = mockk<GoogleSignInService>(relaxed = true)
+        viewModel = AuthViewModel(supabase, revenueCat, pushTokens, googleSignIn)
     }
 
     @Test

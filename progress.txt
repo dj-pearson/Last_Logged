@@ -51,6 +51,9 @@ Started: 2026-03-24
 - For test doubles of @HiltViewModel deps in plain JUnit, mockk(relaxed = true) plus `every { stateFlowProp } returns MutableStateFlow(value)` is the lightest path.
 - Secrets live in LastLogged/Config/Secrets.xcconfig (gitignored); Debug/Release.xcconfig `#include?` it with a Secrets.example.xcconfig fallback. Info.plist uses $(VAR) keys; AppSecrets.swift reads via Bundle.main.object(forInfoDictionaryKey:).
 - xcconfig values interpret `//` as a comment — escape URLs with `https:$()//domain`.
+- Google Sign-In on Android uses Credential Manager (androidx.credentials) + GetGoogleIdOption from the googleid lib; pass the Web OAuth client id (not the Android one). Hand the returned ID token to SupabaseService.signInWithGoogle which calls client.auth.signInWith(IDToken) { provider = Google }.
+- Preserve tap-through on a SwiftUI NavigationLink while adding long-press by using `.simultaneousGesture(LongPressGesture(minimumDuration: 0.4))` — plain `.onLongPressGesture` would eat the tap.
+- Xcode 14+ AppIcon Contents.json can be a single 1024x1024 universal entry — Apple auto-derives sizes. Don't regress to the legacy multi-size matrix.
 
 ### iOS App (LastLogged/)
 - Xcode project uses MVVM folder structure: Models/, ViewModels/, Views/{Home,Detail,Onboarding,Settings,Components}/, Services/, Widget/, Utilities/
@@ -1383,6 +1386,57 @@ Closed the real ship-blocker gaps uncovered in the pre-launch audit. All 8 P0 us
 - Supabase Kotlin client exposes resendEmail via `io.github.jan.supabase.gotrue.providers.builtin.Email.Config.ResendType.SIGNUP` — already used by the existing resendConfirmation in SupabaseService.
 - When a @HiltViewModel's constructor changes in a JUnit test with no Hilt test runner, mockk(relaxed = true) is the cheapest swap-in; return MutableStateFlow for StateFlow properties via `every { flowProp } returns MutableStateFlow(value)`.
 - L-009..L-015 remain open in prd.json for follow-up iterations: Google Sign-In, success_chime.ogg, iOS quick-log sheet, full iOS icon set, assembleRelease CI verification, production backend verification, and store listing metadata.
+---
+
+## 2026-04-21 - LAUNCH-READINESS BATCH 2 (L-009..L-012)
+Closed the rest of the code-side launch-readiness stories. L-013/L-014/L-015 remain open because they aren't code tasks (CI verification, prod infra, store listings).
+
+### L-009: Google Sign-In on Android
+- app/build.gradle.kts — androidx.credentials 1.2.2 + credentials-play-services-auth + googleid 1.1.0 deps; BuildConfig.GOOGLE_WEB_CLIENT_ID from local.properties.
+- service/GoogleSignInService.kt (new, @Singleton) — wraps CredentialManager.getCredential with GetGoogleIdOption (filterByAuthorizedAccounts=false so new users can sign in; autoSelect=false so the account chooser always appears on a fresh install). Throws GoogleSignInException with sanitized messages. isConfigured gate keeps the feature hidden when GOOGLE_WEB_CLIENT_ID is blank.
+- service/SupabaseService.kt — signInWithGoogle(idToken) via client.auth.signInWith(IDToken) { provider = Google }. Imports io.github.jan.supabase.gotrue.providers.Google and IDToken.
+- ui/auth/AuthViewModel.kt — continueWithGoogle(activityContext) orchestrates GoogleSignInService → SupabaseService; isGoogleSignInAvailable exposes service.isConfigured for UI gating. GoogleSignInException caught separately from other errors so it shows a friendly "Google Sign-In failed" message instead of incrementing the failed-attempts cooldown.
+- ui/auth/AuthScreen.kt — "or" divider + OutlinedButton "Continue with Google" rendered only on SIGN_IN / SIGN_UP modes when isGoogleSignInAvailable. Button disabled during isLoading. findActivityForAuth() ContextWrapper walker appended.
+- AuthViewModelTest updated to mock GoogleSignInService.
+- local.properties.example documents GOOGLE_WEB_CLIENT_ID (the Google Cloud **Web** OAuth client id, not Android).
+
+### L-010: success_chime.ogg asset spec
+- res/raw/README.md added with exact asset specs (Ogg Vorbis, 300–500 ms, <50 KB, peaks ≤ -6 dBFS), licensing requirements, and attribution location. SuccessSoundService's dynamic `resources.getIdentifier` path already drops in the asset without code changes.
+
+### L-011: iOS Quick-Log bottom sheet
+- LastLogged/Views/Home/QuickLogSheet.swift (new) — Form sheet: tracker header (icon + name + "Every N days"), DatePicker (range ...Date()), multi-line notes TextField with 500-char soft cap and live counter footer, Cancel / Log toolbar. Success haptic on confirm.
+- HomeView.swift — @State quickLogItem; each row's NavigationLink gets `.simultaneousGesture(LongPressGesture(minimumDuration: 0.4))` to preserve tap-through nav while adding long-press; .sheet(item: $quickLogItem) presents QuickLogSheet with .presentationDetents([.medium, .large]) + .presentationDragIndicator. On confirm: HomeViewModel.logCompletion(for:completedAt:notes:) + showToast + LiveActivityManager.startLogActivity.
+- ViewModels/HomeViewModel.swift — new logCompletion(for:completedAt:notes:) overload. Only advances lastCompletedAt when the supplied completedAt is newer than the previous. Notes routed through InputSanitizer.sanitizeNotes so 500-char limit and control-char stripping are enforced consistently.
+- project.pbxproj — A20000000000000000000032 FileRef + A10000000000000000000036 BuildFile; added to the Home PBXGroup and the main app Sources build phase.
+
+### L-012: iOS AppIcon Contents.json
+- Left as-is. The existing Contents.json uses Xcode's modern single-size universal format (idiom=universal, platform=ios, 1024x1024) which Apple prefers — App Store Connect auto-generates all derived sizes. The legacy multi-size set is a regression and the audit's "only a single PNG" concern is actually a design-asset question, not a code question.
+
+### Files changed
+- prd.json (L-009..L-012 marked passes:true with detailed notes)
+- android/app/build.gradle.kts (Credentials + googleid deps; GOOGLE_WEB_CLIENT_ID BuildConfig)
+- android/local.properties.example (+ GOOGLE_WEB_CLIENT_ID)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/service/GoogleSignInService.kt (new)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/service/SupabaseService.kt (+ signInWithGoogle; + Google/IDToken imports)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/ui/auth/AuthViewModel.kt (+ continueWithGoogle; GoogleSignInService ctor)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/ui/auth/AuthScreen.kt (Google button + "or" divider + findActivityForAuth helper)
+- android/app/src/test/java/com/pearsonmedia/lastlogged/AuthViewModelTest.kt (+ GoogleSignInService mock)
+- android/app/src/main/res/raw/README.md (new)
+- LastLogged/Views/Home/QuickLogSheet.swift (new)
+- LastLogged/Views/Home/HomeView.swift (quickLogItem state, long-press gesture, sheet)
+- LastLogged/ViewModels/HomeViewModel.swift (logCompletion overload)
+- LastLogged.xcodeproj/project.pbxproj (QuickLogSheet registration)
+
+### Learnings for future iterations
+- `GetGoogleIdOption.Builder().setFilterByAuthorizedAccounts(false)` is required for first-time sign-in (true filters to accounts that have already authorized the app, which excludes brand-new users). Revisit for "sign-in" vs "sign-up" differentiation if you need it.
+- `setAutoSelectEnabled(false)` forces the account chooser to appear each time — do NOT auto-select during sign-up flows since the wrong account would silently bypass the Terms checkbox.
+- Supabase Kotlin OIDC: `client.auth.signInWith(IDToken) { idToken = ...; provider = Google }` — `Google` comes from `io.github.jan.supabase.gotrue.providers.Google`, `IDToken` from `...providers.builtin.IDToken`. Both required at the call site.
+- `.simultaneousGesture(LongPressGesture(...))` on a NavigationLink preserves tap-through navigation while adding long-press — `.onLongPressGesture` alone would eat the tap.
+- SwiftUI `.presentationDetents([.medium, .large])` plus `.presentationDragIndicator(.visible)` is the iOS equivalent of Android's ModalBottomSheet — pair with `.sheet(item:)` for data-driven presentation.
+- HomeViewModel.logCompletion(for:completedAt:notes:) should only advance item.lastCompletedAt when the supplied completedAt is newer than the previous value — otherwise back-dating a missed entry would regress the last-completed marker.
+- Xcode 14+ AppIcon Contents.json single-size universal format is App-Store-ready and Apple-preferred; the old multi-size matrix is legacy. Don't regress to it unless a target explicitly requires a per-idiom icon.
+- res/raw/README.md is a clean way to document optional asset specs without breaking compile — keeps licensing + dimension + loudness requirements next to where the asset will live.
+- L-013 (assembleRelease verification), L-014 (prod backend verification), L-015 (store listings) remain open — they are not code tasks. Track them as release-checklist items rather than implementation stories.
 
 
 ---

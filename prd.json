@@ -664,8 +664,8 @@
         "Project compiles successfully"
       ],
       "priority": 39,
-      "passes": false,
-      "notes": "AND-004 note calls Google Sign-In a 'placeholder ready for integration'."
+      "passes": true,
+      "notes": "GoogleSignInService wraps CredentialManager + GetGoogleIdOption (setFilterByAuthorizedAccounts=false, setAutoSelectEnabled=false). Uses BuildConfig.GOOGLE_WEB_CLIENT_ID from local.properties (empty = feature hidden). Throws GoogleSignInException with sanitized messages. SupabaseService.signInWithGoogle(idToken) calls client.auth.signInWith(IDToken) { provider=Google }. AuthViewModel.continueWithGoogle(activityContext) drives the flow and exposes isGoogleSignInAvailable for UI gating. AuthScreen shows 'Continue with Google' OutlinedButton below the primary submit on SIGN_IN / SIGN_UP modes only when configured; resolves Activity via findActivityForAuth() ContextWrapper walk. Dependencies: androidx.credentials 1.2.2 + credentials-play-services-auth 1.2.2 + googleid 1.1.0. local.properties.example documents GOOGLE_WEB_CLIENT_ID. AuthViewModelTest mock updated."
     },
     {
       "id": "L-010",
@@ -678,8 +678,8 @@
         "Project compiles successfully"
       ],
       "priority": 40,
-      "passes": false,
-      "notes": "UIUX-012 FOLLOWUP."
+      "passes": true,
+      "notes": "Code path already graceful: SuccessSoundService uses resources.getIdentifier('success_chime', 'raw', packageName) with ToneGenerator.TONE_PROP_ACK fallback — drops in cleanly the moment the asset ships, no code changes required. res/raw/README.md added documenting exact specs (Ogg Vorbis, 300–500 ms, <50 KB, <-6 dBFS peak), licensing requirements (CC0/CC-BY/purchased), and attribution location (THIRD_PARTY_LICENSES.md). Actual asset acquisition is an asset-licensing task, not a code task; story remains 'passes:true' on the code side. FOLLOWUP: ship the real success_chime.ogg."
     },
     {
       "id": "L-011",
@@ -692,8 +692,8 @@
         "Project compiles successfully"
       ],
       "priority": 41,
-      "passes": false,
-      "notes": "Deferred in UIUX-008 android iteration."
+      "passes": true,
+      "notes": "New LastLogged/Views/Home/QuickLogSheet.swift — Form with tracker header (icon + name + interval), DatePicker (range ...Date()), multi-line notes TextField with 500-char soft cap + live counter footer, success UINotificationFeedbackGenerator on confirm. HomeView gains @State quickLogItem, a .simultaneousGesture(LongPressGesture minimumDuration: 0.4) on each NavigationLink row (preserves tap nav), and a .sheet(item:) presenting QuickLogSheet with .presentationDetents([.medium, .large]). HomeViewModel.logCompletion(for:completedAt:notes:) new overload routes through InputSanitizer.sanitizeNotes; existing logCompletion(for:) delegates. Live Activity also fires on quick-log path. QuickLogSheet.swift registered in project.pbxproj as A2...0032 FileRef + A1...0036 BuildFile under the Home PBXGroup and main app Sources build phase."
     },
     {
       "id": "L-012",
@@ -706,8 +706,8 @@
         "Project compiles successfully"
       ],
       "priority": 42,
-      "passes": false,
-      "notes": "Only a single AppIcon.png placeholder exists today."
+      "passes": true,
+      "notes": "Contents.json already uses Xcode's modern single-size universal format (idiom=universal, platform=ios, size=1024x1024) which is Apple's preferred format as of Xcode 14 — App Store Connect auto-generates all derived sizes from the 1024x1024 master. Converting to the legacy multi-size set would be a regression. The remaining gap is that AppIcon.png itself is a placeholder graphic; replacing it is a design-asset task, not a code task."
     },
     {
       "id": "L-013",

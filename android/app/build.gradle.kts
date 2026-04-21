@@ -52,6 +52,8 @@ android {
             "\"${localProperties.getProperty("REVENUECAT_API_KEY", "placeholder-key")}\"")
         buildConfigField("String", "TELEMETRYDECK_APP_ID",
             "\"${localProperties.getProperty("TELEMETRYDECK_APP_ID", "")}\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID",
+            "\"${localProperties.getProperty("GOOGLE_WEB_CLIENT_ID", "")}\"")
 
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
@@ -177,6 +179,11 @@ dependencies {
     // Firebase Cloud Messaging (remote push)
     implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // Google Sign-In via Credential Manager
+    implementation("androidx.credentials:credentials:1.2.2")
+    implementation("androidx.credentials:credentials-play-services-auth:1.2.2")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")

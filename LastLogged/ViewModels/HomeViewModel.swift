@@ -129,10 +129,22 @@ final class HomeViewModel {
     }
 
     func logCompletion(for item: TrackerItem) -> LogUndoInfo {
+        logCompletion(for: item, completedAt: Date(), notes: nil)
+    }
+
+    @discardableResult
+    func logCompletion(for item: TrackerItem, completedAt: Date, notes: String?) -> LogUndoInfo {
         let previousDate = item.lastCompletedAt
         let log = CompletionLog(trackerItemId: item.id)
+        log.completedAt = completedAt
+        if let notes, !notes.isEmpty {
+            log.notes = InputSanitizer.sanitizeNotes(notes)
+        }
         modelContext.insert(log)
-        item.lastCompletedAt = log.completedAt
+        // Only advance lastCompletedAt if this log is newer than the prior one.
+        if previousDate == nil || completedAt > (previousDate ?? .distantPast) {
+            item.lastCompletedAt = completedAt
+        }
         item.syncStatus = .pending
         item.updatedAt = Date()
         save()

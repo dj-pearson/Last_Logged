@@ -1,7 +1,10 @@
 package com.pearsonmedia.lastlogged.ui.auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pearsonmedia.lastlogged.service.GoogleSignInException
+import com.pearsonmedia.lastlogged.service.GoogleSignInService
 import com.pearsonmedia.lastlogged.service.PushTokenService
 import com.pearsonmedia.lastlogged.service.RevenueCatService
 import com.pearsonmedia.lastlogged.service.SupabaseService
@@ -35,8 +38,12 @@ data class AuthUiState(
 class AuthViewModel @Inject constructor(
     private val supabaseService: SupabaseService,
     private val revenueCatService: RevenueCatService,
-    private val pushTokenService: PushTokenService
+    private val pushTokenService: PushTokenService,
+    private val googleSignInService: GoogleSignInService
 ) : ViewModel() {
+
+    val isGoogleSignInAvailable: Boolean
+        get() = googleSignInService.isConfigured
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -182,6 +189,28 @@ class AuthViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     successMessage = "Confirmation email sent"
+                )
+            } catch (e: Exception) {
+                handleAuthError(e)
+            }
+        }
+    }
+
+    fun continueWithGoogle(activityContext: Context) {
+        if (!isGoogleSignInAvailable) return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            try {
+                val idToken = googleSignInService.getGoogleIdToken(activityContext)
+                supabaseService.signInWithGoogle(idToken)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    failedAttempts = 0
+                )
+            } catch (e: GoogleSignInException) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "Google Sign-In failed. Please try again."
                 )
             } catch (e: Exception) {
                 handleAuthError(e)
