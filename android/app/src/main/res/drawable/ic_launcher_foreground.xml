@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!--
+        Brand mark: rounded check-in-circle on the adaptive foreground layer.
+        Adaptive icons reserve the outer ~18dp for system masking, so artwork
+        stays inside the safe zone (viewport 27..81 on both axes).
+    -->
+    <group android:translateX="27" android:translateY="27">
+        <path
+            android:pathData="M27,4.5 C14.573,4.5 4.5,14.573 4.5,27 C4.5,39.427 14.573,49.5 27,49.5 C39.427,49.5 49.5,39.427 49.5,27 C49.5,14.573 39.427,4.5 27,4.5 Z"
+            android:fillColor="#FFFFFF" />
+        <path
+            android:pathData="M21.6,35.1 L13.95,27.45 L11.4,30 L21.6,40.2 L42.6,19.2 L40.05,16.65 Z"
+            android:fillColor="#4F46E5" />
+    </group>
+</vector>

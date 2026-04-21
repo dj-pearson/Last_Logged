@@ -217,6 +217,36 @@ class SupabaseService @Inject constructor(
         signOut()
     }
 
+    // --- Push Token Registration ---
+
+    @Serializable
+    private data class UserDeviceRow(
+        @SerialName("user_id") val userId: String,
+        @SerialName("device_token") val deviceToken: String,
+        @SerialName("device_name") val deviceName: String? = null,
+        val platform: String = "android",
+        @SerialName("last_seen_at") val lastSeenAt: String? = null
+    )
+
+    suspend fun registerDeviceToken(token: String, deviceName: String? = null) {
+        if (!_isSignedIn.value) return
+        val userId = cachedUserId ?: return
+        try {
+            val row = UserDeviceRow(
+                userId = userId,
+                deviceToken = token,
+                deviceName = deviceName,
+                platform = "android",
+                lastSeenAt = java.time.Instant.now().toString()
+            )
+            client.postgrest.from("user_devices").upsert(row) {
+                onConflict = "device_token"
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "registerDeviceToken failed: ${e.message}")
+        }
+    }
+
     // --- Sync Methods ---
 
     fun scheduleDebouncedSync() {

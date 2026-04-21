@@ -45,6 +45,12 @@ Started: 2026-03-24
 - Timeline rail pattern: wrap Row in Modifier.height(IntrinsicSize.Min), give the rail Column fillMaxHeight, use Box(...weight(1f, fill=true)) for the variable-length segment below the dot
 - Pure helpers for unit testing Android-Settings-backed features: take the primitive value (Float, Int) as input so tests don't need Robolectric. Keep the Context wrapper as a thin delegate.
 - When adding a new @Singleton @Inject service, Hilt auto-wires it into existing @HiltViewModels — no module changes needed, just add the constructor parameter.
+- RevenueCat purchase() on Android requires an Activity — walk LocalContext via ContextWrapper.baseContext to find it from Compose.
+- com.google.gms.google-services plugin must be applied conditionally (`if (file("google-services.json").exists()) apply(plugin = …)`) so builds work before Firebase is configured.
+- FirebaseApp.getInstance() throws IllegalStateException when not configured; wrap in try/catch in PushTokenService before fetching tokens.
+- For test doubles of @HiltViewModel deps in plain JUnit, mockk(relaxed = true) plus `every { stateFlowProp } returns MutableStateFlow(value)` is the lightest path.
+- Secrets live in LastLogged/Config/Secrets.xcconfig (gitignored); Debug/Release.xcconfig `#include?` it with a Secrets.example.xcconfig fallback. Info.plist uses $(VAR) keys; AppSecrets.swift reads via Bundle.main.object(forInfoDictionaryKey:).
+- xcconfig values interpret `//` as a comment — escape URLs with `https:$()//domain`.
 
 ### iOS App (LastLogged/)
 - Xcode project uses MVVM folder structure: Models/, ViewModels/, Views/{Home,Detail,Onboarding,Settings,Components}/, Services/, Widget/, Utilities/
@@ -1291,5 +1297,92 @@ Completed the remaining 11 premium UI/UX stories (UIUX-002..UIUX-012) in a singl
 - Extract any Android-Settings-Global helper that must be unit-tested into a pure function taking the primitive value (e.g. Float) and keep the Context-bound version as a thin wrapper. Avoids Robolectric entirely.
 - Hilt will auto-wire a new @Singleton @Inject constructor service into any existing @HiltViewModel as soon as you add it to the constructor — no module changes needed.
 - When adding new files to a Swift widget extension, remember to add PBXBuildFile entries for BOTH the main target AND the widget target if the file is shared (LastLoggedActivityAttributes.swift).
+---
+
+## 2026-04-21 - LAUNCH-READINESS P0 BATCH (L-001..L-008)
+Closed the real ship-blocker gaps uncovered in the pre-launch audit. All 8 P0 user stories added to prd.json and implemented in a single pass on branch claude/complete-mobile-app-setup-z7J2d.
+
+### L-001: Wire Android RevenueCatService to Purchases SDK
+- android/app/build.gradle.kts — added com.revenuecat.purchases:purchases:7.11.1.
+- service/RevenueCatService.kt rewritten: Purchases.configure(PurchasesConfiguration), getCustomerInfo + getOfferings callbacks, purchase(activity, packageIdentifier) via PurchaseParams, restorePurchases, logIn/logOut. applyCustomerInfo maps entitlements.active["premium"] + productIdentifier (PRODUCT_LIFETIME special-case) to SubscriptionTier. availablePackages sourced from Offerings.current — product.price.formatted replaces hardcoded prices. Placeholder API key still short-circuits to cached state + default packages for UI dev.
+- ui/components/PaywallViewModel.kt + PaywallScreen.kt — purchase now takes Activity (resolved via LocalContext.findActivity() extension appended to PaywallScreen.kt). Selection tracked by pkg.identifier (RC package id) rather than productId.
+- LastLoggedApp.kt — @HiltAndroidApp Application now @Injects RevenueCatService + PushTokenService and calls configure()/initialize() in onCreate().
+
+### L-002: AuthViewModel → SupabaseService
+- ui/auth/AuthViewModel.kt rewritten: @HiltViewModel constructor takes SupabaseService, RevenueCatService, PushTokenService. signIn/signUp/resetPassword/resendConfirmation call real client methods. signOut clears RC identity. init { combine(isSignedIn, currentUserEmail) } observes SupabaseService as source of truth and triggers pushTokenService.uploadPendingToken() on sign-in. Password cleared from state after submit.
+- test/AuthViewModelTest.kt — constructor signature change: mockk(relaxed = true) for all three deps; MutableStateFlow(false) / MutableStateFlow<String?>(null) returned for isSignedIn/currentUserEmail.
+
+### L-003: FCM wiring
+- root build.gradle.kts — com.google.gms.google-services version "4.4.1" apply false.
+- app/build.gradle.kts — applies plugin conditionally: `if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google-services")`. firebase-bom 32.7.1 + firebase-messaging-ktx deps.
+- service/PushTokenService.kt (new, @Singleton) — FirebaseMessaging.getInstance().token listener, persists via SecureStorageService.setString(KEY_PENDING_FCM_TOKEN), uploadPendingToken() calls supabaseService.registerDeviceToken. Guards against FirebaseApp not initialized when google-services.json is absent.
+- service/LastLoggedMessagingService.kt (new, @AndroidEntryPoint) — onNewToken delegates to PushTokenService; onMessageReceived posts NotificationCompat to CHANNEL_ID_REMINDERS with PendingIntent to MainActivity (extras: tracker_id).
+- service/SupabaseService.kt — added registerDeviceToken(token, deviceName) with UserDeviceRow @Serializable + client.postgrest.from("user_devices").upsert onConflict="device_token", Instant.now() for last_seen_at.
+- AndroidManifest.xml — service entry with MESSAGING_EVENT intent-filter; default_notification_channel_id meta-data.
+- android/app/google-services.json.example committed; real file gitignored.
+
+### L-004: Release signing config
+- app/build.gradle.kts — reads rootProject.file("keystore.properties"), creates signingConfigs.release only when storeFile property present. release buildType picks signingConfigs.release if available, falls back to debug signing. keystore.properties.example committed.
+- .gitignore adds keystore.properties, *.jks, *.keystore, google-services.json.
+
+### L-005: Adaptive launcher icon
+- res/mipmap-anydpi-v26/ic_launcher.xml + ic_launcher_round.xml — adaptive-icon refs foreground drawable + background color.
+- res/drawable/ic_launcher_foreground.xml — 108dp vector, rounded circle + checkmark inside 27..81 safe zone.
+- res/values/ic_launcher_background.xml — #4F46E5 brand primary.
+- minSdk=26 so no legacy PNG fallback required.
+
+### L-006: iOS PrivacyInfo.xcprivacy
+- LastLogged/PrivacyInfo.xcprivacy — NSPrivacyTracking=false, NSPrivacyTrackingDomains empty. Collected types: Email+UserID+PurchaseHistory (linked, AppFunctionality), ProductInteraction (Analytics+AppFunctionality), CrashData+PerformanceData (diagnostics). Accessed API categories: UserDefaults CA92.1, FileTimestamp C617.1, SystemBootTime 35F9.1, DiskSpace E174.1.
+- project.pbxproj — A20000000000000000000002E FileRef, A10000000000000000000035 BuildFile for Resources phase, added to LastLogged group.
+
+### L-007: iOS xcconfig secret injection
+- LastLogged/Config/Debug.xcconfig + Release.xcconfig — both `#include? "Secrets.xcconfig"` then `#include? "Secrets.example.xcconfig"` as fallback so fresh clones build but warn in DEBUG.
+- Secrets.example.xcconfig committed. Secrets.xcconfig gitignored. Uses `https:$()//...` trick to escape '//' in xcconfig URL values.
+- LastLogged/Info.plist — $(SUPABASE_URL), $(SUPABASE_ANON_KEY), $(REVENUECAT_API_KEY), $(TELEMETRYDECK_APP_ID) keys.
+- AppSecrets.swift — reads Bundle.main.object(forInfoDictionaryKey:). validate() crashes release on empty, "YOUR_", "YOUR_PROJECT", "your-".
+- project.pbxproj — PBXFileReferences for 3 xcconfigs, new Config PBXGroup (A30000000000000000000011), baseConfigurationReference wired to main app Debug/Release only (widget target still uses default — no secrets needed there).
+
+### L-008: Website App Store URL parameterization
+- website/.env.example — PUBLIC_APP_STORE_URL, PUBLIC_PLAY_STORE_URL (default /coming-soon).
+- index.astro + use-cases.astro — `const appStoreUrl = import.meta.env.PUBLIC_APP_STORE_URL || '/coming-soon'`, all 4 placeholder id0000000000 links and 2 play.google.com links bound to the computed vars.
+- website/src/pages/coming-soon.astro (new) — friendly fallback page.
+
+### Files changed
+- prd.json (L-001..L-015 added; L-001..L-008 marked passes:true)
+- android/build.gradle.kts, android/app/build.gradle.kts
+- android/app/src/main/AndroidManifest.xml
+- android/app/src/main/java/com/pearsonmedia/lastlogged/LastLoggedApp.kt
+- android/app/src/main/java/com/pearsonmedia/lastlogged/service/RevenueCatService.kt (rewrite)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/service/SupabaseService.kt (+ registerDeviceToken)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/service/PushTokenService.kt (new)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/service/LastLoggedMessagingService.kt (new)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/ui/auth/AuthViewModel.kt (rewrite)
+- android/app/src/main/java/com/pearsonmedia/lastlogged/ui/components/PaywallViewModel.kt
+- android/app/src/main/java/com/pearsonmedia/lastlogged/ui/components/PaywallScreen.kt
+- android/app/src/test/java/com/pearsonmedia/lastlogged/AuthViewModelTest.kt
+- android/app/src/main/res/{mipmap-anydpi-v26,drawable,values}/* (icons)
+- android/keystore.properties.example (new)
+- android/app/google-services.json.example (new)
+- LastLogged/PrivacyInfo.xcprivacy (new)
+- LastLogged/Config/{Debug,Release,Secrets.example}.xcconfig (new)
+- LastLogged/Info.plist (+4 secret keys)
+- LastLogged/Utilities/AppSecrets.swift (rewrite)
+- LastLogged.xcodeproj/project.pbxproj (file refs, group, resources, baseConfigurationReference)
+- website/.env.example (new), website/src/pages/coming-soon.astro (new)
+- website/src/pages/{index,use-cases}.astro (env-var binding)
+- .gitignore (keystore.properties, *.jks, google-services.json, Secrets.xcconfig)
+
+### Learnings for future iterations
+- RevenueCat Android SDK purchase() must be called from an Activity — Compose code needs LocalContext.current.findActivity() walking ContextWrapper.baseContext until Activity is found.
+- Applying `com.google.gms.google-services` in the plugins {} block hard-requires google-services.json at configure time. Workaround: drop it from plugins {} and call `apply(plugin = …)` inside an `if (file("google-services.json").exists())` guard.
+- FirebaseApp.getInstance() throws IllegalStateException when Firebase isn't configured — wrap in try/catch in services that may run before the plugin drops its init.
+- xcconfig values treat `//` as the start of a comment, even inside URLs. Escape with `https:$()//domain.com` — the empty `$()` breaks the pattern without affecting the runtime value.
+- `#include? "file.xcconfig"` is the optional-include form — silently skipped if missing. Chain it with a fallback example xcconfig so fresh clones still build.
+- Info.plist $(VAR) substitution only works when the build config has a baseConfigurationReference pointing at the xcconfig that defines VAR. Setting `GENERATE_INFOPLIST_FILE = YES` does NOT suppress Info.plist substitution — they coexist fine.
+- Adaptive icons (mipmap-anydpi-v26) are sufficient on their own for minSdk >= 26. No density-specific PNG fallbacks required.
+- Supabase Kotlin client exposes resendEmail via `io.github.jan.supabase.gotrue.providers.builtin.Email.Config.ResendType.SIGNUP` — already used by the existing resendConfirmation in SupabaseService.
+- When a @HiltViewModel's constructor changes in a JUnit test with no Hilt test runner, mockk(relaxed = true) is the cheapest swap-in; return MutableStateFlow for StateFlow properties via `every { flowProp } returns MutableStateFlow(value)`.
+- L-009..L-015 remain open in prd.json for follow-up iterations: Google Sign-In, success_chime.ogg, iOS quick-log sheet, full iOS icon set, assembleRelease CI verification, production backend verification, and store listing metadata.
+
 
 ---

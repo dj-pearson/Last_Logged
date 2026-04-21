@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'Coming Soon — Last Logged';
+const description =
+  'Last Logged is launching on iOS and Android soon. Sign up to be notified.';
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="coming-soon">
+    <div class="container">
+      <h1>Coming soon</h1>
+      <p class="subtitle">Last Logged is on the way.</p>
+      <p class="message">
+        The app is in final polish for the App Store and Google Play.
+        This badge will link to the real listing the moment it is live.
+      </p>
+      <a href="/" class="back-home">Back to Home</a>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .coming-soon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    text-align: center;
+  }
+
+  .coming-soon h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .message {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    margin-bottom: 2rem;
+    max-width: 40rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .back-home {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s ease;
+  }
+
+  .back-home:hover {
+    background: var(--color-primary-dark, #4338ca);
+    text-decoration: none;
+  }
+</style>

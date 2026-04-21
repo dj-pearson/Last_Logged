@@ -1,7 +1,12 @@
 package com.pearsonmedia.lastlogged
 
+import com.pearsonmedia.lastlogged.service.PushTokenService
+import com.pearsonmedia.lastlogged.service.RevenueCatService
+import com.pearsonmedia.lastlogged.service.SupabaseService
 import com.pearsonmedia.lastlogged.ui.auth.AuthMode
 import com.pearsonmedia.lastlogged.ui.auth.AuthViewModel
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -14,7 +19,13 @@ class AuthViewModelTest {
 
     @Before
     fun setup() {
-        viewModel = AuthViewModel()
+        val supabase = mockk<SupabaseService>(relaxed = true) {
+            io.mockk.every { isSignedIn } returns MutableStateFlow(false)
+            io.mockk.every { currentUserEmail } returns MutableStateFlow<String?>(null)
+        }
+        val revenueCat = mockk<RevenueCatService>(relaxed = true)
+        val pushTokens = mockk<PushTokenService>(relaxed = true)
+        viewModel = AuthViewModel(supabase, revenueCat, pushTokens)
     }
 
     @Test

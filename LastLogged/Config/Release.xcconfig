@@ -1,0 +1,7 @@
+// Release build configuration.
+//
+// Must have a real Secrets.xcconfig. AppSecrets.validate() fatalErrors in
+// release if values still start with 'YOUR_', which blocks accidental
+// ship of placeholder credentials.
+#include? "Secrets.xcconfig"
+#include? "Secrets.example.xcconfig"

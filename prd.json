@@ -513,6 +513,246 @@
       "priority": 30,
       "passes": true,
       "notes": "New SuccessSoundService (@Singleton, Hilt-injected) uses SoundPool with USAGE_ASSISTANCE_SONIFICATION attributes. Attempts to load res/raw/success_chime via resources.getIdentifier (compiles cleanly without the asset); falls back to ToneGenerator.TONE_PROP_ACK on STREAM_NOTIFICATION so the feature works even before the asset ships. Gated by SecureStorageService.getSuccessSoundEnabled (off by default) and AudioManager.RINGER_MODE_NORMAL check (respects silent/vibrate). HomeViewModel calls successSoundService.playIfEnabled() after each successful log. Settings screen exposes a 'Success sound' Switch with description. Setting persisted via EncryptedSharedPreferences. FOLLOWUP: ship an actual royalty-free success_chime.ogg (<50kb) in android/app/src/main/res/raw/ to replace the ToneGenerator fallback."
+    },
+    {
+      "id": "L-001",
+      "title": "Wire Android RevenueCatService to the real Purchases SDK",
+      "description": "As a user, I want Android subscription purchases and restores to actually complete through Google Play Billing via RevenueCat so the paywall is functional.",
+      "acceptanceCriteria": [
+        "com.revenuecat.purchases:purchases dependency added to android/app/build.gradle.kts",
+        "RevenueCatService.configure() calls Purchases.configure with PurchasesConfiguration and BuildConfig.REVENUECAT_API_KEY",
+        "refreshSubscriptionStatus() reads CustomerInfo.entitlements.active['premium'] and updates _tier/_isPremium",
+        "purchase(productId) launches Purchases.sharedInstance.purchaseAsync with the matching Package and handles success/error",
+        "restorePurchases() calls Purchases.sharedInstance.restorePurchasesAsync and updates state",
+        "availablePackages populated from Offerings.current rather than hardcoded price strings",
+        "PaywallScreen in the Compose UI requires an Activity reference (LocalContext as Activity) to pass into purchase()",
+        "Placeholder API key is still safely short-circuited so UI development works without a key",
+        "Project compiles successfully"
+      ],
+      "priority": 31,
+      "passes": true,
+      "notes": "RevenueCatService now calls Purchases.configure with BuildConfig.REVENUECAT_API_KEY, refreshes CustomerInfo via getCustomerInfo, fetches Offerings.current for PackageInfo with real product.price.formatted, and purchase(activity, packageIdentifier) uses PurchaseParams. logIn/logOut wired. PaywallScreen resolves Activity via LocalContext.findActivity() and passes to viewModel.purchase. Placeholder API key still short-circuits gracefully. com.revenuecat.purchases:purchases:7.11.1 dep added."
+    },
+    {
+      "id": "L-002",
+      "title": "Wire Android AuthViewModel to SupabaseService",
+      "description": "As a user, I want sign-in, sign-up, forgot-password, and sign-out on Android to actually hit Supabase so I can create an account and sync my data.",
+      "acceptanceCriteria": [
+        "AuthViewModel gains a SupabaseService constructor dependency via Hilt",
+        "signIn() calls supabaseService.signInEmail(email, password) and sets isSignedIn/currentUserEmail from Supabase state",
+        "signUp() calls supabaseService.signUpEmail and transitions to EMAIL_CONFIRMATION mode on success",
+        "resetPassword() calls supabaseService.resetPassword and shows a success message",
+        "signOut() calls supabaseService.signOut() and resets AuthUiState",
+        "Failed-attempt counter increments on real Supabase auth errors; cooldown logic preserved",
+        "Errors passed through sanitizeAuthError() — raw Supabase messages never shown",
+        "AuthViewModel observes supabaseService.isSignedIn and supabaseService.currentUserEmail so app-wide auth state is the source of truth",
+        "Project compiles successfully"
+      ],
+      "priority": 32,
+      "passes": true,
+      "notes": "AuthViewModel now takes SupabaseService + RevenueCatService + PushTokenService via Hilt. signIn/signUp/resetPassword/resendConfirmation call the real Supabase client; signOut clears RevenueCat identity. Observes supabaseService.isSignedIn/currentUserEmail as source of truth. Clears password from state after submit. AuthViewModelTest updated to mock dependencies."
+    },
+    {
+      "id": "L-003",
+      "title": "Firebase Cloud Messaging wiring on Android",
+      "description": "As a user, I want remote push notifications (reminder digests from the server) to reach my Android device so I get cross-device reminders even when the app is closed.",
+      "acceptanceCriteria": [
+        "com.google.gms.google-services Gradle plugin added at project level and applied in app/build.gradle.kts",
+        "com.google.firebase:firebase-bom + com.google.firebase:firebase-messaging dependencies added",
+        "google-services.json placeholder committed with instructions to replace with real file (or .gitignored with a google-services.json.example)",
+        "LastLoggedMessagingService extends FirebaseMessagingService — onNewToken uploads to Supabase user_devices via SupabaseService.registerDeviceToken(), onMessageReceived posts a local notification",
+        "Service registered in AndroidManifest.xml with the FCM intent-filter",
+        "FCM token fetched on app launch via FirebaseMessaging.getInstance().token and uploaded after sign-in",
+        "Project compiles successfully"
+      ],
+      "priority": 33,
+      "passes": true,
+      "notes": "com.google.gms.google-services plugin added to root + app (applied conditionally only when google-services.json exists so builds don't break without Firebase configured). firebase-bom 32.7.1 + firebase-messaging-ktx dep. LastLoggedMessagingService extends FirebaseMessagingService, posts local notification via NotificationService.CHANNEL_ID_REMINDERS and calls pushTokenService.onNewToken. PushTokenService fetches token, persists via SecureStorageService, uploads via SupabaseService.registerDeviceToken (upsert into user_devices). LastLoggedApp onCreate calls pushTokenService.initialize(). Manifest registers the service with com.google.firebase.MESSAGING_EVENT intent-filter. google-services.json.example committed; real file gitignored."
+    },
+    {
+      "id": "L-004",
+      "title": "Android release signing config via keystore.properties",
+      "description": "As a developer, I need a signingConfigs.release block wired to an external keystore so Play Store uploads are properly signed without committing keystore credentials.",
+      "acceptanceCriteria": [
+        "signingConfigs.release block in android/app/build.gradle.kts reads from a gitignored keystore.properties file (storeFile, storePassword, keyAlias, keyPassword)",
+        "buildTypes.release uses signingConfigs.release only when keystore.properties exists; gracefully falls back to debug signing for local dev otherwise",
+        "keystore.properties.example checked in with placeholder values and path instructions",
+        "keystore.properties and *.jks added to android/.gitignore",
+        "README or inline comment explains how to generate the release keystore with keytool",
+        "Project compiles successfully"
+      ],
+      "priority": 34,
+      "passes": true,
+      "notes": "app/build.gradle.kts reads keystore.properties if present, creates signingConfigs.release with storeFile/storePassword/keyAlias/keyPassword; release buildType picks release signing when available, falls back to debug signing when absent. keystore.properties.example committed. keystore.properties, *.jks, *.keystore, google-services.json added to .gitignore."
+    },
+    {
+      "id": "L-005",
+      "title": "Android launcher icon (adaptive) and mipmap resources",
+      "description": "As a user, I want a proper app icon on my Android home screen so the app doesn't appear with the default Android silhouette.",
+      "acceptanceCriteria": [
+        "res/mipmap-anydpi-v26/ic_launcher.xml and ic_launcher_round.xml reference adaptive foreground + background",
+        "res/drawable/ic_launcher_foreground.xml vector drawable with the Last Logged brand mark",
+        "res/values/ic_launcher_background.xml defines ic_launcher_background color",
+        "Fallback PNGs generated at mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi densities (can be placeholder rasterized from the vector until final art ships)",
+        "AndroidManifest already references @mipmap/ic_launcher and @mipmap/ic_launcher_round — no manifest change needed",
+        "Project compiles successfully"
+      ],
+      "priority": 35,
+      "passes": true,
+      "notes": "res/mipmap-anydpi-v26/ic_launcher.xml + ic_launcher_round.xml adaptive-icon XMLs. drawable/ic_launcher_foreground.xml vector (rounded circle + checkmark, safe-zone-respecting). values/ic_launcher_background.xml sets brand primary #4F46E5. minSdk=26 so adaptive-only coverage is sufficient. Empty legacy mipmap-*dpi folders created to avoid AGP density warnings."
+    },
+    {
+      "id": "L-006",
+      "title": "iOS PrivacyInfo.xcprivacy manifest",
+      "description": "As a developer, I need the Apple-required privacy manifest declaring our required-reason API usage and third-party data collection so the app can be submitted to the App Store.",
+      "acceptanceCriteria": [
+        "LastLogged/PrivacyInfo.xcprivacy added with NSPrivacyTracking=false (no cross-app tracking)",
+        "NSPrivacyAccessedAPITypes declares categories: UserDefaults (CA92.1), FileTimestamp (C617.1), SystemBootTime (35F9.1), DiskSpace (E174.1) with appropriate reason codes",
+        "NSPrivacyCollectedDataTypes covers: Email (linked, authentication), UserID (linked, app functionality), CrashData (not linked, diagnostics)",
+        "NSPrivacyTrackingDomains left empty (we don't track)",
+        "File added to LastLogged target membership via project.pbxproj",
+        "Matches the APIs our services actually use (Supabase, RevenueCat, TelemetryDeck)",
+        "Project compiles successfully"
+      ],
+      "priority": 36,
+      "passes": true,
+      "notes": "LastLogged/PrivacyInfo.xcprivacy added. Declares NSPrivacyTracking=false, NSPrivacyTrackingDomains empty. NSPrivacyCollectedDataTypes: Email+UserID+PurchaseHistory (linked, AppFunctionality), ProductInteraction (not linked, Analytics+AppFunctionality), CrashData+PerformanceData (not linked, diagnostics/analytics). NSPrivacyAccessedAPITypes: UserDefaults (CA92.1), FileTimestamp (C617.1), SystemBootTime (35F9.1), DiskSpace (E174.1). Registered in project.pbxproj as A2...002E FileRef + A1...0035 BuildFile, added to LastLogged group and Resources build phase."
+    },
+    {
+      "id": "L-007",
+      "title": "iOS xcconfig-based secret injection",
+      "description": "As a developer, I need API keys injected via gitignored xcconfig files and validated at launch so release builds can never ship placeholder credentials.",
+      "acceptanceCriteria": [
+        "LastLogged/Config/Secrets.xcconfig (gitignored) with SUPABASE_URL, SUPABASE_ANON_KEY, REVENUECAT_API_KEY, TELEMETRYDECK_APP_ID",
+        "LastLogged/Config/Secrets.example.xcconfig checked in with placeholder values",
+        "LastLogged/Config/Debug.xcconfig + Release.xcconfig include Secrets.xcconfig",
+        "Info.plist gains keys for each secret referencing the xcconfig variable (e.g. $(SUPABASE_URL))",
+        "AppSecrets.swift reads from Bundle.main.object(forInfoDictionaryKey:) instead of hardcoded strings, and validate() fatalErrors in release if any value contains 'YOUR_' or is empty",
+        "Secrets.xcconfig added to .gitignore",
+        "project.pbxproj wired to use Debug.xcconfig / Release.xcconfig as baseConfigurationReference",
+        "Project compiles successfully"
+      ],
+      "priority": 37,
+      "passes": true,
+      "notes": "LastLogged/Config/ with Debug.xcconfig + Release.xcconfig (both #include? Secrets.xcconfig then Secrets.example.xcconfig fallback), Secrets.example.xcconfig committed with YOUR_* placeholders. Info.plist declares SUPABASE_URL/SUPABASE_ANON_KEY/REVENUECAT_API_KEY/TELEMETRYDECK_APP_ID as $(VAR) substitutions. AppSecrets.swift rewritten to read via Bundle.main.object(forInfoDictionaryKey:). validate() now fatalErrors in release on empty, 'YOUR_', 'YOUR_PROJECT', or 'your-' values. project.pbxproj wires baseConfigurationReference for the main app Debug/Release configs. Secrets.xcconfig added to .gitignore."
+    },
+    {
+      "id": "L-008",
+      "title": "Website: parameterize App Store URL",
+      "description": "As a developer, I need the website's App Store badge to be driven by an environment variable so it can be updated in one place when the real App Store listing goes live.",
+      "acceptanceCriteria": [
+        "APP_STORE_URL env var consumed via import.meta.env.PUBLIC_APP_STORE_URL in Astro pages",
+        "Fallback when unset points to a /coming-soon redirect page (not id0000000000)",
+        "index.astro, use-cases.astro, and any other reference use the shared constant",
+        ".env.example documents PUBLIC_APP_STORE_URL",
+        "Typecheck passes"
+      ],
+      "priority": 38,
+      "passes": true,
+      "notes": "index.astro + use-cases.astro read import.meta.env.PUBLIC_APP_STORE_URL / PUBLIC_PLAY_STORE_URL (falls back to /coming-soon when unset). All four placeholder id0000000000 URLs replaced with {appStoreUrl} bindings. Play Store URL also parameterized. New /coming-soon page added. .env.example documents both vars."
+    },
+    {
+      "id": "L-009",
+      "title": "Google Sign-In integration on Android",
+      "description": "As a user, I want to sign in with my Google account on Android for parity with Apple Sign-In on iOS.",
+      "acceptanceCriteria": [
+        "androidx.credentials:credentials + play-services-auth dependencies added",
+        "GoogleSignInService wraps CredentialManager.getCredential flow",
+        "Returns idToken which is passed to SupabaseService.signInWithIdToken(provider=Google, idToken=...)",
+        "AuthScreen 'Continue with Google' button wired to the service; existing placeholder string_resource reused",
+        "Client ID stored in BuildConfig via local.properties (GOOGLE_WEB_CLIENT_ID)",
+        "Project compiles successfully"
+      ],
+      "priority": 39,
+      "passes": false,
+      "notes": "AND-004 note calls Google Sign-In a 'placeholder ready for integration'."
+    },
+    {
+      "id": "L-010",
+      "title": "Ship royalty-free success_chime.ogg asset",
+      "description": "As a user who enables the optional success sound, I want a polished short chime instead of the ToneGenerator beep fallback.",
+      "acceptanceCriteria": [
+        "android/app/src/main/res/raw/success_chime.ogg (<50kb, <500ms) licensed royalty-free",
+        "SuccessSoundService loads it via R.raw.success_chime (replace resources.getIdentifier with direct reference)",
+        "License attribution noted in the codebase (THIRD_PARTY_LICENSES.md or similar)",
+        "Project compiles successfully"
+      ],
+      "priority": 40,
+      "passes": false,
+      "notes": "UIUX-012 FOLLOWUP."
+    },
+    {
+      "id": "L-011",
+      "title": "iOS Quick-Log bottom sheet (parity with Android UIUX-008)",
+      "description": "As an iOS user, I want the same long-press quick-log sheet as Android so I can log with a custom date and notes without leaving the home screen.",
+      "acceptanceCriteria": [
+        "HomeView tracker row responds to .onLongPressGesture (with haptic) by presenting a .sheet with .presentationDetents([.medium])",
+        "Sheet contains: tracker name, DatePicker (default now), TextField for notes, 'Log completion' button",
+        "Confirm calls HomeViewModel.logItem(item, completedAt:notes:) and dismisses",
+        "Project compiles successfully"
+      ],
+      "priority": 41,
+      "passes": false,
+      "notes": "Deferred in UIUX-008 android iteration."
+    },
+    {
+      "id": "L-012",
+      "title": "Complete iOS app icon asset set",
+      "description": "As a developer, I need all iOS icon sizes present in the AppIcon asset catalog so App Store Connect accepts the upload.",
+      "acceptanceCriteria": [
+        "AppIcon.appiconset contains iPhone Notification/Settings/Spotlight/App icons at 2x/3x, iPad equivalents, and 1024x1024 marketing",
+        "Contents.json updated to reference all sizes",
+        "No asset-catalog warnings on build",
+        "Project compiles successfully"
+      ],
+      "priority": 42,
+      "passes": false,
+      "notes": "Only a single AppIcon.png placeholder exists today."
+    },
+    {
+      "id": "L-013",
+      "title": "Android compile verification (./gradlew assembleRelease)",
+      "description": "As a developer, I need confirmation that the Android project actually builds end-to-end in a full Android SDK environment before submission.",
+      "acceptanceCriteria": [
+        "./gradlew assembleDebug passes locally or in CI",
+        "./gradlew assembleRelease passes with real signing config",
+        "./gradlew test passes all 65+ unit tests",
+        "Lint warnings triaged and documented"
+      ],
+      "priority": 43,
+      "passes": false,
+      "notes": "Progress log admits the Kotlin sandbox had no Android SDK; manual code-review only to date."
+    },
+    {
+      "id": "L-014",
+      "title": "Production backend verification",
+      "description": "As a developer, I need to verify all Supabase migrations are applied in production and all edge function env vars are set before shipping.",
+      "acceptanceCriteria": [
+        "All 5 migrations in supabase/migrations/ applied to the production Supabase project",
+        "Edge function env vars set in production: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REVENUECAT_WEBHOOK_SECRET, APNS_KEY_CONTENT (or path), APNS_KEY_ID, APNS_TEAM_ID, APNS_TOPIC, CRON_SECRET, APP_ENV",
+        "RevenueCat webhook URL configured in RevenueCat dashboard pointing to deployed edge function",
+        "RevenueCat dashboard has premium_monthly / premium_annual / lifetime products and premium entitlement configured for both App Store and Play Console",
+        "Cron job scheduled for reminder-digest (daily) and cleanup-old-data (weekly)"
+      ],
+      "priority": 44,
+      "passes": false,
+      "notes": "Infrastructure verification — not code, but a ship prerequisite."
+    },
+    {
+      "id": "L-015",
+      "title": "Store listing assets and metadata",
+      "description": "As a developer, I need screenshots, marketing copy, age ratings, and privacy disclosures ready for App Store Connect and Play Console.",
+      "acceptanceCriteria": [
+        "iOS screenshots at required device sizes (6.7\", 6.5\", 5.5\", iPad 12.9\" if supporting iPad)",
+        "Android screenshots (phone + 7\"/10\" tablet if supported) + feature graphic (1024x500)",
+        "Marketing description, short description, keywords",
+        "Age rating questionnaire completed",
+        "Data Safety form (Play) and App Privacy (App Store) filled out matching PrivacyInfo.xcprivacy",
+        "Promotional text, support URL, privacy policy URL (lastlogged.com/privacy), terms URL"
+      ],
+      "priority": 45,
+      "passes": false,
+      "notes": "Outside of code but required for submission."
     }
   ],
   "previousStories": [

@@ -2,12 +2,16 @@ package com.pearsonmedia.lastlogged.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pearsonmedia.lastlogged.service.PushTokenService
+import com.pearsonmedia.lastlogged.service.RevenueCatService
+import com.pearsonmedia.lastlogged.service.SupabaseService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,7 +32,11 @@ data class AuthUiState(
 )
 
 @HiltViewModel
-class AuthViewModel @Inject constructor() : ViewModel() {
+class AuthViewModel @Inject constructor(
+    private val supabaseService: SupabaseService,
+    private val revenueCatService: RevenueCatService,
+    private val pushTokenService: PushTokenService
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -36,6 +44,22 @@ class AuthViewModel @Inject constructor() : ViewModel() {
     private var cooldownJob: Job? = null
 
     private val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+
+    init {
+        viewModelScope.launch {
+            combine(supabaseService.isSignedIn, supabaseService.currentUserEmail) { signedIn, email ->
+                signedIn to email
+            }.collect { (signedIn, email) ->
+                _uiState.value = _uiState.value.copy(
+                    isSignedIn = signedIn,
+                    currentUserEmail = email ?: _uiState.value.currentUserEmail
+                )
+                if (signedIn) {
+                    pushTokenService.uploadPendingToken()
+                }
+            }
+        }
+    }
 
     val isEmailValid: Boolean
         get() = _uiState.value.email.isEmpty() || emailRegex.matches(_uiState.value.email)
@@ -95,17 +119,16 @@ class AuthViewModel @Inject constructor() : ViewModel() {
 
     fun signIn() {
         if (!canSubmit) return
+        val email = _uiState.value.email
+        val password = _uiState.value.password
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                // TODO: Integrate with SupabaseService
-                // For now, simulate auth
-                delay(1000)
+                supabaseService.signInEmail(email, password)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    isSignedIn = true,
-                    currentUserEmail = _uiState.value.email,
-                    failedAttempts = 0
+                    failedAttempts = 0,
+                    password = ""
                 )
             } catch (e: Exception) {
                 handleAuthError(e)
@@ -115,14 +138,16 @@ class AuthViewModel @Inject constructor() : ViewModel() {
 
     fun signUp() {
         if (!canSubmit) return
+        val email = _uiState.value.email
+        val password = _uiState.value.password
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                // TODO: Integrate with SupabaseService
-                delay(1000)
+                supabaseService.signUpEmail(email, password)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    mode = AuthMode.EMAIL_CONFIRMATION
+                    mode = AuthMode.EMAIL_CONFIRMATION,
+                    password = ""
                 )
             } catch (e: Exception) {
                 handleAuthError(e)
@@ -132,11 +157,11 @@ class AuthViewModel @Inject constructor() : ViewModel() {
 
     fun resetPassword() {
         if (!canSubmit) return
+        val email = _uiState.value.email
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                // TODO: Integrate with SupabaseService
-                delay(1000)
+                supabaseService.resetPassword(email)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     successMessage = "Check your email for a reset link"
@@ -147,8 +172,29 @@ class AuthViewModel @Inject constructor() : ViewModel() {
         }
     }
 
+    fun resendConfirmation() {
+        val email = _uiState.value.email
+        if (email.isBlank()) return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            try {
+                supabaseService.resendConfirmation(email)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    successMessage = "Confirmation email sent"
+                )
+            } catch (e: Exception) {
+                handleAuthError(e)
+            }
+        }
+    }
+
     fun signOut() {
         viewModelScope.launch {
+            try {
+                supabaseService.signOut()
+            } catch (_: Exception) { }
+            revenueCatService.onSignOut()
             _uiState.value = AuthUiState()
         }
     }

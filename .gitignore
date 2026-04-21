@@ -48,9 +48,16 @@ android/build/
 android/app/build/
 android/app/schemas/
 android/local.properties
+android/keystore.properties
+android/app/google-services.json
+android/app/*.jks
+android/app/*.keystore
 android/.idea/
 android/*.iml
 android/app/*.iml
 android/captures/
 android/.externalNativeBuild/
 android/.cxx/
+
+# iOS xcconfig secrets
+LastLogged/Config/Secrets.xcconfig

@@ -8,10 +8,23 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// Apply the Google Services plugin only when a real google-services.json is present.
+// This lets local dev and CI builds succeed without Firebase configured; FCM is wired
+// end-to-end once the real file is dropped into android/app/google-services.json.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) load(file.inputStream())
 }
+
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) load(file.inputStream())
+}
+val hasReleaseKeystore = keystoreProperties.getProperty("storeFile")?.isNotBlank() == true
 
 android {
     namespace = "com.pearsonmedia.lastlogged"
@@ -45,6 +58,17 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -53,6 +77,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
         debug {
             isDebuggable = true
@@ -141,6 +170,13 @@ dependencies {
 
     // DataStore (preferences)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // RevenueCat (subscriptions via Google Play Billing)
+    implementation("com.revenuecat.purchases:purchases:7.11.1")
+
+    // Firebase Cloud Messaging (remote push)
+    implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")

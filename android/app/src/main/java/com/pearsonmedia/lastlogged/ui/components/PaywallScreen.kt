@@ -52,11 +52,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import android.app.Activity
+import android.content.ContextWrapper
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -77,8 +80,9 @@ fun PaywallScreen(
     val packages by viewModel.packages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    var selectedProductId by remember { mutableStateOf(RevenueCatService.PRODUCT_ANNUAL) }
+    var selectedPackageId by remember { mutableStateOf(RevenueCatService.PRODUCT_ANNUAL) }
     val reduceMotion = AccessibilityUtil.rememberReduceMotion()
+    val activity = LocalContext.current.findActivity()
 
     Scaffold(
         topBar = {
@@ -134,8 +138,9 @@ fun PaywallScreen(
 
             // Package cards
             packages.forEach { pkg ->
-                val isSelected = selectedProductId == pkg.productId
-                val isRecommended = pkg.productId == RevenueCatService.PRODUCT_ANNUAL
+                val isSelected = selectedPackageId == pkg.identifier
+                val isRecommended = pkg.productId == RevenueCatService.PRODUCT_ANNUAL ||
+                    pkg.identifier.equals("$" + "rc_annual", ignoreCase = true)
                 PackageCard(
                     title = pkg.title,
                     description = pkg.description,
@@ -143,7 +148,7 @@ fun PaywallScreen(
                     isSelected = isSelected,
                     isRecommended = isRecommended,
                     reduceMotion = reduceMotion,
-                    onClick = { selectedProductId = pkg.productId }
+                    onClick = { selectedPackageId = pkg.identifier }
                 )
             }
 
@@ -162,9 +167,9 @@ fun PaywallScreen(
             Button(
                 onClick = {
                     ctaPressed = true
-                    viewModel.purchase(selectedProductId)
+                    activity?.let { viewModel.purchase(it, selectedPackageId) }
                 },
-                enabled = !isLoading,
+                enabled = !isLoading && activity != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -437,4 +442,13 @@ private fun PackageCard(
             }
         }
     }
+}
+
+private fun android.content.Context.findActivity(): Activity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }
