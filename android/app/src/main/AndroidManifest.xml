@@ -34,6 +34,18 @@
             android:name=".service.NotificationReceiver"
             android:exported="false" />
 
+        <service
+            android:name=".service.LastLoggedMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="tracker_reminders" />
+
         <receiver
             android:name=".ui.widget.LastLoggedWidgetReceiver"
             android:exported="true">

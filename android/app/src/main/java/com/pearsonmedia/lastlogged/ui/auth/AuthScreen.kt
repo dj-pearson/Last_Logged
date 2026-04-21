@@ -16,18 +16,25 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import android.content.ContextWrapper
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -246,6 +253,39 @@ private fun AuthFormContent(
         }
     }
 
+    // Google Sign-In (only on SIGN_IN / SIGN_UP and only when configured)
+    if (viewModel.isGoogleSignInAvailable &&
+        (uiState.mode == AuthMode.SIGN_IN || uiState.mode == AuthMode.SIGN_UP)
+    ) {
+        val context = LocalContext.current
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Divider(modifier = Modifier.weight(1f))
+            Text(
+                text = " or ",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+            Divider(modifier = Modifier.weight(1f))
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = {
+                val activity = context.findActivityForAuth()
+                if (activity != null) viewModel.continueWithGoogle(activity)
+            },
+            enabled = !uiState.isLoading,
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(id = com.pearsonmedia.lastlogged.R.string.google_sign_in))
+        }
+    }
+
     Spacer(modifier = Modifier.height(16.dp))
 
     // Mode switching buttons
@@ -316,4 +356,13 @@ private fun EmailConfirmationContent(
     TextButton(onClick = onBackToSignIn) {
         Text("Back to Sign In")
     }
+}
+
+private fun android.content.Context.findActivityForAuth(): android.app.Activity? {
+    var ctx: android.content.Context = this
+    while (ctx is ContextWrapper) {
+        if (ctx is android.app.Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }

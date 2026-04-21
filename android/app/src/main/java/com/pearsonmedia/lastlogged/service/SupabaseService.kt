@@ -17,7 +17,9 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.gotrue.providers.Google
 import io.github.jan.supabase.gotrue.providers.builtin.Email
+import io.github.jan.supabase.gotrue.providers.builtin.IDToken
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CoroutineScope
@@ -191,6 +193,13 @@ class SupabaseService @Inject constructor(
         client.auth.resendEmail(io.github.jan.supabase.gotrue.providers.builtin.Email.Config.ResendType.SIGNUP, email)
     }
 
+    suspend fun signInWithGoogle(idToken: String) {
+        client.auth.signInWith(IDToken) {
+            this.idToken = idToken
+            this.provider = Google
+        }
+    }
+
     suspend fun signOut() {
         client.auth.signOut()
         cachedUserId = null
@@ -215,6 +224,36 @@ class SupabaseService @Inject constructor(
         // Call edge function to delete all data + auth user
         client.postgrest.rpc("delete_user_account")
         signOut()
+    }
+
+    // --- Push Token Registration ---
+
+    @Serializable
+    private data class UserDeviceRow(
+        @SerialName("user_id") val userId: String,
+        @SerialName("device_token") val deviceToken: String,
+        @SerialName("device_name") val deviceName: String? = null,
+        val platform: String = "android",
+        @SerialName("last_seen_at") val lastSeenAt: String? = null
+    )
+
+    suspend fun registerDeviceToken(token: String, deviceName: String? = null) {
+        if (!_isSignedIn.value) return
+        val userId = cachedUserId ?: return
+        try {
+            val row = UserDeviceRow(
+                userId = userId,
+                deviceToken = token,
+                deviceName = deviceName,
+                platform = "android",
+                lastSeenAt = java.time.Instant.now().toString()
+            )
+            client.postgrest.from("user_devices").upsert(row) {
+                onConflict = "device_token"
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "registerDeviceToken failed: ${e.message}")
+        }
     }
 
     // --- Sync Methods ---

@@ -1,5 +1,6 @@
 package com.pearsonmedia.lastlogged.ui.components
 
+import android.app.Activity
 import androidx.lifecycle.ViewModel
 import com.pearsonmedia.lastlogged.service.AnalyticsService
 import com.pearsonmedia.lastlogged.service.RevenueCatService
@@ -17,8 +18,8 @@ class PaywallViewModel @Inject constructor(
     val isLoading: StateFlow<Boolean> = revenueCatService.isLoading
     val error: StateFlow<String?> = revenueCatService.error
 
-    fun purchase(productId: String) {
-        revenueCatService.purchase(productId)
+    fun purchase(activity: Activity, packageIdentifier: String) {
+        revenueCatService.purchase(activity, packageIdentifier)
     }
 
     fun restorePurchases() {

@@ -1,29 +1,33 @@
 import Foundation
 
 // ============================================================
-// IMPORTANT: This file contains API keys for third-party services.
+// IMPORTANT: Secrets are injected via xcconfig, never hardcoded.
 //
-// For local development:
-//   1. Copy AppSecrets.example.swift to AppSecrets.swift
-//   2. Replace placeholder values with real keys
-//   3. AppSecrets.swift is gitignored — never commit real keys
+// Layout:
+//   LastLogged/Config/Debug.xcconfig   — wired to Debug builds
+//   LastLogged/Config/Release.xcconfig — wired to Release builds
+//   LastLogged/Config/Secrets.xcconfig — gitignored; real keys here
+//   LastLogged/Config/Secrets.example.xcconfig — committed placeholder
 //
-// For CI/CD:
-//   Generate this file from environment variables in a build phase.
+// Info.plist declares $(SUPABASE_URL), $(SUPABASE_ANON_KEY),
+// $(REVENUECAT_API_KEY), $(TELEMETRYDECK_APP_ID). Those values are
+// substituted at build time and read here via Bundle.main.
+//
+// validate() prints a warning in DEBUG and fatalErrors in RELEASE if
+// any value is missing or still a placeholder — a safety net that
+// prevents accidentally shipping a placeholder key.
 // ============================================================
 
 enum AppSecrets {
-    // Supabase
-    static let supabaseURL = "https://YOUR_PROJECT.supabase.co"
-    static let supabaseAnonKey = "YOUR_SUPABASE_ANON_KEY"
+    static let supabaseURL: String = infoValue("SUPABASE_URL")
+    static let supabaseAnonKey: String = infoValue("SUPABASE_ANON_KEY")
+    static let revenueCatAPIKey: String = infoValue("REVENUECAT_API_KEY")
+    static let telemetryDeckAppID: String = infoValue("TELEMETRYDECK_APP_ID")
 
-    // RevenueCat
-    static let revenueCatAPIKey = "YOUR_REVENUECAT_API_KEY"
+    private static func infoValue(_ key: String) -> String {
+        (Bundle.main.object(forInfoDictionaryKey: key) as? String) ?? ""
+    }
 
-    // TelemetryDeck
-    static let telemetryDeckAppID = "YOUR_TELEMETRYDECK_APP_ID"
-
-    /// Call at app launch to crash early if secrets are still placeholders.
     static func validate() {
         let checks: [(key: String, value: String)] = [
             ("SUPABASE_URL", supabaseURL),
@@ -33,10 +37,14 @@ enum AppSecrets {
         ]
 
         for check in checks {
-            if check.value.hasPrefix("YOUR_") || check.value.contains("your-") {
+            let value = check.value
+            let isPlaceholder = value.isEmpty
+                || value.hasPrefix("YOUR_")
+                || value.contains("YOUR_PROJECT")
+                || value.contains("your-")
+            if isPlaceholder {
                 #if DEBUG
-                // In debug, print a warning but don't crash — allows UI development
-                print("⚠️ [AppSecrets] \(check.key) is still a placeholder. Set real credentials in AppSecrets.swift.")
+                print("⚠️ [AppSecrets] \(check.key) is still a placeholder. Fill in Config/Secrets.xcconfig.")
                 #else
                 fatalError("[AppSecrets] \(check.key) is a placeholder. Configure real credentials before building for release.")
                 #endif

@@ -15,6 +15,7 @@ struct HomeView: View {
     @State private var toastDismissTask: Task<Void, Never>?
     @State private var showingSettings = false
     @State private var showingWidgetPrompt = false
+    @State private var quickLogItem: TrackerItem?
     @AppStorage("widgetPromptDismissed") private var widgetPromptDismissed = false
 
     var body: some View {
@@ -97,6 +98,26 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingWidgetPrompt) {
             WidgetPromptView()
+        }
+        .sheet(item: $quickLogItem) { item in
+            if let viewModel {
+                QuickLogSheet(item: item) { completedAt, notes in
+                    let info = viewModel.logCompletion(
+                        for: item,
+                        completedAt: completedAt,
+                        notes: notes
+                    )
+                    showToast(info: info)
+                    if #available(iOS 16.1, *) {
+                        LiveActivityManager.startLogActivity(
+                            trackerName: item.name,
+                            iconName: item.iconName
+                        )
+                    }
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
         }
         .confirmationDialog("Archive Tracker?", isPresented: $showArchiveConfirmation, presenting: itemToArchive) { item in
             Button("Archive", role: .destructive) {
@@ -201,6 +222,13 @@ struct HomeView: View {
                                 logItem(item)
                             }
                         }
+                        .simultaneousGesture(
+                            LongPressGesture(minimumDuration: 0.4)
+                                .onEnded { _ in
+                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                    quickLogItem = item
+                                }
+                        )
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
                                 itemToArchive = item

@@ -1,0 +1,7 @@
+// Debug build configuration.
+//
+// Includes Secrets.xcconfig if present. If Secrets.xcconfig is missing
+// (first clone), fall back to the example so builds succeed — AppSecrets.validate()
+// will still print a warning in DEBUG.
+#include? "Secrets.xcconfig"
+#include? "Secrets.example.xcconfig"
