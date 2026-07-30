@@ -1,5 +1,6 @@
 package com.pearsonmedia.lastlogged.ui
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +34,7 @@ import com.pearsonmedia.lastlogged.service.SupabaseService
 import com.pearsonmedia.lastlogged.ui.navigation.AppNavHost
 import com.pearsonmedia.lastlogged.ui.navigation.NavRoutes
 import com.pearsonmedia.lastlogged.ui.theme.LastLoggedTheme
+import com.pearsonmedia.lastlogged.util.DeepLinks
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -41,8 +45,16 @@ class MainActivity : FragmentActivity() {
     @Inject lateinit var supabaseService: SupabaseService
     @Inject lateinit var secureStorageService: SecureStorageService
 
+    /**
+     * Deep link the app was launched (or re-launched) with. Held as Compose
+     * state so `onNewIntent` — which fires when the activity is already alive,
+     * e.g. a widget tap — re-triggers navigation instead of being ignored.
+     */
+    private var pendingDeepLink by mutableStateOf<DeepLinks.Target?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingDeepLink = DeepLinks.parse(intent?.data)
         enableEdgeToEdge()
         setContent {
             LastLoggedTheme {
@@ -88,12 +100,24 @@ class MainActivity : FragmentActivity() {
                         }
                         AppNavHost(
                             navController = navController,
-                            startDestination = startDest
+                            startDestination = startDest,
+                            deepLink = pendingDeepLink,
+                            onDeepLinkHandled = { pendingDeepLink = null }
                         )
                     }
                 }
             }
         }
+    }
+
+    /**
+     * A widget tap on an already-running app delivers a new Intent rather than
+     * recreating the activity, so the deep link must be picked up here too.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        DeepLinks.parse(intent.data)?.let { pendingDeepLink = it }
     }
 }
 

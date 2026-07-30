@@ -107,7 +107,8 @@
         "Unit test covers the overdue ordering helper"
       ],
       "priority": 5,
-      "passes": false
+      "passes": true,
+      "notes": "Widget now reads Room through a Hilt @EntryPoint (WidgetEntryPoint) in provideGlance; getSampleItems removed. New util/WidgetItems.kt holds the pure overdue-ratio scoring/sorting (mirrors iOS WidgetDataProvider) with 8 unit tests in WidgetItemsTest. Rows deep-link via lastlogged://tracker/<uuid> through new util/DeepLinks.kt -> MainActivity (singleTask + onNewIntent) -> AppNavHost. New service/WidgetUpdater.kt injected into TrackerRepository refreshes every placed widget on all 6 mutation paths. Empty state preserved; DB errors degrade to empty instead of crashing the widget host."
     },
     {
       "id": "PROD-006",

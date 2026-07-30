@@ -1,6 +1,7 @@
 package com.pearsonmedia.lastlogged.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,12 +14,35 @@ import com.pearsonmedia.lastlogged.ui.home.AddTrackerScreen
 import com.pearsonmedia.lastlogged.ui.home.HomeScreen
 import com.pearsonmedia.lastlogged.ui.onboarding.OnboardingScreen
 import com.pearsonmedia.lastlogged.ui.settings.SettingsScreen
+import com.pearsonmedia.lastlogged.util.DeepLinks
 
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    startDestination: String = NavRoutes.Home.route
+    startDestination: String = NavRoutes.Home.route,
+    deepLink: DeepLinks.Target? = null,
+    onDeepLinkHandled: () -> Unit = {}
 ) {
+    // Routed here rather than through NavHost's own deepLinks so the target is
+    // validated by DeepLinks.parse first — an unrecognised or malformed link
+    // resolves to null upstream and simply leaves the user on the start
+    // destination instead of navigating to a bogus route.
+    LaunchedEffect(deepLink) {
+        when (deepLink) {
+            is DeepLinks.Target.TrackerDetail -> {
+                navController.navigate(NavRoutes.TrackerDetail.createRoute(deepLink.trackerId))
+                onDeepLinkHandled()
+            }
+            DeepLinks.Target.Home -> {
+                navController.navigate(NavRoutes.Home.route) {
+                    popUpTo(NavRoutes.Home.route) { inclusive = true }
+                }
+                onDeepLinkHandled()
+            }
+            null -> Unit
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination

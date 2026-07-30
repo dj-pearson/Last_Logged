@@ -1597,3 +1597,46 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - `npm run typecheck` in edge-functions/ is fast and works in the sandbox — always run
     it before committing backend changes.
 ---
+
+## 2026-07-30 - PROD-005
+- `LastLoggedWidget.provideGlance` now loads real trackers via a Hilt `@EntryPoint`
+  (`WidgetEntryPoint`) -> `TrackerRepository.getActiveItems().first()`. `getSampleItems()`
+  (five hardcoded fake rows shipped to every user) is gone.
+- New `util/WidgetItems.kt`: pure, Android-free overdue scoring + `topOverdue`, mirroring
+  iOS `WidgetDataProvider.overdueScore`. Covered by `WidgetItemsTest` (8 cases).
+- New `util/DeepLinks.kt`: parses `lastlogged://tracker/<uuid>` and
+  `https://lastlogged.com/{tracker,open,share}/...`, UUID-validated, returns null on
+  anything unrecognised.
+- Widget rows tap through to tracker detail: MainActivity is now `singleTask`, parses
+  `intent.data` in `onCreate` and `onNewIntent`, and hands the target to `AppNavHost`,
+  which navigates in a `LaunchedEffect`.
+- New `service/WidgetUpdater.kt` injected into `TrackerRepository`; all six mutation
+  paths (create, update, archive, logCompletionAt, undoLog, clearAllData) refresh widgets.
+- Files changed: ui/widget/LastLoggedWidget.kt, util/WidgetItems.kt (new),
+  util/DeepLinks.kt (new), service/WidgetUpdater.kt (new),
+  data/repository/TrackerRepository.kt, ui/MainActivity.kt,
+  ui/navigation/AppNavHost.kt, AndroidManifest.xml,
+  app/src/test/.../WidgetItemsTest.kt (new)
+- **Learnings for future iterations:**
+  - Glance widgets are instantiated by the system and CANNOT be `@AndroidEntryPoint`.
+    Use `@EntryPoint @InstallIn(SingletonComponent::class)` +
+    `EntryPointAccessors.fromApplication(context.applicationContext, X::class.java)`.
+  - Glance does not observe Room. Any write that changes widget content must call
+    `LastLoggedWidget().updateAll(context)` — centralised in `WidgetUpdater` and injected
+    into `TrackerRepository` so no call site can forget.
+  - Wrap widget data loading in try/catch: an exception out of `provideGlance` makes the
+    launcher tear the widget down, and the user has to re-add it by hand.
+  - `MainActivity` must be `launchMode="singleTask"` with an `onNewIntent` override, or a
+    widget tap on an already-running app silently does nothing.
+  - Overdue ordering is a RATIO (elapsed / interval), never a raw day count — 3 days late
+    on a weekly task must outrank 3 days late on an annual one. Keep Android and iOS in
+    sync on this.
+  - Adding a constructor param to `TrackerRepository` is safe: the unit tests mock the
+    repo rather than constructing it.
+  - NOT COMPILE-VERIFIED: the sandbox has no Android SDK (dl.google.com is proxy-blocked),
+    so this is code-review-verified only. The one API to double-check on the first real
+    build is `actionStartActivity(intent: Intent)` — imported from
+    `androidx.glance.appwidget.action`, not `androidx.glance.action`.
+  - The `WidgetItemsTest` expectations were verified by re-running the algorithm
+    independently before commit, since Kotlin tests cannot run in the sandbox.
+---

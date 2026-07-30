@@ -1,15 +1,19 @@
 package com.pearsonmedia.lastlogged.ui.widget
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -20,14 +24,22 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
-import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
+import com.pearsonmedia.lastlogged.data.repository.TrackerRepository
+import com.pearsonmedia.lastlogged.ui.MainActivity
+import com.pearsonmedia.lastlogged.util.DeepLinks
 import com.pearsonmedia.lastlogged.util.TimeFormatUtil
+import com.pearsonmedia.lastlogged.util.WidgetItems
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.flow.first
 
 data class WidgetTrackerItem(
     val id: String,
@@ -36,6 +48,17 @@ data class WidgetTrackerItem(
     val reminderIntervalDays: Int,
     val iconName: String
 )
+
+/**
+ * Glance widgets are instantiated by the system, so they cannot be annotated
+ * `@AndroidEntryPoint`. An `@EntryPoint` is the supported way to reach the Hilt
+ * singleton graph from one.
+ */
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface WidgetEntryPoint {
+    fun trackerRepository(): TrackerRepository
+}
 
 class LastLoggedWidget : GlanceAppWidget() {
 
@@ -48,35 +71,57 @@ class LastLoggedWidget : GlanceAppWidget() {
     )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // TODO: Read from Room database via shared data
-        // For now, use sample data
-        val items = getSampleItems()
+        val items = loadTopOverdue(context)
 
         provideContent {
             GlanceTheme {
-                WidgetContent(items = items)
+                WidgetContent(context = context, items = items)
             }
         }
     }
 
-    private fun getSampleItems(): List<WidgetTrackerItem> {
-        return listOf(
-            WidgetTrackerItem("1", "HVAC Filter", System.currentTimeMillis() - 86400000L * 95, 90, "air"),
-            WidgetTrackerItem("2", "Oil Change", System.currentTimeMillis() - 86400000L * 85, 90, "oil_barrel"),
-            WidgetTrackerItem("3", "Dental Checkup", System.currentTimeMillis() - 86400000L * 200, 180, "medical_services"),
-            WidgetTrackerItem("4", "Tire Rotation", System.currentTimeMillis() - 86400000L * 170, 180, "tire_repair"),
-            WidgetTrackerItem("5", "Haircut", System.currentTimeMillis() - 86400000L * 50, 42, "content_cut")
-        )
+    /**
+     * Reads the user's real trackers. Glance does not observe Room, so this runs
+     * once per refresh and takes the current value off the DAO's Flow.
+     */
+    private suspend fun loadTopOverdue(context: Context): List<WidgetTrackerItem> {
+        return try {
+            val repository = EntryPointAccessors
+                .fromApplication(context.applicationContext, WidgetEntryPoint::class.java)
+                .trackerRepository()
+
+            WidgetItems
+                .topOverdue(repository.getActiveItems().first(), MAX_ITEMS)
+                .map { item ->
+                    WidgetTrackerItem(
+                        id = item.id,
+                        name = item.name,
+                        lastCompletedAt = item.lastCompletedAt,
+                        reminderIntervalDays = item.reminderIntervalDays,
+                        iconName = item.iconName
+                    )
+                }
+        } catch (e: Exception) {
+            // A widget that throws gets torn down by the launcher, so degrade to
+            // the empty state and let the next refresh recover.
+            emptyList()
+        }
+    }
+
+    companion object {
+        /** Fits the large widget; smaller sizes clip inside the LazyColumn. */
+        const val MAX_ITEMS = 5
     }
 }
 
 @Composable
-private fun WidgetContent(items: List<WidgetTrackerItem>) {
+private fun WidgetContent(context: Context, items: List<WidgetTrackerItem>) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(GlanceTheme.colors.background)
             .padding(12.dp)
+            .clickable(actionStartActivity(homeIntent(context)))
     ) {
         Text(
             text = "Top Overdue",
@@ -99,8 +144,8 @@ private fun WidgetContent(items: List<WidgetTrackerItem>) {
             )
         } else {
             LazyColumn {
-                items(items.take(5)) { item ->
-                    WidgetRow(item)
+                items(items) { item ->
+                    WidgetRow(context = context, item = item)
                 }
             }
         }
@@ -108,7 +153,7 @@ private fun WidgetContent(items: List<WidgetTrackerItem>) {
 }
 
 @Composable
-private fun WidgetRow(item: WidgetTrackerItem) {
+private fun WidgetRow(context: Context, item: WidgetTrackerItem) {
     val urgency = TimeFormatUtil.urgencyLevel(item.lastCompletedAt, item.reminderIntervalDays)
     val urgencyColor = when (urgency) {
         TimeFormatUtil.UrgencyLevel.GOOD -> ColorProvider(
@@ -129,7 +174,8 @@ private fun WidgetRow(item: WidgetTrackerItem) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .clickable(actionStartActivity(trackerIntent(context, item.id))),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = GlanceModifier.defaultWeight()) {
@@ -152,6 +198,19 @@ private fun WidgetRow(item: WidgetTrackerItem) {
         }
     }
 }
+
+/**
+ * Widget taps arrive as a fresh Intent, so they are routed through the same
+ * deep-link path as an external link instead of a second, parallel mechanism.
+ */
+private fun trackerIntent(context: Context, trackerId: String): Intent =
+    Intent(Intent.ACTION_VIEW, Uri.parse(DeepLinks.trackerUri(trackerId)))
+        .setClass(context, MainActivity::class.java)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+private fun homeIntent(context: Context): Intent =
+    Intent(context, MainActivity::class.java)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
 class LastLoggedWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = LastLoggedWidget()
