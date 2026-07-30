@@ -236,7 +236,8 @@
         "deploy-edge-functions.yml runs lint and test before deploying"
       ],
       "priority": 13,
-      "passes": false
+      "passes": true,
+      "notes": "Vitest + ESLint 9 (flat config, typescript-eslint) configured with npm test / npm run lint. 43 tests across 4 files, all passing: middleware (13 - rate limit under/over/per-IP/window-reset/XFF-chain, bodyLimit, cronAuth incl. missing-secret 403), revenuecat-webhook (7 - valid, missing, empty, wrong-secret, tampered-body, malformed and non-hex signatures all 401 not 500), validate-env (12 - each required var, placeholders, multi-report, FCM warn paths), fcm (11 - RS256 JWT verified against the public key, token caching, dead-token vs transient-500 pruning). deploy-edge-functions.yml job renamed to 'verify' and now runs typecheck + lint + test before deploy."
     },
     {
       "id": "PROD-014",

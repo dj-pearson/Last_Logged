@@ -1824,3 +1824,36 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - The prefs file name (`lastlogged_secure_prefs`) is `PREFS_NAME` in
     SecureStorageService; keep the backup rules in sync if it ever changes.
 ---
+
+## 2026-07-30 - PROD-013
+- Added Vitest (`vitest.config.ts`, `npm test`) and ESLint 9 flat config
+  (`eslint.config.js`, `npm run lint`) to edge-functions.
+- 43 tests across 4 files, ALL RUN AND PASSING in the sandbox:
+  - `middleware.test.ts` (13): rate limit under/over/per-IP/window-reset/XFF-chain,
+    bodyLimit over/at/absent, cronAuth valid/missing/wrong/bare-token/no-secret-403.
+  - `revenuecat-webhook.test.ts` (7): valid signature, missing, empty, wrong secret,
+    valid-signature-for-different-body, malformed and non-hex signatures — the last two
+    confirm `timingSafeEqual`'s length-mismatch throw is caught and returns 401, not 500.
+  - `validate-env.test.ts` (12): every required var, placeholder detection, all-missing
+    reported at once, and the three FCM warn paths from PROD-004.
+  - `fcm.test.ts` (11): the RS256 JWT is verified against the generated public key,
+    token caching, send payload shape, and dead-token vs transient-500 pruning.
+- `deploy-edge-functions.yml`: job renamed `typecheck` -> `verify`
+  ("Typecheck, Lint & Test") and now runs all three before deploy.
+- Files changed: edge-functions/{vitest.config.ts,eslint.config.js,package.json},
+  edge-functions/test/*.test.ts (4 new), .github/workflows/deploy-edge-functions.yml
+- **Learnings for future iterations:**
+  - Edge-function tests RUN in the sandbox. Always `npm test && npm run lint && npm run
+    typecheck` in edge-functions/ before committing backend changes — this is the one
+    part of the repo with real verification.
+  - Modules read `process.env` at import time. Set env at the TOP of the test file, then
+    `await import(...)` inside `beforeAll`. A top-level static import is too late.
+  - Use `vi.mock('../src/supabase.js', ...)` to keep webhook tests off the network.
+  - `vi.stubGlobal('fetch', mock)` + `vi.unstubAllGlobals()` is the clean way to test
+    fetch-based senders; `resetFcmTokenCache()` was added to fcm.ts for exactly this.
+  - The in-memory rate-limit store is module-level and shared across tests in a file —
+    give each test a distinct IP and `keyPrefix` or they interfere.
+  - ESLint 9 needs an explicit `languageOptions.globals` list for Node globals in a flat
+    config; there is no automatic `env: node`.
+  - Renaming a CI job changes the required-status-check name in branch protection.
+---
