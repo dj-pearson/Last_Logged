@@ -72,6 +72,10 @@ final class NotificationService {
         let granted = await requestPermissionIfNeeded()
         guard granted else { return }
 
+        // Permission may have just been granted for the first time — register now
+        // rather than making the user relaunch before server digests can reach them.
+        await AppDelegate.registerForPushIfAuthorized()
+
         // Remove all existing notifications and reschedule
         center.removeAllPendingNotificationRequests()
 

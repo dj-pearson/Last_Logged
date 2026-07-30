@@ -1533,3 +1533,34 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - DAO methods are `suspend`, so instrumentation tests need `runBlocking` around
     DAO calls.
 ---
+
+## 2026-07-30 - PROD-003
+- Added `LastLogged/Services/AppDelegate.swift` and wired it with
+  `@UIApplicationDelegateAdaptor` in `LastLoggedApp`.
+- `didRegisterForRemoteNotificationsWithDeviceToken` hex-encodes the token and calls
+  the previously-dead `SupabaseService.registerDeviceToken(_:)` (which already writes
+  `platform: "ios"` and the device name).
+- `registerForPushIfAuthorized()` gates on `.authorized`/`.provisional` and is called
+  from two places: `LastLoggedApp.task` (every launch, so rotated tokens refresh) and
+  `NotificationService.rescheduleAllNotifications` right after a first-time grant.
+- `didFailToRegisterForRemoteNotifications` reports via AnalyticsService, never fatal.
+- Set `UNUserNotificationCenter.delegate` + async `willPresent` so reminders that fire
+  while the app is open actually appear.
+- Added `aps-environment` to LastLogged.entitlements.
+- Files changed: LastLogged/Services/AppDelegate.swift (new), LastLogged/LastLoggedApp.swift,
+  LastLogged/Services/NotificationService.swift, LastLogged/LastLogged.entitlements,
+  LastLogged.xcodeproj/project.pbxproj
+- **Learnings for future iterations:**
+  - `SupabaseService.registerDeviceToken(_:)` existed and was correct but had NO caller —
+    the whole server digest pipeline had zero iOS tokens. When auditing, grep for callers
+    of a service method, not just its existence.
+  - Adding a Swift file needs FOUR pbxproj edits: PBXBuildFile, PBXFileReference, the
+    PBXGroup children list, and the target's PBXSourcesBuildPhase. Check you are editing
+    the *app* Sources phase — the widget extension has its own, and several files
+    (TrackerItem, SchemaVersions, WidgetDataProvider) appear in both with different IDs.
+  - Next free pbxproj IDs after this story: A1...0038 (BuildFile), A2...0034 (FileRef).
+  - `NotificationService.swift` is app-target only, so it can safely reference UIKit-based
+    types like AppDelegate. Do not add such references to files shared with the widget.
+  - Found but out of scope: the registered `LOG_NOW_ACTION` notification button has no
+    `didReceive:` handler, so it does nothing. Tracked as PROD-021.
+---

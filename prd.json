@@ -73,7 +73,8 @@
         "Token re-registered on each launch so rotated tokens are refreshed"
       ],
       "priority": 3,
-      "passes": false
+      "passes": true,
+      "notes": "Added LastLogged/Services/AppDelegate.swift (registered in project.pbxproj, app target only) wired via @UIApplicationDelegateAdaptor. Hex-encodes the APNs token into SupabaseService.registerDeviceToken (already wrote platform='ios' + device name), guards registration on authorized/provisional status, re-registers each launch and immediately after first grant in rescheduleAllNotifications, logs failures via AnalyticsService without crashing, and adds the aps-environment entitlement. Also sets UNUserNotificationCenter.delegate so foreground reminders present instead of being swallowed."
     },
     {
       "id": "PROD-004",
@@ -333,6 +334,21 @@
         "progress.txt Codebase Patterns section updated with patterns from this batch"
       ],
       "priority": 20,
+      "passes": false
+    },
+    {
+      "id": "PROD-021",
+      "title": "iOS notification 'Log Now' action actually logs a completion",
+      "description": "As a user, I need the Log Now button on a reminder notification to work. NotificationService registers a TRACKER_REMINDER category with a LOG_NOW_ACTION button, but nothing implements userNotificationCenter(_:didReceive:) \u2014 tapping it just foregrounds the app and silently drops the action. Found while wiring the AppDelegate in PROD-003.",
+      "acceptanceCriteria": [
+        "AppDelegate implements userNotificationCenter(_:didReceive:) and handles LOG_NOW_ACTION",
+        "The tracker id is carried in the notification userInfo and resolved before logging",
+        "Completion written through the shared App Group ModelContainer so the widget and app agree",
+        "Notifications rescheduled after the log so the reminder does not immediately re-fire",
+        "Default tap (UNNotificationDefaultActionIdentifier) deep-links to that tracker's detail screen",
+        "Unknown or deleted tracker ids are ignored without crashing"
+      ],
+      "priority": 21,
       "passes": false
     }
   ],

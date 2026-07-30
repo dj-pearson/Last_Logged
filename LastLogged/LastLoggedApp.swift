@@ -4,6 +4,7 @@ import RevenueCat
 
 @main
 struct LastLoggedApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     let modelContainer: ModelContainer
 
@@ -51,6 +52,9 @@ struct LastLoggedApp: App {
                 }
                 .task {
                     await SupabaseService.shared.restoreSession()
+                    // Re-register every launch so rotated APNs tokens replace the
+                    // stale row in user_devices.
+                    await AppDelegate.registerForPushIfAuthorized()
                 }
         }
         .modelContainer(modelContainer)

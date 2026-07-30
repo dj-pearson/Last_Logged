@@ -25,6 +25,7 @@
 		A10000000000000000000010 /* CategoryTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* CategoryTemplates.swift */; };
 		A10000000000000000000011 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* TemplatePickerView.swift */; };
 		A10000000000000000000012 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* NotificationService.swift */; };
+		A10000000000000000000037 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* AppDelegate.swift */; };
 		A10000000000000000000013 /* WidgetDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* WidgetDataProvider.swift */; };
 		A10000000000000000000014 /* LastLoggedWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* LastLoggedWidgetBundle.swift */; };
 		A10000000000000000000015 /* LastLoggedWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* LastLoggedWidget.swift */; };
@@ -106,6 +107,7 @@
 		A20000000000000000000010 /* CategoryTemplates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryTemplates.swift; sourceTree = "<group>"; };
 		A20000000000000000000011 /* TemplatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatePickerView.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		A20000000000000000000033 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A20000000000000000000013 /* WidgetDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataProvider.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* LastLoggedWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedWidgetBundle.swift; sourceTree = "<group>"; };
 		A20000000000000000000015 /* LastLoggedWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedWidget.swift; sourceTree = "<group>"; };
@@ -287,6 +289,7 @@
 		A3000000000000000000000B /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A20000000000000000000033 /* AppDelegate.swift */,
 				A20000000000000000000023 /* AnalyticsService.swift */,
 				A20000000000000000000012 /* NotificationService.swift */,
 				A20000000000000000000019 /* RevenueCatService.swift */,
@@ -473,6 +476,7 @@
 				A10000000000000000000010 /* CategoryTemplates.swift in Sources */,
 				A10000000000000000000011 /* TemplatePickerView.swift in Sources */,
 				A10000000000000000000012 /* NotificationService.swift in Sources */,
+				A10000000000000000000037 /* AppDelegate.swift in Sources */,
 				A1000000000000000000001D /* RevenueCatService.swift in Sources */,
 				A1000000000000000000001E /* PaywallView.swift in Sources */,
 				A1000000000000000000001F /* SupabaseService.swift in Sources */,

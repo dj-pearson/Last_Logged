@@ -6,5 +6,9 @@
 	<array>
 		<string>group.com.pearsonmedia.lastlogged</string>
 	</array>
+	<!-- Xcode rewrites this to "production" for App Store/TestFlight archives.
+	     Required for registerForRemoteNotifications() to return a token. -->
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>
