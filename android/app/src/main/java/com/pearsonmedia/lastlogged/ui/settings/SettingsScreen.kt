@@ -37,12 +37,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pearsonmedia.lastlogged.util.UrlOpener
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAuth: () -> Unit,
+    onNavigateToPaywall: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -114,7 +116,7 @@ fun SettingsScreen(
                     headlineContent = {
                         Text("Upgrade to Premium", color = MaterialTheme.colorScheme.primary)
                     },
-                    modifier = Modifier.clickable { /* TODO: Show paywall */ }
+                    modifier = Modifier.clickable { onNavigateToPaywall() }
                 )
             }
 
@@ -207,11 +209,11 @@ fun SettingsScreen(
             SectionHeader("Legal")
             ListItem(
                 headlineContent = { Text("Terms of Service") },
-                modifier = Modifier.clickable { /* TODO: Open in browser */ }
+                modifier = Modifier.clickable { UrlOpener.openTerms(context) }
             )
             ListItem(
                 headlineContent = { Text("Privacy Policy") },
-                modifier = Modifier.clickable { /* TODO: Open in browser */ }
+                modifier = Modifier.clickable { UrlOpener.openPrivacy(context) }
             )
 
             HorizontalDivider()

@@ -61,8 +61,12 @@ fun AppNavHost(
             PaywallScreen(
                 isHardPaywall = false,
                 onDismiss = {
-                    navController.navigate(NavRoutes.Home.route) {
-                        popUpTo(NavRoutes.Paywall.route) { inclusive = true }
+                    // Reachable from two places now: onboarding (nothing to pop —
+                    // onboarding removes itself) and Settings (pop back to it).
+                    if (!navController.popBackStack()) {
+                        navController.navigate(NavRoutes.Home.route) {
+                            popUpTo(NavRoutes.Paywall.route) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -84,7 +88,8 @@ fun AppNavHost(
         composable(NavRoutes.Settings.route) {
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToAuth = { navController.navigate(NavRoutes.Auth.route) }
+                onNavigateToAuth = { navController.navigate(NavRoutes.Auth.route) },
+                onNavigateToPaywall = { navController.navigate(NavRoutes.Paywall.route) }
             )
         }
 

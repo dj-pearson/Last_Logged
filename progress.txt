@@ -1741,3 +1741,29 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - Hilt field injection works in a `BroadcastReceiver` via `@AndroidEntryPoint` +
     `@Inject lateinit var`.
 ---
+
+## 2026-07-30 - PROD-010
+- New `util/UrlOpener.kt`: Custom Tab first, `ACTION_VIEW` fallback when no Custom Tabs
+  provider exists, logged no-op if there is no browser at all. Holds `TERMS_URL` and
+  `PRIVACY_URL`.
+- Wired all five dead controls: Settings Terms / Privacy / "Upgrade to Premium" (new
+  `onNavigateToPaywall` param routed in AppNavHost) and the Paywall Terms / Privacy
+  TextButtons.
+- Added `androidx.browser:browser:1.7.0`.
+- Fixed `PaywallScreen.onDismiss` in AppNavHost: it hardcoded a navigate-to-Home with
+  `popUpTo(Paywall)`, which was only correct coming from onboarding. Now
+  `popBackStack()` first and fall back to Home — otherwise opening the paywall from
+  Settings would have pushed Home on top of Settings.
+- Files changed: util/UrlOpener.kt (new), ui/settings/SettingsScreen.kt,
+  ui/components/PaywallScreen.kt, ui/navigation/AppNavHost.kt, app/build.gradle.kts
+- **Learnings for future iterations:**
+  - `grep -rn "TODO" android/app/src/main/java/.../ui/` is now clean — keep it that way;
+    a TODO in an `onClick` ships as a control that silently does nothing.
+  - Both App Store and Play review require Terms and Privacy to be reachable **from the
+    purchase surface**, not just from Settings.
+  - `PaywallScreen` already had `LocalContext.current.findActivity()`; it needed a plain
+    `val context = LocalContext.current` for `UrlOpener` (the private `findActivity()`
+    extension lives at the bottom of that file).
+  - When adding a second entry point to an existing screen, re-check its dismiss/back
+    handling — hardcoded `popUpTo` chains are usually written for one caller only.
+---

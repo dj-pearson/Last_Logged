@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.pearsonmedia.lastlogged.service.RevenueCatService
 import com.pearsonmedia.lastlogged.util.AccessibilityUtil
+import com.pearsonmedia.lastlogged.util.UrlOpener
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,7 +83,8 @@ fun PaywallScreen(
     val error by viewModel.error.collectAsState()
     var selectedPackageId by remember { mutableStateOf(RevenueCatService.PRODUCT_ANNUAL) }
     val reduceMotion = AccessibilityUtil.rememberReduceMotion()
-    val activity = LocalContext.current.findActivity()
+    val context = LocalContext.current
+    val activity = context.findActivity()
 
     Scaffold(
         topBar = {
@@ -223,10 +225,10 @@ fun PaywallScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                TextButton(onClick = { /* TODO: Open terms */ }) {
+                TextButton(onClick = { UrlOpener.openTerms(context) }) {
                     Text("Terms", style = MaterialTheme.typography.labelSmall)
                 }
-                TextButton(onClick = { /* TODO: Open privacy */ }) {
+                TextButton(onClick = { UrlOpener.openPrivacy(context) }) {
                     Text("Privacy", style = MaterialTheme.typography.labelSmall)
                 }
             }

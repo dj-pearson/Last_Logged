@@ -189,7 +189,8 @@
         "No remaining TODO-marked onClick handlers in ui/"
       ],
       "priority": 10,
-      "passes": false
+      "passes": true,
+      "notes": "New util/UrlOpener.kt (Custom Tab -> ACTION_VIEW fallback -> logged no-op) with TERMS_URL/PRIVACY_URL constants. Wired the 3 dead Settings clickables (Terms, Privacy, Upgrade->paywall via new onNavigateToPaywall param) and the 2 dead Paywall TextButtons. Added androidx.browser:browser:1.7.0. Also fixed PaywallScreen.onDismiss, which assumed onboarding was the only entry point and would have stacked Home on top of Settings. Zero TODO-marked onClick handlers remain in ui/."
     },
     {
       "id": "PROD-011",
