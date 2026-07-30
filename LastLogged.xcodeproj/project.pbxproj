@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10000000000000000000039 /* InputSanitizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000035 /* InputSanitizerTests.swift */; };
+		A1000000000000000000003A /* CategoryTemplatesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000036 /* CategoryTemplatesTests.swift */; };
+		A1000000000000000000003B /* WidgetDataProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000037 /* WidgetDataProviderTests.swift */; };
+		A1000000000000000000003C /* AuthViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000038 /* AuthViewModelTests.swift */; };
 		A10000000000000000000001 /* LastLoggedApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* LastLoggedApp.swift */; };
 		A10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* ContentView.swift */; };
 		A10000000000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* Assets.xcassets */; };
@@ -25,6 +29,8 @@
 		A10000000000000000000010 /* CategoryTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* CategoryTemplates.swift */; };
 		A10000000000000000000011 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* TemplatePickerView.swift */; };
 		A10000000000000000000012 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* NotificationService.swift */; };
+		A10000000000000000000037 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* AppDelegate.swift */; };
+		A1000000000000000000003D /* CrashReportingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003A /* CrashReportingService.swift */; };
 		A10000000000000000000013 /* WidgetDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* WidgetDataProvider.swift */; };
 		A10000000000000000000014 /* LastLoggedWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* LastLoggedWidgetBundle.swift */; };
 		A10000000000000000000015 /* LastLoggedWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* LastLoggedWidget.swift */; };
@@ -50,6 +56,7 @@
 		A10000000000000000000029 /* CancellationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* CancellationView.swift */; };
 		A1000000000000000000002A /* WidgetPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* WidgetPromptView.swift */; };
 		A1000000000000000000002B /* AppSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* AppSecrets.swift */; };
+		A10000000000000000000038 /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000034 /* DeepLinkRouter.swift */; };
 		A1000000000000000000002C /* SchemaVersions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* SchemaVersions.swift */; };
 		A1000000000000000000002D /* SchemaVersions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* SchemaVersions.swift */; };
 		A1000000000000000000002E /* BiometricService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* BiometricService.swift */; };
@@ -60,10 +67,18 @@
 		A10000000000000000000033 /* LastLoggedActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002B /* LastLoggedActivityAttributes.swift */; };
 		A10000000000000000000034 /* LastLoggedLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002D /* LastLoggedLiveActivity.swift */; };
 		A10000000000000000000035 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002E /* PrivacyInfo.xcprivacy */; };
+		A1000000000000000000003E /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003B /* Localizable.xcstrings */; };
 		A10000000000000000000036 /* QuickLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000032 /* QuickLogSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		AB0000000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A60000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000000000000000000001;
+			remoteInfo = LastLogged;
+		};
 		AB0000000000000000000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A60000000000000000000001 /* Project object */;
@@ -88,6 +103,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A20000000000000000000035 /* InputSanitizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSanitizerTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000036 /* CategoryTemplatesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryTemplatesTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000037 /* WidgetDataProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataProviderTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000038 /* AuthViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModelTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000039 /* LastLoggedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LastLoggedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000001 /* LastLoggedApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedApp.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -106,6 +126,8 @@
 		A20000000000000000000010 /* CategoryTemplates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryTemplates.swift; sourceTree = "<group>"; };
 		A20000000000000000000011 /* TemplatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatePickerView.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		A20000000000000000000033 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A2000000000000000000003A /* CrashReportingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashReportingService.swift; sourceTree = "<group>"; };
 		A20000000000000000000013 /* WidgetDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataProvider.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* LastLoggedWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedWidgetBundle.swift; sourceTree = "<group>"; };
 		A20000000000000000000015 /* LastLoggedWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedWidget.swift; sourceTree = "<group>"; };
@@ -126,6 +148,7 @@
 		A20000000000000000000024 /* CancellationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancellationView.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* WidgetPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPromptView.swift; sourceTree = "<group>"; };
 		A20000000000000000000026 /* AppSecrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSecrets.swift; sourceTree = "<group>"; };
+		A20000000000000000000034 /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
 		A20000000000000000000027 /* SchemaVersions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaVersions.swift; sourceTree = "<group>"; };
 		A20000000000000000000028 /* BiometricService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricService.swift; sourceTree = "<group>"; };
 		A20000000000000000000029 /* InputSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSanitizer.swift; sourceTree = "<group>"; };
@@ -134,6 +157,7 @@
 		A2000000000000000000002C /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
 		A2000000000000000000002D /* LastLoggedLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedLiveActivity.swift; sourceTree = "<group>"; };
 		A2000000000000000000002E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A2000000000000000000003B /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		A2000000000000000000002F /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		A20000000000000000000030 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		A20000000000000000000031 /* Secrets.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.example.xcconfig; sourceTree = "<group>"; };
@@ -141,6 +165,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A40000000000000000000009 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A40000000000000000000002 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -162,11 +193,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A3000000000000000000001A /* LastLoggedTests */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000035 /* InputSanitizerTests.swift */,
+				A20000000000000000000036 /* CategoryTemplatesTests.swift */,
+				A20000000000000000000037 /* WidgetDataProviderTests.swift */,
+				A20000000000000000000038 /* AuthViewModelTests.swift */,
+			);
+			path = LastLoggedTests;
+			sourceTree = "<group>";
+		};
 		A30000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000002 /* LastLogged */,
 				A30000000000000000000010 /* LastLoggedWidget */,
+				A3000000000000000000001A /* LastLoggedTests */,
 				A3000000000000000000000E /* Products */,
 				A3000000000000000000000F /* Frameworks */,
 			);
@@ -187,6 +230,7 @@
 				A20000000000000000000004 /* LastLogged.entitlements */,
 				A20000000000000000000005 /* Info.plist */,
 				A2000000000000000000002E /* PrivacyInfo.xcprivacy */,
+				A2000000000000000000003B /* Localizable.xcstrings */,
 				A30000000000000000000011 /* Config */,
 			);
 			path = LastLogged;
@@ -287,6 +331,8 @@
 		A3000000000000000000000B /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A20000000000000000000033 /* AppDelegate.swift */,
+				A2000000000000000000003A /* CrashReportingService.swift */,
 				A20000000000000000000023 /* AnalyticsService.swift */,
 				A20000000000000000000012 /* NotificationService.swift */,
 				A20000000000000000000019 /* RevenueCatService.swift */,
@@ -302,6 +348,7 @@
 		A3000000000000000000000C /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				A20000000000000000000034 /* DeepLinkRouter.swift */,
 				A2000000000000000000000B /* DataSeeder.swift */,
 				A20000000000000000000010 /* CategoryTemplates.swift */,
 				A20000000000000000000026 /* AppSecrets.swift */,
@@ -323,6 +370,7 @@
 			children = (
 				A20000000000000000000006 /* LastLogged.app */,
 				A20000000000000000000017 /* LastLoggedWidgetExtension.appex */,
+				A20000000000000000000039 /* LastLoggedTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -349,6 +397,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A50000000000000000000003 /* LastLoggedTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A80000000000000000000004 /* Build configuration list for PBXNativeTarget "LastLoggedTests" */;
+			buildPhases = (
+				A40000000000000000000008 /* Sources */,
+				A40000000000000000000009 /* Frameworks */,
+				A4000000000000000000000A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AC0000000000000000000002 /* PBXTargetDependency */,
+			);
+			name = LastLoggedTests;
+			productName = LastLoggedTests;
+			productReference = A20000000000000000000039 /* LastLoggedTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		A50000000000000000000001 /* LastLogged */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A80000000000000000000002 /* Build configuration list for PBXNativeTarget "LastLogged" */;
@@ -368,6 +434,7 @@
 				AA0000000000000000000001 /* Supabase */,
 				AA0000000000000000000002 /* RevenueCat */,
 				AA0000000000000000000003 /* TelemetryDeck */,
+				AA0000000000000000000005 /* Sentry */,
 			);
 			productName = LastLogged;
 			productReference = A20000000000000000000006 /* LastLogged.app */;
@@ -403,6 +470,10 @@
 				LastSwiftUpdateCheck = 1540;
 				LastUpgradeCheck = 1540;
 				TargetAttributes = {
+					A50000000000000000000003 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = A50000000000000000000001;
+					};
 					A50000000000000000000001 = {
 						CreatedOnToolsVersion = 15.4;
 					};
@@ -421,6 +492,7 @@
 			);
 			mainGroup = A30000000000000000000001;
 			packageReferences = (
+				A90000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 				A90000000000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				A90000000000000000000002 /* XCRemoteSwiftPackageReference "purchases-ios" */,
 				A90000000000000000000003 /* XCRemoteSwiftPackageReference "SwiftClient" */,
@@ -431,17 +503,26 @@
 			targets = (
 				A50000000000000000000001 /* LastLogged */,
 				A50000000000000000000002 /* LastLoggedWidgetExtension */,
+				A50000000000000000000003 /* LastLoggedTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A4000000000000000000000A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A40000000000000000000003 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000003 /* Assets.xcassets in Resources */,
 				A10000000000000000000035 /* PrivacyInfo.xcprivacy in Resources */,
+				A1000000000000000000003E /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -455,6 +536,17 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A40000000000000000000008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000039 /* InputSanitizerTests.swift in Sources */,
+				A1000000000000000000003A /* CategoryTemplatesTests.swift in Sources */,
+				A1000000000000000000003B /* WidgetDataProviderTests.swift in Sources */,
+				A1000000000000000000003C /* AuthViewModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A40000000000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -473,6 +565,8 @@
 				A10000000000000000000010 /* CategoryTemplates.swift in Sources */,
 				A10000000000000000000011 /* TemplatePickerView.swift in Sources */,
 				A10000000000000000000012 /* NotificationService.swift in Sources */,
+				A10000000000000000000037 /* AppDelegate.swift in Sources */,
+				A1000000000000000000003D /* CrashReportingService.swift in Sources */,
 				A1000000000000000000001D /* RevenueCatService.swift in Sources */,
 				A1000000000000000000001E /* PaywallView.swift in Sources */,
 				A1000000000000000000001F /* SupabaseService.swift in Sources */,
@@ -491,6 +585,7 @@
 				A10000000000000000000029 /* CancellationView.swift in Sources */,
 				A1000000000000000000002A /* WidgetPromptView.swift in Sources */,
 				A1000000000000000000002B /* AppSecrets.swift in Sources */,
+				A10000000000000000000038 /* DeepLinkRouter.swift in Sources */,
 				A1000000000000000000002C /* SchemaVersions.swift in Sources */,
 				A10000000000000000000031 /* LastLoggedActivityAttributes.swift in Sources */,
 				A10000000000000000000032 /* LiveActivityManager.swift in Sources */,
@@ -519,6 +614,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		AC0000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000000000000000000001 /* LastLogged */;
+			targetProxy = AB0000000000000000000002 /* PBXContainerItemProxy */;
+		};
 		AC0000000000000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A50000000000000000000002 /* LastLoggedWidgetExtension */;
@@ -527,6 +627,46 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		A70000000000000000000007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pearsonmedia.lastlogged.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LastLogged.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LastLogged";
+			};
+			name = Debug;
+		};
+		A70000000000000000000008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pearsonmedia.lastlogged.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LastLogged.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LastLogged";
+			};
+			name = Release;
+		};
 		A70000000000000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -759,6 +899,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A80000000000000000000004 /* Build configuration list for PBXNativeTarget "LastLoggedTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A70000000000000000000007 /* Debug */,
+				A70000000000000000000008 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A80000000000000000000001 /* Build configuration list for PBXProject "LastLogged" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -789,6 +938,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		A90000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
 		A90000000000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift.git";
@@ -816,6 +973,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		AA0000000000000000000005 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A90000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
 		AA0000000000000000000001 /* Supabase */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A90000000000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */;

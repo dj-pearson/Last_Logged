@@ -16,6 +16,8 @@ struct HomeView: View {
     @State private var showingSettings = false
     @State private var showingWidgetPrompt = false
     @State private var quickLogItem: TrackerItem?
+    @State private var deepLinkedItem: TrackerItem?
+    @State private var deepLinkRouter = DeepLinkRouter.shared
     @AppStorage("widgetPromptDismissed") private var widgetPromptDismissed = false
 
     var body: some View {
@@ -69,11 +71,20 @@ struct HomeView: View {
                     .accessibilityHint("Create a new tracker or add from templates")
                 }
             }
+            // Programmatic destination for deep links. The tap-through
+            // NavigationLinks in the list stay as they are.
+            .navigationDestination(item: $deepLinkedItem) { item in
+                TrackerDetailView(item: item)
+            }
         }
         .onAppear {
             if viewModel == nil {
                 viewModel = HomeViewModel(modelContext: modelContext)
             }
+            resolvePendingDeepLink()
+        }
+        .onChange(of: deepLinkRouter.pendingTarget) { _, _ in
+            resolvePendingDeepLink()
         }
         .sheet(isPresented: $showingAddTracker) {
             if let viewModel {
@@ -206,6 +217,25 @@ struct HomeView: View {
         }
         .padding()
         .accessibilityElement(children: .contain)
+    }
+
+    // MARK: - Deep Links
+
+    /// Resolves a pending deep link against the local store. A tracker that was
+    /// deleted (or never existed — links are user-shareable) simply leaves the
+    /// user on Home rather than pushing an empty detail screen.
+    private func resolvePendingDeepLink() {
+        guard let target = deepLinkRouter.consume() else { return }
+
+        switch target {
+        case .home:
+            deepLinkedItem = nil
+        case .trackerDetail(let id):
+            let descriptor = FetchDescriptor<TrackerItem>(
+                predicate: #Predicate { $0.id == id }
+            )
+            deepLinkedItem = try? modelContext.fetch(descriptor).first
+        }
     }
 
     // MARK: - Tracker List

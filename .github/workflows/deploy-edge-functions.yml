@@ -11,8 +11,8 @@ env:
   EDGE_FUNCTIONS_DIR: edge-functions
 
 jobs:
-  typecheck:
-    name: Typecheck
+  verify:
+    name: Typecheck, Lint & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,9 +30,17 @@ jobs:
         working-directory: ${{ env.EDGE_FUNCTIONS_DIR }}
         run: npm run typecheck
 
+      - name: Lint
+        working-directory: ${{ env.EDGE_FUNCTIONS_DIR }}
+        run: npm run lint
+
+      - name: Test
+        working-directory: ${{ env.EDGE_FUNCTIONS_DIR }}
+        run: npm test
+
   deploy:
     name: Deploy to Coolify
-    needs: typecheck
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

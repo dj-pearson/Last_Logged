@@ -27,7 +27,7 @@ env:
 
 jobs:
   build:
-    name: Build (no signing)
+    name: Build & Test (no signing)
     runs-on: macos-15
     timeout-minutes: 25
 
@@ -48,6 +48,9 @@ jobs:
           restore-keys: |
             spm-${{ runner.os }}-
 
+      - name: Check localization invariants
+        run: ./scripts/check-ios-strings.sh
+
       - name: Seed Secrets.xcconfig
         run: |
           # CI uses the committed example so builds compile; AppSecrets.validate()
@@ -61,15 +64,26 @@ jobs:
             -project "$PROJECT" \
             -scheme "$SCHEME"
 
-      - name: Build for Simulator
+      # build-for-testing compiles both the app and LastLoggedTests, so a
+      # separate build step would just duplicate the work.
+      - name: Build & Run Tests
         run: |
           set -o pipefail
-          xcodebuild build \
+          xcodebuild test \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -destination "$DESTINATION" \
             -configuration Debug \
+            -resultBundlePath "$RUNNER_TEMP/LastLogged.xcresult" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             | xcbeautify --renderer github-actions || exit $?
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcresult
+          path: ${{ runner.temp }}/LastLogged.xcresult
+          if-no-files-found: ignore

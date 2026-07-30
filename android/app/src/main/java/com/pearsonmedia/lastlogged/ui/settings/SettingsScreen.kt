@@ -1,5 +1,6 @@
 package com.pearsonmedia.lastlogged.ui.settings
 
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,29 +29,53 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pearsonmedia.lastlogged.R
+import com.pearsonmedia.lastlogged.util.UrlOpener
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAuth: () -> Unit,
+    onNavigateToPaywall: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    // Launch the share sheet once the export file is on disk. Done here rather
+    // than in the ViewModel because starting an Activity needs a UI context.
+    LaunchedEffect(uiState.exportedFileUri) {
+        val uri = uiState.exportedFileUri ?: return@LaunchedEffect
+        val share = Intent(Intent.ACTION_SEND).apply {
+            type = "application/json"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.export_subject))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(share, context.getString(R.string.export_share_title)))
+        viewModel.clearExportedFile()
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back_a11y)
+                        )
                     }
                 }
             )
@@ -63,22 +88,22 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             // --- Account Section ---
-            SectionHeader("Account")
+            SectionHeader(stringResource(R.string.account_section))
             if (uiState.isSignedIn) {
                 ListItem(
-                    headlineContent = { Text(uiState.userEmail ?: "Signed In") },
-                    supportingContent = { Text("Cloud sync enabled") }
+                    headlineContent = { Text(uiState.userEmail ?: stringResource(R.string.signed_in)) },
+                    supportingContent = { Text(stringResource(R.string.cloud_sync_enabled)) }
                 )
                 ListItem(
                     headlineContent = {
-                        Text("Sign Out", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.sign_out), color = MaterialTheme.colorScheme.error)
                     },
                     modifier = Modifier.clickable { viewModel.signOut() }
                 )
             } else {
                 ListItem(
-                    headlineContent = { Text("Sign In") },
-                    supportingContent = { Text("Enable cloud sync across devices") },
+                    headlineContent = { Text(stringResource(R.string.sign_in)) },
+                    supportingContent = { Text(stringResource(R.string.sign_in_prompt)) },
                     modifier = Modifier.clickable { onNavigateToAuth() }
                 )
             }
@@ -86,29 +111,29 @@ fun SettingsScreen(
             HorizontalDivider()
 
             // --- Subscription Section ---
-            SectionHeader("Subscription")
+            SectionHeader(stringResource(R.string.subscription_section))
             ListItem(
-                headlineContent = { Text("Current Plan") },
+                headlineContent = { Text(stringResource(R.string.current_plan)) },
                 trailingContent = { Text(uiState.subscriptionTier) }
             )
             if (!uiState.isPremium) {
                 ListItem(
                     headlineContent = {
-                        Text("Upgrade to Premium", color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(R.string.upgrade_to_premium), color = MaterialTheme.colorScheme.primary)
                     },
-                    modifier = Modifier.clickable { /* TODO: Show paywall */ }
+                    modifier = Modifier.clickable { onNavigateToPaywall() }
                 )
             }
 
             HorizontalDivider()
 
             // --- Security Section ---
-            SectionHeader("Security")
+            SectionHeader(stringResource(R.string.security_section))
             ListItem(
-                headlineContent = { Text("Require Biometric Authentication") },
+                headlineContent = { Text(stringResource(R.string.biometric_lock)) },
                 supportingContent = {
                     if (!uiState.biometricAvailable) {
-                        Text("Not available on this device", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.biometric_unavailable), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 trailingContent = {
@@ -123,9 +148,9 @@ fun SettingsScreen(
             HorizontalDivider()
 
             // --- Notifications Section ---
-            SectionHeader("Notifications")
+            SectionHeader(stringResource(R.string.notifications_section))
             ListItem(
-                headlineContent = { Text("Enable Reminders") },
+                headlineContent = { Text(stringResource(R.string.enable_notifications)) },
                 trailingContent = {
                     Switch(
                         checked = uiState.remindersEnabled,
@@ -134,7 +159,7 @@ fun SettingsScreen(
                 }
             )
             ListItem(
-                headlineContent = { Text("Default Reminder Time") },
+                headlineContent = { Text(stringResource(R.string.reminder_time)) },
                 trailingContent = {
                     Text(
                         String.format(
@@ -146,9 +171,9 @@ fun SettingsScreen(
                 }
             )
             ListItem(
-                headlineContent = { Text("Success sound") },
+                headlineContent = { Text(stringResource(R.string.success_sound)) },
                 supportingContent = {
-                    Text("Play a subtle chime when you log a completion. Respects silent mode.")
+                    Text(stringResource(R.string.success_sound_description))
                 },
                 trailingContent = {
                     Switch(
@@ -161,9 +186,9 @@ fun SettingsScreen(
             HorizontalDivider()
 
             // --- Data Section ---
-            SectionHeader("Data")
+            SectionHeader(stringResource(R.string.data_section))
             ListItem(
-                headlineContent = { Text("Export Data") },
+                headlineContent = { Text(stringResource(R.string.export_data)) },
                 trailingContent = {
                     if (uiState.isExporting) CircularProgressIndicator()
                 },
@@ -173,7 +198,7 @@ fun SettingsScreen(
             )
             ListItem(
                 headlineContent = {
-                    Text("Clear All Data", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.clear_all_data), color = MaterialTheme.colorScheme.error)
                 },
                 trailingContent = {
                     if (uiState.isClearing) CircularProgressIndicator()
@@ -186,24 +211,24 @@ fun SettingsScreen(
             HorizontalDivider()
 
             // --- Legal Section ---
-            SectionHeader("Legal")
+            SectionHeader(stringResource(R.string.legal_section))
             ListItem(
-                headlineContent = { Text("Terms of Service") },
-                modifier = Modifier.clickable { /* TODO: Open in browser */ }
+                headlineContent = { Text(stringResource(R.string.terms_of_service)) },
+                modifier = Modifier.clickable { UrlOpener.openTerms(context) }
             )
             ListItem(
-                headlineContent = { Text("Privacy Policy") },
-                modifier = Modifier.clickable { /* TODO: Open in browser */ }
+                headlineContent = { Text(stringResource(R.string.privacy_policy)) },
+                modifier = Modifier.clickable { UrlOpener.openPrivacy(context) }
             )
 
             HorizontalDivider()
 
             // --- About Section ---
-            SectionHeader("About")
+            SectionHeader(stringResource(R.string.about_section))
             ListItem(
-                headlineContent = { Text("Version") },
+                headlineContent = { Text(stringResource(R.string.version)) },
                 trailingContent = {
-                    Text("${uiState.appVersion} (${uiState.appBuildNumber})")
+                    Text(stringResource(R.string.version_value, uiState.appVersion, uiState.appBuildNumber))
                 }
             )
 
@@ -220,7 +245,7 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                 ) {
-                    Text("Delete Account")
+                    Text(stringResource(R.string.delete_account))
                 }
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -230,12 +255,12 @@ fun SettingsScreen(
         if (uiState.showDeleteConfirmation) {
             AlertDialog(
                 onDismissRequest = { viewModel.hideDeleteConfirmation() },
-                title = { Text("Delete Account") },
+                title = { Text(stringResource(R.string.delete_account)) },
                 text = {
                     Column {
-                        Text("This will permanently delete your account and all data. This cannot be undone.")
+                        Text(stringResource(R.string.delete_account_warning))
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("Type DELETE to confirm:")
+                        Text(stringResource(R.string.delete_account_confirm))
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = uiState.deleteConfirmText,
@@ -253,13 +278,13 @@ fun SettingsScreen(
                         if (uiState.isDeletingAccount) {
                             CircularProgressIndicator()
                         } else {
-                            Text("Delete", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { viewModel.hideDeleteConfirmation() }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                 }
             )

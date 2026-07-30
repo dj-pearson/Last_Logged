@@ -31,6 +31,7 @@ Migrations live in `supabase/migrations/`. Apply in order:
 20260401000002_user_devices.sql
 20260401000003_agreed_to_terms.sql
 20260402000001_auth_rate_limits.sql
+20260730000001_shared_rate_limits.sql
 ```
 
 Either use Supabase CLI:
@@ -72,8 +73,14 @@ Strongly recommended:
 |----------|-------|
 | `APNS_KEY_CONTENT` | Base64-encoded `.p8` contents — preferred over `APNS_KEY_PATH` |
 | `APNS_TOPIC` | Bundle id: `com.pearsonmedia.lastlogged` |
+| `FCM_PROJECT_ID` | Firebase Console → Project Settings → General. **Android digests are skipped without this.** |
+| `FCM_CLIENT_EMAIL` | `client_email` from the Firebase service-account JSON |
+| `FCM_PRIVATE_KEY` | `private_key` from the same JSON; `\n`-escaped newlines are handled |
 | `CRON_SECRET` | Random string; guards `/cleanup-old-data` + `/reminder-digest` cron endpoints |
 | `APP_ENV` | `production` |
+| `APP_VERSION` | Reported by `GET /health`; set to the release tag or commit sha |
+| `SENTRY_DSN` | Optional. Crash reporting is disabled entirely when unset. |
+| `RATE_LIMIT_STORE` | Leave unset in production (Postgres-backed). `memory` only for local dev. |
 | `APNS_ENVIRONMENT` | `production` once released (use `sandbox` for TestFlight-only testing) |
 
 ### 2.2 Deploy
@@ -87,6 +94,9 @@ Manual: `gh workflow run deploy-edge-functions.yml`.
 - [ ] `GET /export-data` with a valid Bearer token returns the user's data as JSON
 - [ ] `POST /auth/check-rate-limit` returns `X-Auth-RateLimit-Remaining` header
 - [ ] `POST /delete-account` with a valid JWT deletes + signs out
+- [ ] `GET /health` returns 200 with `checks.database = "ok"`; returns 503 if Supabase is unreachable
+- [ ] `GET /health/live` returns 200 without touching the database
+- [ ] Rate limits hold across instances (`rate_limits` table gains rows under load)
 
 ### 2.4 Cron jobs
 
@@ -140,15 +150,60 @@ Use Supabase scheduled functions, GitHub Actions cron, or your platform cron:
 
 - [ ] Firebase project has an Android app registered with package `com.pearsonmedia.lastlogged`
 - [ ] `google-services.json` downloaded and placed at `android/app/google-services.json`
-  (gitignored; CI must inject from `GOOGLE_SERVICES_JSON` secret if ever used)
-- [ ] FCM server key available for server-side sends (store in edge-function env later if needed)
-- [ ] `reminder-digest.ts` confirmed to fan out to both APNs and FCM tokens in `user_devices`
+  (gitignored; `deploy-android.yml` injects it from the `GOOGLE_SERVICES_JSON` secret)
+- [ ] Firebase service account created; `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, and
+  `FCM_PRIVATE_KEY` set in the edge-function env (see §2.1). **Android digests are
+  skipped entirely without these** — `validate-env.ts` warns at startup.
+- [ ] `reminder-digest.ts` routes by `user_devices.platform`: `ios` → APNs, `android` → FCM
 
 ### 4.3 Verify
 
+- [ ] iOS: grant notification permission → `AppDelegate` registers for APNs and a row
+      appears in `user_devices` with `platform='ios'` (this had NO caller before; if the
+      row is missing, check the `aps-environment` entitlement and the provisioning profile)
 - [ ] iOS device logs into the app → new row appears in `user_devices` with `platform='ios'`
 - [ ] Android device logs into the app → new row appears with `platform='android'`
 - [ ] Trigger `/reminder-digest` manually → notifications arrive on both
+
+---
+
+## 4b. Universal Links / App Links
+
+The `/.well-known` association files are **generated at build time** by
+`website/src/pages/.well-known/`. They are no longer static files, because the
+committed placeholders (`TEAMID`, `REPLACE_WITH_YOUR_SHA256_FINGERPRINT`) were
+being served from production, which silently broke deep linking on both
+platforms.
+
+### 4b.1 Values
+
+| Env var | Where to get it |
+|---------|-----------------|
+| `APPLE_TEAM_ID` | Apple Developer → Membership → Team ID (10 chars) |
+| `ANDROID_SHA256_CERT` | Play Console → Release → Setup → App signing → **SHA-256 certificate fingerprint** of the *app signing key*, not the upload key. Colon-separated uppercase hex. |
+
+`deploy-website.yml` sets `REQUIRE_APP_LINKS=true`, so a deploy **fails** rather
+than shipping placeholders, and a follow-up step greps the built files to be sure.
+
+### 4b.2 App-side configuration
+
+- iOS: `com.apple.developer.associated-domains` in `LastLogged.entitlements`
+  (`applinks:lastlogged.com`, `webcredentials:lastlogged.com`). The provisioning
+  profile must have the Associated Domains capability enabled.
+- Android: the `autoVerify` intent filter on `MainActivity` in `AndroidManifest.xml`.
+
+### 4b.3 Verify
+
+- [ ] `curl https://lastlogged.com/.well-known/apple-app-site-association` returns
+      JSON with the real team id and `Content-Type: application/json`
+- [ ] `curl https://lastlogged.com/.well-known/assetlinks.json` returns the real fingerprint
+- [ ] Android: `adb shell pm get-app-links com.pearsonmedia.lastlogged` reports `verified`
+- [ ] Tapping `https://lastlogged.com/tracker/<uuid>` opens the app on both platforms
+- [ ] Tapping an unknown path (e.g. `/tracker/not-a-uuid`) opens the app on Home, not a crash
+
+**Paths are declared in three places and must stay in sync:**
+`website/src/config/app-association.ts` (`APP_LINK_PATHS`),
+`android/.../util/DeepLinks.kt`, and `LastLogged/Utilities/DeepLinkRouter.swift`.
 
 ---
 
@@ -175,20 +230,82 @@ For `android-ci.yml` + `ios-ci.yml` + the existing deploy workflows, set:
 | `REVENUECAT_ANDROID_API_KEY` | android-ci |
 | `TELEMETRYDECK_APP_ID` | both |
 | `GOOGLE_WEB_CLIENT_ID` | android-ci |
-| `GOOGLE_SERVICES_JSON` | (future) android-release workflow |
-| `ANDROID_KEYSTORE_BASE64` | (future) android-release workflow |
-| `ANDROID_KEYSTORE_PASSWORD` | (future) android-release workflow |
-| `ANDROID_KEY_ALIAS` | (future) android-release workflow |
-| `ANDROID_KEY_PASSWORD` | (future) android-release workflow |
+| `GOOGLE_SERVICES_JSON` | deploy-android (full file contents; enables FCM) |
+| `ANDROID_KEYSTORE_BASE64` | deploy-android (`base64 -w0 lastlogged-release.jks`) |
+| `ANDROID_KEYSTORE_PASSWORD` | deploy-android |
+| `ANDROID_KEY_ALIAS` | deploy-android |
+| `ANDROID_KEY_PASSWORD` | deploy-android |
+| `PLAY_SERVICE_ACCOUNT_JSON` | deploy-android (Play Console → API access → service account JSON) |
+| `SENTRY_DSN_ANDROID` | deploy-android, android-ci |
+| `SENTRY_DSN_IOS` | deploy-ios (written into `Secrets.xcconfig`) |
 | `APPLE_ID` | ios-deploy |
 | `APPLE_APP_SPECIFIC_PASSWORD` | ios-deploy |
-| `APPLE_TEAM_ID` | ios-deploy |
+| `APPLE_TEAM_ID` | ios-deploy, **deploy-website** (apple-app-site-association) |
+| `ANDROID_SHA256_CERT` | **deploy-website** (assetlinks.json) |
 | `APP_STORE_CONNECT_API_KEY_ID` | ios-deploy |
 | `APP_STORE_CONNECT_API_ISSUER_ID` | ios-deploy |
 | `APP_STORE_CONNECT_API_PRIVATE_KEY` | ios-deploy |
 | `DEVELOPER_CERTIFICATE_P12_BASE64` | ios-deploy |
 | `DEVELOPER_CERTIFICATE_PASSWORD` | ios-deploy |
 | `PROVISIONING_PROFILE_BASE64` | ios-deploy |
+
+---
+
+## 6b. Android release
+
+`deploy-android.yml` runs on a `v*` tag or via workflow_dispatch (track selector:
+internal / alpha / beta / production).
+
+- `versionName` comes from the tag, `versionCode` from the run number. Both are
+  read by `build.gradle.kts` from `VERSION_NAME` / `VERSION_CODE` env vars, so a
+  local build still defaults to 1.0.0 / 1.
+- **`versionCode` must strictly increase for every Play upload.** The run number
+  handles this automatically; use the `version_code` input if you ever need to
+  jump ahead of a manually uploaded build.
+- Missing secrets degrade rather than fail: without `ANDROID_KEYSTORE_BASE64` the
+  job builds an unsigned AAB, and without `PLAY_SERVICE_ACCOUNT_JSON` it skips the
+  upload. The AAB is always attached to the run as the `app-release-aab` artifact
+  and the summary says exactly what was skipped.
+- The R8 `mapping.txt` is uploaded as an artifact (90-day retention) and passed to
+  the Play upload. Without it, production crash reports are unreadable.
+
+### Verify
+
+- [ ] Tag a prerelease and confirm the run produces a signed AAB
+- [ ] Confirm the build appears on the Play internal track
+- [ ] Confirm `mapping.txt` is attached to both the run and the Play release
+
+---
+
+## 6c. Observability
+
+- [ ] Sentry projects created for iOS, Android, and the edge functions
+- [ ] `SENTRY_DSN_IOS`, `SENTRY_DSN_ANDROID`, and the server `SENTRY_DSN` set
+- [ ] Confirm a test crash appears in each project
+- [ ] Confirm no tracker names, notes, or emails appear in any event
+      (`sendDefaultPii` is off and `beforeSend` scrubs; verify once after launch)
+- [ ] `mapping.txt` from `deploy-android.yml` uploaded so Android traces deobfuscate
+- [ ] Reporting is disabled, not broken, when a DSN is absent
+
+---
+
+## 6d. Localization
+
+Both apps are translation-ready; only English ships today.
+
+- **Android**: `android/app/src/main/res/values/strings.xml`. Add a locale by
+  creating `values-<lang>/strings.xml`. `android/check-hardcoded-strings.sh`
+  fails CI on a new user-facing literal.
+- **iOS**: `LastLogged/Localizable.xcstrings`. Add a language in Xcode
+  (Project → Info → Localizations); `SWIFT_EMIT_LOC_STRINGS` extracts new
+  `Text(...)` strings automatically on build. `scripts/check-ios-strings.sh`
+  fails CI on a `String`-typed user-facing literal.
+
+### Verify
+
+- [ ] Open `Localizable.xcstrings` in Xcode once and confirm the three plural
+      rules render (`auth.error.cooldownShort/Long`, `auth.error.attemptsRemaining`)
+- [ ] Run the app in a pseudo-locale to spot any literal that escaped the gates
 
 ---
 

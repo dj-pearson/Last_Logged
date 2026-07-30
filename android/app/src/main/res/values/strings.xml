@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  All user-facing text lives here. Compose reads it with stringResource() /
+  pluralStringResource(); non-Composable code (NotificationService, Glance
+  widgets) uses context.getString().
+
+  NOT in here on purpose: animation labels (`label = "ctaScale"`), semantics
+  test tags, and log messages. Those are developer-facing identifiers.
+-->
 <resources>
     <string name="app_name">Last Logged</string>
     <string name="home_title">Last Logged</string>
@@ -15,28 +23,71 @@
     <string name="sign_up">Sign Up</string>
     <string name="sign_out">Sign Out</string>
     <string name="forgot_password">Forgot Password?</string>
+    <string name="reset_password_title">Reset Password</string>
     <string name="send_reset_link">Send Reset Link</string>
     <string name="google_sign_in">Sign in with Google</string>
     <string name="email_invalid">Enter a valid email address</string>
     <string name="password_requirements">Password must be 8+ characters with uppercase, lowercase, and a number</string>
-    <string name="rate_limit_message">Too many attempts. Try again in %d seconds.</string>
     <string name="terms_agreement">I agree to the Terms of Service and Privacy Policy</string>
+    <string name="terms_agreement_a11y">Agree to Terms of Service and Privacy Policy</string>
     <string name="email_confirmation_title">Check Your Email</string>
-    <string name="email_confirmation_message">We sent a confirmation link to %s. Please check your inbox and confirm your email to sign in.</string>
+    <string name="email_confirmation_sent_to">We sent a confirmation link to</string>
+    <string name="email_confirmation_check_inbox">Please check your inbox and confirm your email to sign in.</string>
     <string name="resend_confirmation">Resend Confirmation Email</string>
     <string name="back_to_sign_in">Back to Sign In</string>
     <string name="reset_password_sent">Check your email for a reset link</string>
+    <string name="auth_no_account_prompt">Don\'t have an account? Sign Up</string>
+    <string name="auth_have_account_prompt">Already have an account? Sign In</string>
+    <string name="auth_divider_or"> or </string>
+    <!-- Prefixes an unmet password rule, e.g. "- One uppercase letter" -->
+    <string name="password_rule_bullet">- %1$s</string>
+    <plurals name="rate_limit_cooldown">
+        <item quantity="one">Too many attempts. Try again in %1$d second.</item>
+        <item quantity="other">Too many attempts. Try again in %1$d seconds.</item>
+    </plurals>
 
     <!-- Home -->
-    <string name="empty_state_title">No Trackers Yet</string>
-    <string name="empty_state_message">Tap + to add your first tracker and start logging.</string>
+    <string name="empty_state_title">Start Tracking What Matters</string>
+    <string name="empty_state_message">Tap + to add your first tracker and never forget the small things again.</string>
+    <string name="empty_state_cta">Add your first tracker</string>
     <string name="log_action">Log</string>
     <string name="undo">Undo</string>
     <string name="logged_message">Logged!</string>
+    <string name="dismiss">Dismiss</string>
     <string name="archive">Archive</string>
     <string name="edit">Edit</string>
     <string name="new_tracker">New Tracker</string>
     <string name="add_from_templates">Add from Templates</string>
+    <string name="add_tracker_a11y">Add tracker</string>
+    <string name="quick_log_title">Log this completion</string>
+    <string name="quick_log_when">When:</string>
+    <string name="quick_log_notes_label">Notes (optional)</string>
+    <string name="quick_log_submit">Log completion</string>
+
+    <!-- Add / Edit tracker -->
+    <string name="tracker_name_label">Tracker Name</string>
+    <string name="category_label">Category</string>
+    <string name="no_category">No Category</string>
+    <string name="reminder_interval_label">Reminder Interval (days)</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="create_tracker">Create Tracker</string>
+    <plurals name="characters_remaining">
+        <item quantity="one">%1$d character remaining</item>
+        <item quantity="other">%1$d characters remaining</item>
+    </plurals>
+
+    <!-- Tracker detail -->
+    <string name="log_now">Log now</string>
+    <string name="history">History</string>
+    <string name="history_empty">No completions yet. Tap Log now to record your first one.</string>
+    <string name="last_logged_at">Last logged %1$s</string>
+    <string name="stat_streak">Streak</string>
+    <string name="stat_total_logs">Total logs</string>
+    <string name="stat_avg_interval">Avg interval</string>
+    <plurals name="reminder_every_days">
+        <item quantity="one">Reminder every %1$d day</item>
+        <item quantity="other">Reminder every %1$d days</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="account_section">Account</string>
@@ -46,16 +97,98 @@
     <string name="data_section">Data</string>
     <string name="legal_section">Legal</string>
     <string name="about_section">About</string>
+    <string name="signed_in">Signed In</string>
+    <string name="cloud_sync_enabled">Cloud sync enabled</string>
+    <string name="sign_in_prompt">Enable cloud sync across devices</string>
+    <string name="current_plan">Current Plan</string>
+    <string name="upgrade_to_premium">Upgrade to Premium</string>
+    <string name="biometric_unavailable">Not available on this device</string>
+    <string name="success_sound">Success sound</string>
+    <string name="success_sound_description">Play a subtle chime when you log a completion. Respects silent mode.</string>
+    <string name="version">Version</string>
+    <string name="version_value">%1$s (%2$d)</string>
     <string name="delete_account">Delete Account</string>
-    <string name="delete_account_confirm">Type DELETE to confirm account deletion</string>
+    <string name="delete_account_warning">This will permanently delete your account and all data. This cannot be undone.</string>
+    <string name="delete_account_confirm">Type DELETE to confirm:</string>
+    <string name="delete">Delete</string>
     <string name="export_data">Export Data</string>
+    <string name="export_share_title">Export data</string>
+    <string name="export_subject">Last Logged data export</string>
     <string name="clear_all_data">Clear All Data</string>
     <string name="terms_of_service">Terms of Service</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="biometric_lock">Require Biometric Authentication</string>
     <string name="enable_notifications">Enable Reminders</string>
     <string name="reminder_time">Default Reminder Time</string>
-    <string name="version_label">Version %s (%d)</string>
+
+    <!-- Paywall -->
+    <string name="paywall_title">Unlock Premium</string>
+    <string name="paywall_subtitle">Track everything, worry about nothing</string>
+    <string name="paywall_social_proof">Loved by thousands of trackers</string>
+    <string name="subscribe">Subscribe</string>
+    <string name="restore_purchases">Restore Purchases</string>
+    <string name="continue_with_free">Continue with Free</string>
+    <string name="terms_short">Terms</string>
+    <string name="privacy_short">Privacy</string>
+    <string name="most_popular">MOST POPULAR</string>
+    <!-- Accessibility label for a package card, e.g. "Annual - $24.99" -->
+    <string name="package_a11y">%1$s - %2$s</string>
+
+    <!-- Cancellation -->
+    <string name="cancellation_title">Are you sure?</string>
+    <string name="cancellation_message">You\'ll lose access to premium features. Here\'s what you\'ve tracked so far:</string>
+    <string name="stat_total_events">Total Events</string>
+    <string name="stat_active_trackers">Active Trackers</string>
+    <string name="stat_tracking_since">Tracking Since</string>
+    <string name="stat_months_active">Months Active</string>
+    <string name="keep_subscription">Keep Subscription</string>
+    <string name="cancel_anyway">Cancel Anyway</string>
+    <!-- Accessibility label for a stat card, e.g. "Total Events: 128" -->
+    <string name="stat_card_a11y">%1$s: %2$s</string>
+
+    <!-- Onboarding -->
+    <string name="skip">Skip</string>
+    <string name="continue_action">Continue</string>
+    <string name="get_started">Get Started</string>
+    <string name="back">Back</string>
+    <string name="onboarding_welcome_headline">When did I last…?</string>
+    <string name="onboarding_welcome_body">Track maintenance tasks, health checkups, and life events so you never forget when something was last done.</string>
+    <string name="onboarding_categories_title">What do you want to track?</string>
+    <string name="onboarding_categories_subtitle">Select categories to get started with pre-built templates</string>
+    <string name="onboarding_widget_title">Add a Widget</string>
+    <string name="onboarding_widget_subtitle">See your most overdue items right on your home screen.</string>
+    <string name="onboarding_widget_steps">1. Long press your home screen\n2. Tap \"Widgets\"\n3. Find \"Last Logged\"\n4. Drag it to your home screen</string>
+    <!-- Accessibility label for a category chip, e.g. "Home Maintenance category" -->
+    <string name="category_chip_a11y">%1$s category</string>
+
+    <!-- Lock screen -->
+    <string name="locked">Locked</string>
+    <string name="unlock">Unlock</string>
+
+    <!-- Widget -->
+    <string name="widget_title">Top Overdue</string>
+    <string name="widget_empty">All caught up!</string>
+
+    <!-- Notifications -->
+    <string name="notification_reminder_title">Time to log: %1$s</string>
+    <string name="notification_overflow_title">Reminder Limit Reached</string>
+    <string name="notification_reminder_body">It\'s been a while since you last logged this.</string>
+    <plurals name="notification_overflow_body">
+        <item quantity="one">You have %1$d tracker without reminders. Open Last Logged to review.</item>
+        <item quantity="other">You have %1$d trackers without reminders. Open Last Logged to review.</item>
+    </plurals>
+
+    <!-- ViewModel-surfaced messages -->
+    <string name="confirmation_email_sent">Confirmation email sent</string>
+    <string name="google_sign_in_failed">Google Sign-In failed. Please try again.</string>
+    <string name="error_log_failed">Failed to log completion: %1$s</string>
+    <string name="error_undo_failed">Failed to undo: %1$s</string>
+    <string name="error_archive_failed">Failed to archive: %1$s</string>
+    <string name="error_export_failed">Export failed: %1$s</string>
+    <string name="error_clear_data_failed">Clear data failed: %1$s</string>
+    <string name="error_delete_account_failed">Account deletion failed: %1$s</string>
+    <string name="error_sign_out_failed">Sign out failed: %1$s</string>
+    <string name="biometric_too_many_attempts">Too many failed attempts. Please try again later.</string>
 
     <!-- Biometric -->
     <string name="biometric_prompt_title">Unlock Last Logged</string>
@@ -66,6 +199,9 @@
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
+    <string name="ok">OK</string>
+    <string name="back_a11y">Back</string>
+    <string name="settings_a11y">Settings</string>
     <string name="error_generic">Something went wrong. Please try again.</string>
     <string name="session_expired">Your session has expired. Please sign in again.</string>
 </resources>

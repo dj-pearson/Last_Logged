@@ -50,7 +50,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pearsonmedia.lastlogged.R
 import com.pearsonmedia.lastlogged.ui.theme.UrgencyColors
 import com.pearsonmedia.lastlogged.util.TimeFormatUtil
 import java.text.SimpleDateFormat
@@ -111,13 +114,13 @@ fun TrackerDetailScreen(
                         IconButton(onClick = onNavigateBack) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
+                                contentDescription = stringResource(R.string.back_a11y)
                             )
                         }
                     },
                     actions = {
                         IconButton(onClick = onNavigateToEdit) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit")
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit))
                         }
                     },
                     colors = TopAppBarDefaults.largeTopAppBarColors(
@@ -133,7 +136,7 @@ fun TrackerDetailScreen(
                 ExtendedFloatingActionButton(
                     onClick = { viewModel.logNow() },
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("Log now", fontWeight = FontWeight.SemiBold) },
+                    text = { Text(stringResource(R.string.log_now), fontWeight = FontWeight.SemiBold) },
                     containerColor = urgencyColor,
                     contentColor = Color.White
                 )
@@ -175,7 +178,7 @@ fun TrackerDetailScreen(
 
                 item {
                     Text(
-                        text = "History",
+                        text = stringResource(R.string.history),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
@@ -185,7 +188,7 @@ fun TrackerDetailScreen(
                 if (uiState.logs.isEmpty()) {
                     item {
                         Text(
-                            text = "No completions yet. Tap Log now to record your first one.",
+                            text = stringResource(R.string.history_empty),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -235,13 +238,17 @@ private fun HeroSummary(
             Spacer(Modifier.height(4.dp))
         }
         Text(
-            text = "Last logged $lastLoggedLabel",
+            text = stringResource(R.string.last_logged_at, lastLoggedLabel),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
         if (reminderIntervalDays > 0) {
             Text(
-                text = "Reminder every $reminderIntervalDays days",
+                text = pluralStringResource(
+                    R.plurals.reminder_every_days,
+                    reminderIntervalDays,
+                    reminderIntervalDays
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -263,21 +270,21 @@ private fun StatsRow(
         StatCard(
             modifier = Modifier.weight(1f),
             icon = Icons.Outlined.LocalFireDepartment,
-            label = "Streak",
+            label = stringResource(R.string.stat_streak),
             value = if (stats.streak > 0) stats.streak.toString() else "—",
             accent = urgencyColor
         )
         StatCard(
             modifier = Modifier.weight(1f),
             icon = Icons.Outlined.TaskAlt,
-            label = "Total logs",
+            label = stringResource(R.string.stat_total_logs),
             value = stats.totalLogs.toString(),
             accent = MaterialTheme.colorScheme.primary
         )
         StatCard(
             modifier = Modifier.weight(1f),
             icon = Icons.Outlined.Schedule,
-            label = "Avg interval",
+            label = stringResource(R.string.stat_avg_interval),
             value = stats.avgIntervalDays?.let { "${it}d" } ?: "—",
             accent = MaterialTheme.colorScheme.secondary
         )

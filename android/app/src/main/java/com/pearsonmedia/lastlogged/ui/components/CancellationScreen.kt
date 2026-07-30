@@ -22,6 +22,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.pearsonmedia.lastlogged.R
 
 data class UserStats(
     val totalEvents: Int,
@@ -44,13 +46,13 @@ fun CancellationScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Are you sure?",
+            text = stringResource(R.string.cancellation_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "You'll lose access to premium features. Here's what you've tracked so far:",
+            text = stringResource(R.string.cancellation_message),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -63,12 +65,12 @@ fun CancellationScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StatCard(
-                label = "Total Events",
+                label = stringResource(R.string.stat_total_events),
                 value = stats.totalEvents.toString(),
                 modifier = Modifier.weight(1f)
             )
             StatCard(
-                label = "Active Trackers",
+                label = stringResource(R.string.stat_active_trackers),
                 value = stats.activeTrackers.toString(),
                 modifier = Modifier.weight(1f)
             )
@@ -80,12 +82,12 @@ fun CancellationScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StatCard(
-                label = "Tracking Since",
+                label = stringResource(R.string.stat_tracking_since),
                 value = stats.trackingSince,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
-                label = "Months Active",
+                label = stringResource(R.string.stat_months_active),
                 value = stats.monthsActive.toString(),
                 modifier = Modifier.weight(1f)
             )
@@ -97,7 +99,7 @@ fun CancellationScreen(
             onClick = onKeepSubscription,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Keep Subscription")
+            Text(stringResource(R.string.keep_subscription))
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -109,14 +111,17 @@ fun CancellationScreen(
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Cancel Anyway")
+            Text(stringResource(R.string.cancel_anyway))
         }
     }
 }
 
 @Composable
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.semantics { contentDescription = "$label: $value" }) {
+    // Read outside the semantics {} lambda — stringResource() is @Composable.
+    val a11y = stringResource(R.string.stat_card_a11y, label, value)
+
+    Card(modifier = modifier.semantics { contentDescription = a11y }) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

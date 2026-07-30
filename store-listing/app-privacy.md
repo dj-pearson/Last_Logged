@@ -40,7 +40,12 @@ networks, and we don't fingerprint devices.
 - Purposes: Analytics, App Functionality
 
 **Diagnostics → Crash Data**
-- Collected: Yes (Apple crash reports + optional TelemetryDeck)
+- Collected: Yes (Apple crash reports + Sentry)
+- Sentry is configured with `sendDefaultPii = false`, screenshots and view
+  hierarchies disabled, and a `beforeSend` hook that strips the user object,
+  server name, extras, request headers/cookies/bodies, and breadcrumb content.
+  Stack traces and device model only — no tracker names, notes, or emails.
+- Disabled entirely when no `SENTRY_DSN` is configured.
 - Linked to user: No
 - Used for tracking: No
 - Purposes: App Functionality
@@ -90,7 +95,8 @@ All "shared" answers: **No**.
 |---------|------|---------|----------------|
 | Supabase | Email, User ID, tracker data | Auth + sync backend | Private cloud backend |
 | RevenueCat | User ID, purchase receipts | Subscription management | Billing SDK |
-| TelemetryDeck | Aggregate signals (no user id) | Analytics | Privacy-preserving analytics |
+| TelemetryDeck | Aggregate signals (SHA-256 hashed user id on Android; no raw id or email) | Analytics | Privacy-preserving analytics |
+| Sentry | Crash stack traces, OS/device model, app version | Diagnostics | Crash reporting; PII scrubbed before send |
 | Firebase Cloud Messaging | Device token | Push notifications | Google service |
 
 ### Data deletion

@@ -24,6 +24,15 @@ enum AppSecrets {
     static let revenueCatAPIKey: String = infoValue("REVENUECAT_API_KEY")
     static let telemetryDeckAppID: String = infoValue("TELEMETRYDECK_APP_ID")
 
+    /// Optional. Crash reporting is disabled entirely when this is blank, so a
+    /// local or CI build needs no Sentry project. Deliberately NOT part of
+    /// `validate()` — an absent DSN must not fail a release build.
+    static let sentryDSN: String = infoValue("SENTRY_DSN")
+
+    static var isCrashReportingConfigured: Bool {
+        !sentryDSN.isEmpty && !sentryDSN.hasPrefix("YOUR_")
+    }
+
     private static func infoValue(_ key: String) -> String {
         (Bundle.main.object(forInfoDictionaryKey: key) as? String) ?? ""
     }

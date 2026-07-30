@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Data exports are written to cacheDir/exports and shared via
+         FileProvider. Scoped to that one subdirectory so the provider cannot
+         hand out anything else in the cache. -->
+    <cache-path name="exports" path="exports/" />
+</paths>

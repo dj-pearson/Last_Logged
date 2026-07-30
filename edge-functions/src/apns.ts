@@ -1,4 +1,5 @@
 import apn from "@parse/node-apn";
+import type { PushResult } from "./fcm.js";
 
 // APNs key can be provided as base64 content (preferred) or file path (fallback)
 const APNS_KEY_CONTENT = process.env.APNS_KEY_CONTENT;
@@ -61,4 +62,44 @@ export function buildDigestNotification(
   }
 
   return notification;
+}
+
+/**
+ * APNs reports a permanently dead token as `Unregistered` (HTTP 410) or
+ * `BadDeviceToken` (HTTP 400 — commonly an FCM token stored against an iOS
+ * row, or a sandbox token sent to production). Both mean stop sending.
+ */
+const DEAD_TOKEN_REASONS = new Set(["Unregistered", "BadDeviceToken", "DeviceTokenNotForTopic"]);
+
+/**
+ * Sends one notification and normalises the result into the same shape as
+ * `sendFcmNotification`, so the digest can treat both platforms uniformly.
+ */
+export async function sendApnsNotification(
+  deviceToken: string,
+  notification: apn.Notification
+): Promise<PushResult> {
+  try {
+    const result = await getApnProvider().send(notification, deviceToken);
+
+    if (result.failed.length === 0) {
+      return { ok: true, unregistered: false };
+    }
+
+    const failure = result.failed[0];
+    const reason = failure.response?.reason ?? failure.error?.message ?? "unknown";
+    const status = Number(failure.status ?? 0);
+
+    return {
+      ok: false,
+      unregistered: status === 410 || DEAD_TOKEN_REASONS.has(reason),
+      error: `APNs send failed (${status || "?"}): ${reason}`,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      unregistered: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 }

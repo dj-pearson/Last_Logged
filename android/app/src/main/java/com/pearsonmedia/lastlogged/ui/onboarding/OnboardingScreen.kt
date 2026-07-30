@@ -44,7 +44,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pearsonmedia.lastlogged.R
 import com.pearsonmedia.lastlogged.util.AccessibilityUtil
 import kotlinx.coroutines.launch
 
@@ -84,7 +86,7 @@ fun OnboardingScreen(
                     viewModel.completeOnboarding()
                     onComplete()
                 }) {
-                    Text("Skip")
+                    Text(stringResource(R.string.skip))
                 }
             } else {
                 Spacer(modifier = Modifier.size(48.dp))
@@ -130,7 +132,7 @@ fun OnboardingScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Continue")
+                    Text(stringResource(R.string.continue_action))
                 }
             } else {
                 Button(
@@ -140,7 +142,7 @@ fun OnboardingScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Get Started")
+                    Text(stringResource(R.string.get_started))
                 }
             }
 
@@ -150,7 +152,7 @@ fun OnboardingScreen(
                         scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
                     }
                 ) {
-                    Text("Back")
+                    Text(stringResource(R.string.back))
                 }
             }
         }
@@ -202,19 +204,19 @@ private fun WelcomePage(isVisible: Boolean, reduceMotion: Boolean) {
         OnboardingIcon(isVisible, reduceMotion, Icons.Outlined.Celebration)
         Spacer(modifier = Modifier.height(32.dp))
         Text(
-            text = "Last Logged",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "When did I last...?",
+            text = stringResource(R.string.onboarding_welcome_headline),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(20.dp))
         Text(
-            text = "Track maintenance tasks, health checkups, and life events so you never forget when something was last done.",
+            text = stringResource(R.string.onboarding_welcome_body),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -249,14 +251,14 @@ private fun CategorySelectionPage(
         OnboardingIcon(isVisible, reduceMotion, Icons.Outlined.Category)
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "What do you want to track?",
+            text = stringResource(R.string.onboarding_categories_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Select categories to get started with pre-built templates",
+            text = stringResource(R.string.onboarding_categories_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -269,12 +271,15 @@ private fun CategorySelectionPage(
             modifier = Modifier.fillMaxWidth()
         ) {
             categories.forEach { (name, _) ->
+                // Read outside the semantics {} lambda — stringResource() is @Composable.
+                val chipA11y = stringResource(R.string.category_chip_a11y, name)
+
                 FilterChip(
                     selected = selectedCategories.contains(name),
                     onClick = { onToggleCategory(name) },
                     label = { Text(name) },
                     modifier = Modifier.semantics {
-                        contentDescription = "$name category"
+                        contentDescription = chipA11y
                     }
                 )
             }
@@ -294,20 +299,20 @@ private fun WidgetPromptPage(isVisible: Boolean, reduceMotion: Boolean) {
         OnboardingIcon(isVisible, reduceMotion, Icons.Outlined.Widgets)
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Add a Widget",
+            text = stringResource(R.string.onboarding_widget_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "See your most overdue items right on your home screen.",
+            text = stringResource(R.string.onboarding_widget_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "1. Long press your home screen\n2. Tap \"Widgets\"\n3. Find \"Last Logged\"\n4. Drag it to your home screen",
+            text = stringResource(R.string.onboarding_widget_steps),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Start,
             modifier = Modifier.fillMaxWidth()

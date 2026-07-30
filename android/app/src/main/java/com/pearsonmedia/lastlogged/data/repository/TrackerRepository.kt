@@ -7,6 +7,7 @@ import com.pearsonmedia.lastlogged.data.local.entity.CompletionLog
 import com.pearsonmedia.lastlogged.data.local.entity.SyncStatus
 import com.pearsonmedia.lastlogged.data.local.entity.TrackerCategory
 import com.pearsonmedia.lastlogged.data.local.entity.TrackerItem
+import com.pearsonmedia.lastlogged.service.WidgetUpdater
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 import javax.inject.Inject
@@ -16,7 +17,8 @@ import javax.inject.Singleton
 class TrackerRepository @Inject constructor(
     private val trackerItemDao: TrackerItemDao,
     private val completionLogDao: CompletionLogDao,
-    private val trackerCategoryDao: TrackerCategoryDao
+    private val trackerCategoryDao: TrackerCategoryDao,
+    private val widgetUpdater: WidgetUpdater
 ) {
 
     // --- TrackerItem ---
@@ -48,6 +50,7 @@ class TrackerRepository @Inject constructor(
             syncStatus = SyncStatus.PENDING
         )
         trackerItemDao.insert(item)
+        widgetUpdater.refresh()
         return item
     }
 
@@ -58,10 +61,12 @@ class TrackerRepository @Inject constructor(
                 updatedAt = System.currentTimeMillis()
             )
         )
+        widgetUpdater.refresh()
     }
 
     suspend fun archiveItem(id: String) {
         trackerItemDao.archiveItem(id)
+        widgetUpdater.refresh()
     }
 
     suspend fun logCompletion(trackerItemId: String, notes: String? = null): CompletionLog =
@@ -80,6 +85,7 @@ class TrackerRepository @Inject constructor(
         )
         completionLogDao.insert(log)
         trackerItemDao.markCompleted(trackerItemId, completedAt)
+        widgetUpdater.refresh()
         return log
     }
 
@@ -93,6 +99,7 @@ class TrackerRepository @Inject constructor(
                 updatedAt = System.currentTimeMillis()
             )
         )
+        widgetUpdater.refresh()
     }
 
     // --- CompletionLog ---
@@ -121,9 +128,21 @@ class TrackerRepository @Inject constructor(
 
     // --- Data Management ---
 
+    /**
+     * One-shot snapshot of everything stored locally, for data export.
+     * Includes archived items — a data-rights export must be complete.
+     */
+    suspend fun exportSnapshot(): Triple<List<TrackerCategory>, List<TrackerItem>, List<CompletionLog>> =
+        Triple(
+            trackerCategoryDao.getAllCategoriesOnce(),
+            trackerItemDao.getAllItemsOnce(),
+            completionLogDao.getAllLogsOnce()
+        )
+
     suspend fun clearAllData() {
         completionLogDao.deleteAll()
         trackerItemDao.deleteAll()
         trackerCategoryDao.deleteAll()
+        widgetUpdater.refresh()
     }
 }

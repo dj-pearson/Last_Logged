@@ -4,11 +4,16 @@ import RevenueCat
 
 @main
 struct LastLoggedApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     let modelContainer: ModelContainer
 
     init() {
         AppSecrets.validate()
+
+        // First thing after secrets: a crash during the rest of init should
+        // still be reported.
+        CrashReportingService.configure()
 
         // Migrate sensitive values from UserDefaults to Keychain (one-time)
         KeychainService.migrateDateFromUserDefaults(key: "com.pearsonmedia.lastlogged.lastSyncTimestamp")
@@ -51,6 +56,9 @@ struct LastLoggedApp: App {
                 }
                 .task {
                     await SupabaseService.shared.restoreSession()
+                    // Re-register every launch so rotated APNs tokens replace the
+                    // stale row in user_devices.
+                    await AppDelegate.registerForPushIfAuthorized()
                 }
         }
         .modelContainer(modelContainer)

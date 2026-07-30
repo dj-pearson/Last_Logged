@@ -3,6 +3,68 @@ Started: 2026-03-24
 
 ## Codebase Patterns
 
+### Verification reality (READ FIRST)
+- edge-functions/ and website/ REALLY BUILD AND TEST in the agent sandbox. Always run
+  `npm run typecheck && npm run lint && npm test` (edge-functions) and
+  `npx astro check && npm run build` (website) before committing.
+- iOS and Android DO NOT compile here: no Xcode, and dl.google.com is proxy-blocked so
+  there is no Android SDK. Those changes are code-review-verified only — say so in commit
+  notes rather than claiming "compiles successfully".
+- The Gradle wrapper DOES work (`./gradlew --version` downloads gradle-8.5 fine); only the
+  Android SDK is unavailable.
+- Validate what you can without a compiler: YAML via `yaml.safe_load`, plists via
+  `plistlib.load`, XML via `xml.dom.minidom.parse`, JSON via `json.load`, and pbxproj by
+  diffing `^\t\t<24-hex>` definitions against all 24-hex references (dangling refs = typo).
+- When you cannot run a test, re-derive its expectations independently (e.g. reimplement
+  the sort in Python) before committing.
+
+### Auditing
+- GREP FOR CALLERS, not just definitions. Three separate production gaps in this batch
+  were fully-written functions with zero call sites: `SupabaseService.registerDeviceToken`
+  (iOS), `AnalyticsService.configure` (Android), and the `LOG_NOW_ACTION` handler.
+- A green CI badge proves nothing until you check the steps actually ran — every
+  `./gradlew` step had been failing since the workflow was added because the wrapper JAR
+  was never committed.
+
+### Cross-platform invariants (change both sides together)
+- Overdue ordering is a RATIO (elapsed / interval), never a raw day count.
+  `WidgetItems.kt` (Android) and `WidgetDataProvider.swift` (iOS) must agree.
+- Analytics event name strings are the join key between the two funnels.
+  `AnalyticsServiceTest.kt` asserts the full list.
+- Data-export JSON uses camelCase keys matching iOS, NOT snake_case column names.
+  Bump `DataExporter.SCHEMA_VERSION` when the shape changes.
+- Deep-link paths are declared in THREE places: `website/src/config/app-association.ts`
+  (`APP_LINK_PATHS`), `android/.../util/DeepLinks.kt`, and
+  `LastLogged/Utilities/DeepLinkRouter.swift`.
+
+### Secrets
+- Keep OPTIONAL secrets out of `AppSecrets.validate()` — it `fatalError`s in Release, so a
+  missing nice-to-have becomes a launch crash.
+- `Release.xcconfig` uses `#include?` with an example fallback, so a missing
+  `Secrets.xcconfig` fails SILENTLY at build time and loudly at runtime. Any archiving
+  workflow must write the real file.
+- xcconfig treats `//` as a comment even inside values — escape URLs as `https:$()//host`.
+- `plistlib.dump()` and `json.dump()` DESTROY comments. Re-add them with a text edit.
+
+### Localization
+- `stringResource()` cannot be called inside `semantics {}` / `remember {}` — hoist it
+  into a `val` in the enclosing @Composable.
+- `String(localized: "key \(v)")` resolves to `"key %lld"` (Int) or `"key %@"` (String).
+  The xcstrings key must include the specifier.
+- Grep for more than `Text("`: custom composables, `when` branches, `?:` fallbacks, and
+  ViewModel message assignments all hide literals. Listing UNUSED string resources is the
+  reliable way to find what a naive grep missed.
+- Two CI gates guard regressions: `android/check-hardcoded-strings.sh` and
+  `scripts/check-ios-strings.sh`.
+
+### CI
+- The `secrets` context is NOT available in a step's `if:`. Convert presence checks into
+  step outputs and gate on `steps.<id>.outputs.*`.
+- `defaults.run.working-directory` applies only to `run` steps; `uses:` action inputs are
+  relative to the workspace root.
+- Renaming a CI job changes the required-status-check name in branch protection.
+
+
 ### Android App (android/)
 - Android project uses MVVM: data/local/{entity,dao,converter}/, data/repository/, di/, ui/{home,auth,settings,detail,onboarding,components,theme,navigation}/, service/, util/
 - Gradle Kotlin DSL with Compose BOM 2024.01.00, Hilt 2.50, Room 2.6.1, Supabase BOM 2.1.3
@@ -1477,4 +1539,717 @@ Closed the final three launch-readiness stories with deliverables that are durab
 - ALL 45 user stories in prd.json now pass. External action items (real google-services.json, keystore, Secrets.xcconfig, AppIcon.png, success_chime.ogg, store URLs, store screenshots) are outside the code boundary and tracked in DEPLOYMENT.md + store-listing/ as human checklist items.
 
 
+---
+
+## 2026-07-30 - PROD-001
+- Restored the Gradle wrapper: committed `android/gradle/wrapper/gradle-wrapper.jar`
+  (Gradle 8.5 official artifact) and `android/gradlew.bat` for Windows devs.
+- Added `android/gradle/wrapper/gradle-wrapper.jar.sha256` pinning the exact binary.
+- android-ci.yml now runs `gradle/actions/wrapper-validation@v4` right after checkout
+  and a `sha256sum -c` + `./gradlew --version` smoke step before the build steps.
+- Files changed: android/gradle/wrapper/gradle-wrapper.jar (new),
+  android/gradle/wrapper/gradle-wrapper.jar.sha256 (new), android/gradlew.bat (new),
+  .github/workflows/android-ci.yml
+- **Learnings for future iterations:**
+  - The wrapper JAR was never committed, so *every* `./gradlew` step in android-ci.yml
+    has been failing since the workflow was added. The Android app has never actually
+    been compiled by CI — do not trust the previous "compiles successfully" story notes.
+  - Verified locally: `./gradlew --version` now downloads gradle-8.5-bin.zip and prints
+    "Gradle 8.5". The agent sandbox *can* reach services.gradle.org for the distribution
+    zip, but `services.gradle.org/*.sha256` and `dl.google.com` are proxy-blocked (403),
+    so the Android SDK still cannot be installed and full `assembleDebug` remains
+    unverifiable locally.
+  - `./gradlew` prints a harmless `ulimit: Illegal option -u` warning under dash; ignore it.
+---
+
+## 2026-07-30 - PROD-002
+- Removed `android/app/schemas/` from .gitignore (with an explanatory comment so it
+  is not re-added) and documented the export workflow in `android/app/schemas/README.md`.
+- `AppDatabase` now exposes `NAME` and an explicit `MIGRATIONS` array; `AppModule`
+  calls `.addMigrations(*AppDatabase.MIGRATIONS)`. Still no `fallbackToDestructiveMigration`.
+- Created the `androidTest` source set (it did not exist) with `AppDatabaseMigrationTest`
+  covering v1 creatability and v1 -> latest validation via `MigrationTestHelper`.
+- build.gradle.kts: `androidTest` assets now include `$projectDir/schemas`; added
+  `room-testing` + `kotlinx-coroutines-test` to `androidTestImplementation`.
+- android-ci.yml: new "Check Room schema is committed and current" step plus a
+  `room-schemas` artifact upload.
+- Files changed: .gitignore, android/app/build.gradle.kts,
+  android/app/src/main/java/.../data/local/AppDatabase.kt,
+  android/app/src/main/java/.../di/AppModule.kt,
+  android/app/src/androidTest/java/.../AppDatabaseMigrationTest.kt (new),
+  android/app/schemas/README.md (new), .github/workflows/android-ci.yml
+- **Learnings for future iterations:**
+  - Room's exported schema JSON CANNOT be hand-authored. It carries an `identityHash`
+    that Room computes from the compiled entities during annotation processing — a
+    hand-written value makes `MigrationTestHelper` fail in a confusing way. The
+    baseline must come from a real build.
+  - Because of that, the CI schema gate is deliberately two-stage: it warns while
+    `app/schemas/**/*.json` is untracked and only becomes blocking once a baseline
+    is committed. Use `git ls-files 'app/schemas/**/*.json'` (not the directory) for
+    the check, otherwise README.md arms the gate prematurely.
+  - `MigrationTestHelper` needs the schema JSON as *androidTest assets*, which
+    requires the `sourceSets { getByName("androidTest") { assets.srcDir(...) } }`
+    block — adding `room-testing` alone is not enough.
+  - `room-testing` was previously only in `testImplementation`; instrumentation
+    tests need it in `androidTestImplementation` too.
+  - DAO methods are `suspend`, so instrumentation tests need `runBlocking` around
+    DAO calls.
+---
+
+## 2026-07-30 - PROD-003
+- Added `LastLogged/Services/AppDelegate.swift` and wired it with
+  `@UIApplicationDelegateAdaptor` in `LastLoggedApp`.
+- `didRegisterForRemoteNotificationsWithDeviceToken` hex-encodes the token and calls
+  the previously-dead `SupabaseService.registerDeviceToken(_:)` (which already writes
+  `platform: "ios"` and the device name).
+- `registerForPushIfAuthorized()` gates on `.authorized`/`.provisional` and is called
+  from two places: `LastLoggedApp.task` (every launch, so rotated tokens refresh) and
+  `NotificationService.rescheduleAllNotifications` right after a first-time grant.
+- `didFailToRegisterForRemoteNotifications` reports via AnalyticsService, never fatal.
+- Set `UNUserNotificationCenter.delegate` + async `willPresent` so reminders that fire
+  while the app is open actually appear.
+- Added `aps-environment` to LastLogged.entitlements.
+- Files changed: LastLogged/Services/AppDelegate.swift (new), LastLogged/LastLoggedApp.swift,
+  LastLogged/Services/NotificationService.swift, LastLogged/LastLogged.entitlements,
+  LastLogged.xcodeproj/project.pbxproj
+- **Learnings for future iterations:**
+  - `SupabaseService.registerDeviceToken(_:)` existed and was correct but had NO caller —
+    the whole server digest pipeline had zero iOS tokens. When auditing, grep for callers
+    of a service method, not just its existence.
+  - Adding a Swift file needs FOUR pbxproj edits: PBXBuildFile, PBXFileReference, the
+    PBXGroup children list, and the target's PBXSourcesBuildPhase. Check you are editing
+    the *app* Sources phase — the widget extension has its own, and several files
+    (TrackerItem, SchemaVersions, WidgetDataProvider) appear in both with different IDs.
+  - Next free pbxproj IDs after this story: A1...0038 (BuildFile), A2...0034 (FileRef).
+  - `NotificationService.swift` is app-target only, so it can safely reference UIKit-based
+    types like AppDelegate. Do not add such references to files shared with the widget.
+  - Found but out of scope: the registered `LOG_NOW_ACTION` notification button has no
+    `didReceive:` handler, so it does nothing. Tracked as PROD-021.
+---
+
+## 2026-07-30 - PROD-004
+- New `edge-functions/src/fcm.ts`: FCM HTTP v1 sender. Mints a service-account JWT with
+  `node:crypto` (RS256) and exchanges it at oauth2.googleapis.com — no googleapis dep.
+  Access token cached with a 60s refresh skew.
+- New `sendApnsNotification` in apns.ts returning the same `PushResult` shape as FCM so
+  the digest treats both platforms uniformly.
+- `sendReminderDigests` now selects `user_devices.platform`, routes ios->APNs and
+  android->FCM, counts unknown platforms as `unsupportedPlatform` instead of guessing,
+  and prunes rows whose token the provider called permanently dead.
+- `validate-env.ts` warns (never fatal) when FCM is unconfigured or partially configured.
+- Files changed: edge-functions/src/fcm.ts (new), edge-functions/src/apns.ts,
+  edge-functions/src/reminder-digest.ts, edge-functions/src/validate-env.ts,
+  edge-functions/.env.example, DEPLOYMENT.md
+- **Learnings for future iterations:**
+  - The digest previously pushed EVERY `user_devices` row through APNs regardless of the
+    `platform` column, so every Android token failed. `platform` existed in the schema
+    from PH-018 but was never read.
+  - Env vars are read at module load in this codebase (apns.ts and fcm.ts both do it), so
+    tests must set `process.env` *before* importing the module, or re-import with a
+    cache-busting query string.
+  - Service-account private keys arrive `\n`-escaped from CI secrets and .env files.
+    Always `raw.replace(/\\n/g, "\n")` before handing the PEM to `crypto.createSign`.
+    Verified by round-tripping a generated RSA key through sign/verify.
+  - FCM's `android.notification.channel_id` must match the channel NotificationService.kt
+    creates ("tracker_reminders") and the manifest's
+    `com.google.firebase.messaging.default_notification_channel_id`, or Android 8+
+    silently drops the notification.
+  - Dead-token signals worth pruning on: APNs 410 / Unregistered / BadDeviceToken /
+    DeviceTokenNotForTopic; FCM 404 / UNREGISTERED / INVALID_ARGUMENT.
+  - `npm run typecheck` in edge-functions/ is fast and works in the sandbox — always run
+    it before committing backend changes.
+---
+
+## 2026-07-30 - PROD-005
+- `LastLoggedWidget.provideGlance` now loads real trackers via a Hilt `@EntryPoint`
+  (`WidgetEntryPoint`) -> `TrackerRepository.getActiveItems().first()`. `getSampleItems()`
+  (five hardcoded fake rows shipped to every user) is gone.
+- New `util/WidgetItems.kt`: pure, Android-free overdue scoring + `topOverdue`, mirroring
+  iOS `WidgetDataProvider.overdueScore`. Covered by `WidgetItemsTest` (8 cases).
+- New `util/DeepLinks.kt`: parses `lastlogged://tracker/<uuid>` and
+  `https://lastlogged.com/{tracker,open,share}/...`, UUID-validated, returns null on
+  anything unrecognised.
+- Widget rows tap through to tracker detail: MainActivity is now `singleTask`, parses
+  `intent.data` in `onCreate` and `onNewIntent`, and hands the target to `AppNavHost`,
+  which navigates in a `LaunchedEffect`.
+- New `service/WidgetUpdater.kt` injected into `TrackerRepository`; all six mutation
+  paths (create, update, archive, logCompletionAt, undoLog, clearAllData) refresh widgets.
+- Files changed: ui/widget/LastLoggedWidget.kt, util/WidgetItems.kt (new),
+  util/DeepLinks.kt (new), service/WidgetUpdater.kt (new),
+  data/repository/TrackerRepository.kt, ui/MainActivity.kt,
+  ui/navigation/AppNavHost.kt, AndroidManifest.xml,
+  app/src/test/.../WidgetItemsTest.kt (new)
+- **Learnings for future iterations:**
+  - Glance widgets are instantiated by the system and CANNOT be `@AndroidEntryPoint`.
+    Use `@EntryPoint @InstallIn(SingletonComponent::class)` +
+    `EntryPointAccessors.fromApplication(context.applicationContext, X::class.java)`.
+  - Glance does not observe Room. Any write that changes widget content must call
+    `LastLoggedWidget().updateAll(context)` — centralised in `WidgetUpdater` and injected
+    into `TrackerRepository` so no call site can forget.
+  - Wrap widget data loading in try/catch: an exception out of `provideGlance` makes the
+    launcher tear the widget down, and the user has to re-add it by hand.
+  - `MainActivity` must be `launchMode="singleTask"` with an `onNewIntent` override, or a
+    widget tap on an already-running app silently does nothing.
+  - Overdue ordering is a RATIO (elapsed / interval), never a raw day count — 3 days late
+    on a weekly task must outrank 3 days late on an annual one. Keep Android and iOS in
+    sync on this.
+  - Adding a constructor param to `TrackerRepository` is safe: the unit tests mock the
+    repo rather than constructing it.
+  - NOT COMPILE-VERIFIED: the sandbox has no Android SDK (dl.google.com is proxy-blocked),
+    so this is code-review-verified only. The one API to double-check on the first real
+    build is `actionStartActivity(intent: Intent)` — imported from
+    `androidx.glance.appwidget.action`, not `androidx.glance.action`.
+  - The `WidgetItemsTest` expectations were verified by re-running the algorithm
+    independently before commit, since Kotlin tests cannot run in the sandbox.
+---
+
+## 2026-07-30 - PROD-006
+- New `util/DataExporter.kt`: builds the export document (`schemaVersion`, `exportedAt`,
+  `platform`, `categories`, `trackerItems`, `completionLogs`) using the same camelCase
+  keys and ISO-8601 timestamps as iOS `exportDataLocally()`.
+- Added one-shot `getAllItemsOnce()` / `getAllLogsOnce()` / `getAllCategoriesOnce()` DAO
+  queries and `TrackerRepository.exportSnapshot()`. Archived items ARE included — a
+  data-rights export has to be complete.
+- `SettingsViewModel.exportData()` now really exports: Dispatchers.IO, writes
+  `cacheDir/exports/lastlogged-export-<date>.json`, clears older exports, returns a
+  `FileProvider` URI in `exportedFileUri`, and reports failures instead of faking success.
+- `SettingsScreen` opens the ACTION_SEND chooser from a `LaunchedEffect` and calls
+  `clearExportedFile()` so it fires once.
+- Manifest: added the `FileProvider` (`${applicationId}.fileprovider`, not exported) and
+  `res/xml/file_paths.xml` scoped to the `exports/` cache subdirectory only.
+- Files changed: util/DataExporter.kt (new), data/local/dao/*.kt (3),
+  data/repository/TrackerRepository.kt, ui/settings/SettingsViewModel.kt,
+  ui/settings/SettingsScreen.kt, res/xml/file_paths.xml (new), AndroidManifest.xml,
+  app/build.gradle.kts, app/src/test/.../DataExporterTest.kt (new)
+- **Learnings for future iterations:**
+  - `org.json` in the android.jar stub THROWS on every call in unit tests. Add
+    `testImplementation("org.json:json:20231013")` so the real implementation wins on the
+    test classpath — do this before writing any test that touches JSONObject.
+  - `JSONObject.put(key, null)` REMOVES the key. That is what we want for absent optional
+    fields, and it means an exported doc omits keys rather than writing `"null"`.
+  - Scope FileProvider `<cache-path>` to a subdirectory (`exports/`), never the whole
+    cache — otherwise a share grant could expose unrelated cached files.
+  - Keep Activity launches (share sheet) out of the ViewModel: expose a URI on the UI
+    state and let a `LaunchedEffect` in the composable start the chooser with
+    `LocalContext.current`.
+  - Export key names are camelCase to match iOS, NOT the snake_case Room column names.
+    If you change one platform's shape, change both and bump `DataExporter.SCHEMA_VERSION`.
+  - `SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")` with a UTC TimeZone emits a
+    trailing `Z`. Test expectations were verified independently before commit.
+---
+
+## 2026-07-30 - PROD-007
+- Deleted `website/public/.well-known/*` (they shipped literal `TEAMID` and
+  `REPLACE_WITH_YOUR_SHA256_FINGERPRINT` to production) and replaced them with build-time
+  Astro endpoints: `src/pages/.well-known/apple-app-site-association.ts` and
+  `assetlinks.json.ts`, fed by `src/config/app-association.ts`.
+- `deploy-website.yml` passes `APPLE_TEAM_ID` / `ANDROID_SHA256_CERT` and sets
+  `REQUIRE_APP_LINKS=true` so placeholders fail the deploy; a follow-up step greps the
+  built files as a second gate.
+- iOS: added `com.apple.developer.associated-domains` + `CFBundleURLTypes`, new
+  `Utilities/DeepLinkRouter.swift` (registered in pbxproj), `ContentView.onOpenURL`, and
+  `HomeView.navigationDestination(item:)` resolving the UUID against SwiftData.
+- Android: added the `autoVerify` https intent filter (`/tracker/`, `/share/`, `/open`).
+- DEPLOYMENT.md §4b documents both secrets, where the fingerprint comes from, and the
+  three files that must stay in sync.
+- Files changed: website/src/config/app-association.ts (new),
+  website/src/pages/.well-known/*.ts (2 new), website/public/.well-known/* (deleted),
+  .github/workflows/deploy-website.yml, LastLogged/Utilities/DeepLinkRouter.swift (new),
+  LastLogged/ContentView.swift, LastLogged/Views/Home/HomeView.swift,
+  LastLogged/LastLogged.entitlements, LastLogged/Info.plist,
+  LastLogged.xcodeproj/project.pbxproj, android/app/src/main/AndroidManifest.xml,
+  DEPLOYMENT.md
+- **Learnings for future iterations:**
+  - The website CAN be built and typechecked in the sandbox (`npm run build`,
+    `npx astro check`). Use it — this story was verified three ways: default build warns,
+    real env values inject correctly, `REQUIRE_APP_LINKS=true` exits 1.
+  - Astro static endpoints emit the exact route path, so
+    `src/pages/.well-known/apple-app-site-association.ts` produces a file with NO
+    extension at `/.well-known/apple-app-site-association`, which is what Apple requires.
+    Use `export const prerender = true` and `export const GET: APIRoute`.
+  - A file in `public/` and a route at the same path conflict — delete the public copy
+    when converting to an endpoint.
+  - `process.env` (not `import.meta.env`) is what reaches non-PUBLIC_ vars at build time.
+  - `plistlib.dump()` DESTROYS comments in .entitlements/.plist files. Re-add any
+    explanatory comments with a text edit afterwards, or edit the XML as text.
+  - Only list hosts in `associated-domains` that actually serve an AASA. `www.` was
+    dropped because only the apex is generated.
+  - iOS deep-link navigation: `.navigationDestination(item:)` (iOS 17+) coexists fine
+    with the existing destination-based `NavigationLink`s in the list.
+  - The Play Console fingerprint to use is the **app signing key**, not the upload key.
+---
+
+## 2026-07-30 - PROD-008
+- New `service/BootCompletedReceiver.kt`: `@AndroidEntryPoint` BroadcastReceiver that
+  re-arms reminder alarms after `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED`.
+- Reads active trackers via `TrackerRepository.getActiveItems().first()` and calls
+  `NotificationService.rescheduleAllNotifications` on `Dispatchers.IO`, holding the
+  broadcast open with `goAsync()` / `pendingResult.finish()`.
+- Returns immediately when `secureStorageService.getRemindersEnabled()` is false.
+- Manifest: added `RECEIVE_BOOT_COMPLETED` and the receiver (`exported="false"`,
+  `directBootAware="false"`).
+- Files changed: service/BootCompletedReceiver.kt (new), AndroidManifest.xml
+- **Learnings for future iterations:**
+  - Android wipes ALL AlarmManager alarms on reboot. Any feature scheduled through
+    AlarmManager needs a BOOT_COMPLETED receiver or it silently stops working forever
+    after the user's first restart.
+  - `MY_PACKAGE_REPLACED` matters too — an app update also clears alarms.
+  - `onReceive` runs on the main thread with a ~10s budget and the process may be killed
+    the moment it returns. Any I/O needs `goAsync()` + `pendingResult.finish()` in a
+    `finally`.
+  - Do NOT make a receiver `directBootAware` when it touches
+    `SecureStorageService`/EncryptedSharedPreferences — credential-encrypted storage is
+    unreadable before first unlock, so `LOCKED_BOOT_COMPLETED` is intentionally unhandled.
+  - Hilt field injection works in a `BroadcastReceiver` via `@AndroidEntryPoint` +
+    `@Inject lateinit var`.
+---
+
+## 2026-07-30 - PROD-010
+- New `util/UrlOpener.kt`: Custom Tab first, `ACTION_VIEW` fallback when no Custom Tabs
+  provider exists, logged no-op if there is no browser at all. Holds `TERMS_URL` and
+  `PRIVACY_URL`.
+- Wired all five dead controls: Settings Terms / Privacy / "Upgrade to Premium" (new
+  `onNavigateToPaywall` param routed in AppNavHost) and the Paywall Terms / Privacy
+  TextButtons.
+- Added `androidx.browser:browser:1.7.0`.
+- Fixed `PaywallScreen.onDismiss` in AppNavHost: it hardcoded a navigate-to-Home with
+  `popUpTo(Paywall)`, which was only correct coming from onboarding. Now
+  `popBackStack()` first and fall back to Home — otherwise opening the paywall from
+  Settings would have pushed Home on top of Settings.
+- Files changed: util/UrlOpener.kt (new), ui/settings/SettingsScreen.kt,
+  ui/components/PaywallScreen.kt, ui/navigation/AppNavHost.kt, app/build.gradle.kts
+- **Learnings for future iterations:**
+  - `grep -rn "TODO" android/app/src/main/java/.../ui/` is now clean — keep it that way;
+    a TODO in an `onClick` ships as a control that silently does nothing.
+  - Both App Store and Play review require Terms and Privacy to be reachable **from the
+    purchase surface**, not just from Settings.
+  - `PaywallScreen` already had `LocalContext.current.findActivity()`; it needed a plain
+    `val context = LocalContext.current` for `UrlOpener` (the private `findActivity()`
+    extension lives at the bottom of that file).
+  - When adding a second entry point to an existing screen, re-check its dismiss/back
+    handling — hardcoded `popUpTo` chains are usually written for one caller only.
+---
+
+## 2026-07-30 - PROD-011
+- `AnalyticsService` now really sends: POSTs the TelemetryDeck v2 signal array to
+  `https://nom.telemetrydeck.com/v2/` with `appID` from `BuildConfig.TELEMETRYDECK_APP_ID`.
+- Fire-and-forget on a `SupervisorJob() + Dispatchers.IO` scope with a
+  `CoroutineExceptionHandler`; a network failure is logged and nothing else.
+- Complete no-op when the app id is blank (the CI/unit-test default), so no traffic and
+  no storage access at all.
+- `clientUser` is a SHA-256 hash of the Supabase user id — the raw id and the email never
+  leave the device. `identify()` is wired into `SupabaseService`'s auth state listener and
+  `signOut()`. Before sign-in a random per-install UUID is used.
+- Fixed a second gap found along the way: `AnalyticsService.configure()` had NO caller.
+  Now invoked from `LastLoggedApp.onCreate()` alongside RevenueCat and PushTokenService.
+- `buildPayload` is `internal` so tests can assert on the exact body without a network.
+- Files changed: service/AnalyticsService.kt, service/SupabaseService.kt,
+  LastLoggedApp.kt, app/src/test/.../AnalyticsServiceTest.kt (new)
+- **Learnings for future iterations:**
+  - Same lesson as PROD-003: grep for CALLERS. `AnalyticsService.configure()` existed and
+    was never invoked, exactly like `SupabaseService.registerDeviceToken` on iOS.
+  - Event name strings are the join key between the iOS and Android funnels.
+    `AnalyticsServiceTest` asserts the full list — update both platforms together.
+  - Expose an `internal` payload builder for services that do network I/O; it gives unit
+    tests a seam without HTTP mocking.
+  - `verify { mock wasNot Called }` needs `import io.mockk.Called` — `wasNot` is an infix
+    inside the verification scope and is NOT imported.
+  - NOT VERIFIED AGAINST LIVE INGEST: the TelemetryDeck v2 body shape
+    (`[{appID, clientUser, type, payload:{...}}]`) is written from the documented format
+    but no request has been made. Confirm with one real signal before relying on the
+    dashboard; if v2 wants `payload` as an array of `"key:value"` strings instead of an
+    object, only `buildPayload` needs to change and the tests will catch it.
+---
+
+## 2026-07-30 - PROD-015
+- Added `res/xml/backup_rules.xml` (`android:fullBackupContent`, API <= 30) and
+  `res/xml/data_extraction_rules.xml` (`android:dataExtractionRules`, API 31+, covering
+  both cloud-backup and device-transfer), wired into `<application>`.
+- Excluded: `lastlogged.db` and its `-shm`/`-wal` sidecars, `lastlogged_secure_prefs.xml`,
+  and `datastore/`.
+- Hardened `SecureStorageService`: the previous catch fell straight through to
+  `context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)` — i.e. PLAINTEXT prefs under
+  the same file name — which is precisely what a restored, undecryptable file would have
+  triggered. Now it deletes the unreadable file and retries encrypted creation first.
+- Files changed: res/xml/backup_rules.xml (new), res/xml/data_extraction_rules.xml (new),
+  AndroidManifest.xml, service/SecureStorageService.kt
+- **Learnings for future iterations:**
+  - `allowBackup="true"` with no rules means Room + EncryptedSharedPreferences are
+    eligible for Google's auto-backup. The AndroidKeyStore master key is hardware-bound
+    and is NOT backed up, so a restore produces an undecryptable prefs file — the data is
+    both exposed and useless. Exclude both.
+  - You need BOTH files: `fullBackupContent` for API <= 30 and `dataExtractionRules` for
+    API 31+. Shipping only one leaves half the install base unprotected.
+  - Remember the SQLite `-shm` and `-wal` sidecars; excluding only the `.db` still backs
+    up recent writes.
+  - `context.deleteSharedPreferences()` requires API 24 — fine at minSdk 26.
+  - The prefs file name (`lastlogged_secure_prefs`) is `PREFS_NAME` in
+    SecureStorageService; keep the backup rules in sync if it ever changes.
+---
+
+## 2026-07-30 - PROD-013
+- Added Vitest (`vitest.config.ts`, `npm test`) and ESLint 9 flat config
+  (`eslint.config.js`, `npm run lint`) to edge-functions.
+- 43 tests across 4 files, ALL RUN AND PASSING in the sandbox:
+  - `middleware.test.ts` (13): rate limit under/over/per-IP/window-reset/XFF-chain,
+    bodyLimit over/at/absent, cronAuth valid/missing/wrong/bare-token/no-secret-403.
+  - `revenuecat-webhook.test.ts` (7): valid signature, missing, empty, wrong secret,
+    valid-signature-for-different-body, malformed and non-hex signatures — the last two
+    confirm `timingSafeEqual`'s length-mismatch throw is caught and returns 401, not 500.
+  - `validate-env.test.ts` (12): every required var, placeholder detection, all-missing
+    reported at once, and the three FCM warn paths from PROD-004.
+  - `fcm.test.ts` (11): the RS256 JWT is verified against the generated public key,
+    token caching, send payload shape, and dead-token vs transient-500 pruning.
+- `deploy-edge-functions.yml`: job renamed `typecheck` -> `verify`
+  ("Typecheck, Lint & Test") and now runs all three before deploy.
+- Files changed: edge-functions/{vitest.config.ts,eslint.config.js,package.json},
+  edge-functions/test/*.test.ts (4 new), .github/workflows/deploy-edge-functions.yml
+- **Learnings for future iterations:**
+  - Edge-function tests RUN in the sandbox. Always `npm test && npm run lint && npm run
+    typecheck` in edge-functions/ before committing backend changes — this is the one
+    part of the repo with real verification.
+  - Modules read `process.env` at import time. Set env at the TOP of the test file, then
+    `await import(...)` inside `beforeAll`. A top-level static import is too late.
+  - Use `vi.mock('../src/supabase.js', ...)` to keep webhook tests off the network.
+  - `vi.stubGlobal('fetch', mock)` + `vi.unstubAllGlobals()` is the clean way to test
+    fetch-based senders; `resetFcmTokenCache()` was added to fcm.ts for exactly this.
+  - The in-memory rate-limit store is module-level and shared across tests in a file —
+    give each test a distinct IP and `keyPrefix` or they interfere.
+  - ESLint 9 needs an explicit `languageOptions.globals` list for Node globals in a flat
+    config; there is no automatic `env: node`.
+  - Renaming a CI job changes the required-status-check name in branch protection.
+---
+
+## 2026-07-30 - PROD-016
+- New migration `20260730000001_shared_rate_limits.sql`:
+  - `rate_limits` table keyed by `"<keyPrefix>:<ip>"`, RLS enabled with NO policies so
+    only the service role (which bypasses RLS) can touch it.
+  - `increment_rate_limit(bucket_key, window_ms)` — a single atomic upsert that resets an
+    elapsed window and returns the post-increment count. Read-then-write from the app
+    would race between instances, which is the exact bug this replaces.
+  - `prune_rate_limits()` wired into `runCleanup()` (weekly) so the table stays bounded.
+- `middleware.ts`: `consumeBudget()` calls the RPC, with the old in-memory Map kept as an
+  automatic fallback plus a 30s backoff after a failure — a DB outage degrades to
+  per-instance limits instead of failing open or hammering a dead database.
+  `RATE_LIMIT_STORE=memory` forces local (used by the tests).
+- `/health` now actually checks Supabase and returns 503 with the failure reason; adds
+  `version` and `uptimeSeconds`. Added `/health/live` for probes that must not touch the DB.
+- 49 edge-function tests pass, 6 new ones covering the shared store: RPC shape, 429 from a
+  shared count, non-array RPC result, fallback on error, the 30s backoff, and empty-row.
+- Files changed: supabase/migrations/20260730000001_shared_rate_limits.sql (new),
+  edge-functions/src/{middleware.ts,index.ts,cleanup.ts}, edge-functions/.env.example,
+  edge-functions/test/{rate-limit-store.test.ts (new),middleware.test.ts}, DEPLOYMENT.md
+- **Learnings for future iterations:**
+  - `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` with zero policies is the idiom for a
+    service-role-only table: it denies anon/authenticated (which would otherwise reach it
+    through the public REST API) while the service role bypasses RLS. `auth_rate_limits`
+    has the same intent but never enabled RLS — worth revisiting.
+  - Supabase `.rpc()` on a function with `RETURNS TABLE` gives an ARRAY. Handle both
+    shapes (`Array.isArray(data) ? data[0] : data`).
+  - Adding an import of `src/supabase.js` to a module makes every test that imports it
+    fail with "supabaseUrl is required" — `createClient()` runs at import time. Add
+    `vi.mock('../src/supabase.js', ...)` to those test files.
+  - When a middleware gains an external dependency, give it an env escape hatch
+    (`RATE_LIMIT_STORE=memory`) so existing tests stay fast and hermetic.
+  - A health check that returns a static 200 is worse than none — it keeps a broken
+    instance in the load-balancer rotation.
+---
+
+## 2026-07-30 - PROD-014
+- New `.github/workflows/deploy-android.yml`: `v*` tags + workflow_dispatch with a track
+  selector (internal / alpha / beta / production).
+- Version calculation mirrors `deploy-ios.yml`. `build.gradle.kts` now reads
+  `VERSION_NAME` / `VERSION_CODE` from the environment with local-safe defaults
+  (1.0.0 / 1), so CI can set them without editing the file.
+- Keystore decoded from `ANDROID_KEYSTORE_BASE64` into `keystore.properties`;
+  `google-services.json` written from a secret; unit tests run; `bundleRelease` builds a
+  signed AAB; AAB and `mapping.txt` (90-day retention) uploaded as artifacts; publish via
+  `r0adkll/upload-google-play`.
+- Degrades instead of failing: no keystore -> unsigned artifact only; no Play service
+  account -> upload skipped. A summary step states exactly what was skipped and why.
+- `always()` cleanup step removes the keystore, keystore.properties, local.properties, and
+  google-services.json from the runner.
+- Files changed: .github/workflows/deploy-android.yml (new), android/app/build.gradle.kts,
+  DEPLOYMENT.md (§6b + secrets table)
+- **Learnings for future iterations:**
+  - The `secrets` context is NOT available in a step's `if:`. Convert secret-presence
+    checks into step outputs (`echo "has_x=true" >> "$GITHUB_OUTPUT"`) and gate on
+    `steps.<id>.outputs.*`. Step-level `env` in the same step's `if:` is also unreliable.
+  - `defaults.run.working-directory` only applies to `run` steps. Inputs to `uses:` actions
+    (artifact paths, releaseFiles) are relative to the workspace root — they need the
+    `android/` prefix.
+  - `versionCode` must strictly increase for every Play upload; `GITHUB_RUN_NUMBER` is the
+    simplest monotonic source.
+  - Release builds have `isMinifyEnabled = true`, so `mapping.txt` is mandatory for
+    readable crash reports. Upload it as an artifact AND pass it to the Play upload.
+  - Keep secret-dependent deploy steps optional so the workflow is testable before all
+    store credentials exist.
+---
+
+## 2026-07-30 - PROD-012
+- Added the `LastLoggedTests` unit-test target to `project.pbxproj`: PBXNativeTarget
+  (`com.apple.product-type.bundle.unit-test`), PBXContainerItemProxy + PBXTargetDependency
+  on the app, Sources/Frameworks/Resources phases, Debug+Release XCBuildConfigurations with
+  `TEST_HOST` + `BUNDLE_LOADER`, `TargetAttributes.TestTargetID`, and the `.xctest` entry in
+  the Products group.
+- Added a SHARED scheme at `LastLogged.xcodeproj/xcshareddata/xcschemes/LastLogged.xcscheme`
+  with a `<Testables>` entry — without a shared scheme, `xcodebuild test -scheme LastLogged`
+  cannot see the target from a fresh clone.
+- 4 test files, 48 test methods: `InputSanitizerTests` (13), `CategoryTemplatesTests` (8),
+  `WidgetDataProviderTests` (12), `AuthViewModelTests` (15).
+- `ios-ci.yml` now runs `xcodebuild test` (replacing the build-only step — `test` builds
+  everything anyway) and uploads the `.xcresult` bundle on failure.
+- Files changed: LastLoggedTests/*.swift (4 new), LastLogged.xcodeproj/project.pbxproj,
+  LastLogged.xcodeproj/xcshareddata/xcschemes/LastLogged.xcscheme (new),
+  .github/workflows/ios-ci.yml
+- **Learnings for future iterations:**
+  - Adding a TEST target to pbxproj needs far more than a source file: PBXNativeTarget,
+    PBXContainerItemProxy, PBXTargetDependency, three build phases, two
+    XCBuildConfigurations + an XCConfigurationList, the Products group entry, the project
+    `targets` list, AND `TargetAttributes` with `TestTargetID`.
+  - `TEST_HOST` + `BUNDLE_LOADER = "$(TEST_HOST)"` are what make `@testable import
+    LastLogged` link. Without them the target compiles but cannot see internal symbols.
+  - A shared scheme under `xcshareddata/xcschemes/` is REQUIRED for CI. `.gitignore`
+    excludes `xcuserdata` but not `xcshareddata` — verified with `git check-ignore`.
+  - Validate pbxproj edits by extracting every `^\t\t<24-hex>` definition and every 24-hex
+    reference and diffing them. This run: 172 objects, ZERO dangling references. Cheap and
+    catches every typo'd id.
+  - Next free pbxproj IDs after this story: A1...003D (BuildFile), A2...003A (FileRef),
+    A3...001B (Group), A4...000B (BuildPhase), A5...0004 (Target), A7...0009 (BuildConfig),
+    A8...0005 (ConfigList), AB...0003 (Proxy), AC...0003 (Dependency).
+  - `AuthViewModel` requires a `ModelContext`; tests build one from
+    `ModelConfiguration(isStoredInMemoryOnly: true)` with `SchemaV1`.
+  - The rate-limit property is `isLockedOut`, not `isInCooldown`.
+  - NOT COMPILE-VERIFIED: no macOS/Xcode in the sandbox. The pbxproj is structurally sound
+    but the first CI run is the real check.
+---
+
+## 2026-07-30 - PROD-017
+- `Info.plist`: added `ITSAppUsesNonExemptEncryption = false` (App Store Connect otherwise
+  asks the encryption question on EVERY upload) and
+  `UIBackgroundModes = [remote-notification]`, which the PROD-003 digest needs.
+  `CFBundleURLTypes` for the `lastlogged://` scheme landed earlier in PROD-007.
+- Deliberately did NOT add `CFBundleDisplayName` / `CFBundleShortVersionString` /
+  `CFBundleVersion` to the file: `GENERATE_INFOPLIST_FILE = YES` already synthesises them
+  from `INFOPLIST_KEY_CFBundleDisplayName`, `MARKETING_VERSION`, and
+  `CURRENT_PROJECT_VERSION`. Declaring them in both places is redundant and risks a
+  duplicate-key conflict at build time. They ARE build-setting driven, which is what the
+  story asked for.
+- `store-listing/app-store.md`: added a Submission answers table (encryption, export
+  compliance, IDFA, analytics, account requirements), the provisioning-profile capability
+  checklist, and the declared background modes.
+- Files changed: LastLogged/Info.plist, store-listing/app-store.md
+- **Learnings for future iterations:**
+  - With `GENERATE_INFOPLIST_FILE = YES`, prefer `INFOPLIST_KEY_*` build settings over
+    editing Info.plist. Only put keys in the file that have no `INFOPLIST_KEY_` equivalent
+    (here: `ITSAppUsesNonExemptEncryption`, `CFBundleURLTypes`, the `$(VAR)` secret keys).
+  - `plistlib.dump()` strips comments — same trap as the entitlements file in PROD-007.
+  - The provisioning profile now needs THREE capabilities (App Groups, Push Notifications,
+    Associated Domains). Push and Associated Domains were both added during this batch, so
+    the existing profile in the deploy secrets is stale and must be regenerated.
+---
+
+## 2026-07-30 - PROD-021
+- `AppDelegate` implements `userNotificationCenter(_:didReceive:)`. The registered
+  `LOG_NOW_ACTION` button previously did nothing but foreground the app.
+- New `NotificationService.logCompletionFromNotification(trackerId:)`: opens its own
+  `ModelContext` on the App Group container (no view is alive at that point), resolves the
+  tracker, inserts a `CompletionLog`, advances `lastCompletedAt`, sets `syncStatus =
+  .pending`, then reschedules notifications so the reminder that just fired does not
+  immediately re-fire.
+- A default tap (`UNNotificationDefaultActionIdentifier`) sets
+  `DeepLinkRouter.shared.pendingTarget`, reusing the PROD-007 routing rather than adding a
+  parallel mechanism.
+- Deleted trackers and malformed `userInfo` return early instead of crashing.
+- Files changed: LastLogged/Services/AppDelegate.swift, LastLogged/Services/NotificationService.swift
+- **Learnings for future iterations:**
+  - `content.userInfo["trackerItemId"]` was already being set by
+    `makeNotificationRequest` — the data was there, only the handler was missing.
+  - Notification actions run with no view hierarchy. Use
+    `WidgetDataProvider.shared.makeSharedModelContainer()` to reach the App Group store
+    rather than expecting a `ModelContext` from the environment.
+  - Always reschedule after logging from a notification, or the next reminder still
+    reflects the old `lastCompletedAt`.
+  - Route notification taps through `DeepLinkRouter` so there is exactly one place that
+    decides where a tracker id navigates.
+---
+
+## 2026-07-30 - PROD-009
+- Sentry on all three surfaces, each a complete no-op when its DSN is absent:
+  - iOS: `Services/CrashReportingService.swift` + the `sentry-cocoa` SPM package (package
+    reference, product dependency, and the source file all registered in pbxproj).
+    Configured as the first statement of `LastLoggedApp.init` after `AppSecrets.validate()`.
+  - Android: `service/CrashReportingService.kt` + `io.sentry:sentry-android:7.14.0`, a
+    `SENTRY_DSN` BuildConfig field, configured first in `LastLoggedApp.onCreate`.
+  - Edge functions: `src/crash-reporting.ts`, wired to `app.onError` plus
+    `unhandledRejection` / `uncaughtException` process handlers.
+- PII scrubbing on every surface: `sendDefaultPii` off, screenshots and view hierarchies
+  off, `beforeSend` strips user/serverName/extras and (server) request headers, cookies,
+  body, and query string; `beforeBreadcrumb` strips messages and data.
+- `AppSecrets.sentryDSN` is deliberately NOT in `validate()` — that function `fatalError`s
+  in release, and an optional feature must never be able to block a ship.
+- `PrivacyInfo.xcprivacy` already declared CrashData + PerformanceData; `app-privacy.md`
+  now names Sentry and describes the scrubbing.
+- 55 edge-function tests pass (6 new covering the gating and non-Error captures).
+- **Also fixed a ship-blocker found while wiring this**: `deploy-ios.yml` never wrote
+  `Secrets.xcconfig`. `Release.xcconfig` falls back to `Secrets.example.xcconfig`, so a
+  TestFlight/App Store archive would have shipped placeholder credentials and
+  `AppSecrets.validate()` would `fatalError` on first launch. The workflow now writes the
+  file from secrets (failing fast if the required three are missing) and deletes it in the
+  `always()` cleanup.
+- Files changed: LastLogged/Services/CrashReportingService.swift (new),
+  LastLogged/Utilities/AppSecrets.swift, LastLogged/Config/Secrets.example.xcconfig,
+  LastLogged/Info.plist, LastLogged/LastLoggedApp.swift, LastLogged.xcodeproj/project.pbxproj,
+  android/.../service/CrashReportingService.kt (new), android/.../LastLoggedApp.kt,
+  android/app/build.gradle.kts, android/local.properties.example,
+  edge-functions/src/{crash-reporting.ts (new),index.ts}, edge-functions/.env.example,
+  edge-functions/test/crash-reporting.test.ts (new),
+  .github/workflows/{deploy-ios.yml,android-ci.yml}, store-listing/app-privacy.md, DEPLOYMENT.md
+- **Learnings for future iterations:**
+  - Keep OPTIONAL secrets out of `AppSecrets.validate()`. It `fatalError`s in Release, so
+    adding a new key there turns a missing nice-to-have into a launch crash.
+  - `Release.xcconfig` uses `#include?` with an example fallback, which means a missing
+    `Secrets.xcconfig` fails SILENTLY at build time and loudly at runtime. Any workflow
+    that archives must write the real file.
+  - xcconfig treats `//` as a comment even inside values — escape URLs as
+    `https:$()//host`. The workflow does this with `sed 's|//|$()//|g'`; verified.
+  - ES module imports are HOISTED, so a call placed between import statements does not run
+    first. Put `initCrashReporting()` at the top of the module body instead.
+  - Adding an SPM package to pbxproj takes three edits: XCRemoteSwiftPackageReference,
+    XCSwiftPackageProductDependency, and entries in both the project `packageReferences`
+    list and the target's `packageProductDependencies`.
+  - Sentry defaults leak user content on this app: `attachScreenshot` and
+    `attachViewHierarchy` would capture the entire tracker list. Turn both off explicitly.
+  - Next free pbxproj IDs: A1...003E (BuildFile), A2...003B (FileRef),
+    A9...0005 (PackageRef), AA...0006 (ProductDep).
+---
+
+## 2026-07-30 - PROD-018 (PARTIAL — blocked on assets)
+- New `website/src/components/HeroScreenshot.astro` replaces the hardcoded grey
+  `screenshot-placeholder` box that read "App Screenshot" on the live landing page.
+- Renders `<picture>` with a WebP `<source>` and PNG fallback, explicit 1170x2532
+  intrinsic `width`/`height` (reserves space, no CLS on the LCP element), descriptive
+  alt text, `loading="eager"` + `fetchpriority="high"`.
+- With no assets present it renders a deliberate device skeleton and logs a build
+  warning, rather than an empty grey rectangle.
+- Removed the `.screenshot-placeholder` CSS from both the base rules and the media query.
+- `public/screenshots/README.md` documents required files, dimensions, and the
+  `simctl` / `adb` / `cwebp` capture commands.
+- Verified by building BOTH ways: with no image (1 warning, skeleton rendered) and with a
+  synthesised 1170x2532 PNG (0 warnings, correct `<img>` with intrinsic dimensions).
+  `npx astro check`: 0 errors.
+- **STILL BLOCKED**: the real device-framed screenshots cannot be produced here. There is
+  no iOS simulator or Android emulator in this environment and neither app compiles
+  (no Xcode, and dl.google.com is proxy-blocked so no Android SDK). Capture them per
+  `public/screenshots/README.md` and drop the files in — no further code change needed.
+- Files changed: website/src/components/HeroScreenshot.astro (new),
+  website/src/pages/index.astro, website/public/screenshots/README.md (new)
+- **Learnings for future iterations:**
+  - `import.meta.url` in an Astro component resolves against the COMPILED output, not the
+    source tree. Use `process.cwd()` for build-time filesystem checks (the build always
+    runs with cwd = `website/`).
+  - Astro components can do build-time `existsSync` checks — a clean way to make an asset
+    optional and warn loudly instead of shipping a broken-looking placeholder.
+  - Always set intrinsic `width`/`height` on the hero image; it is the LCP element and
+    omitting them causes layout shift.
+---
+
+## 2026-07-30 - PROD-020
+- Verification sweep across everything this batch touched:
+  - No real TODO/FIXME left in shipped iOS, Android, or edge-function source. (The single
+    grep hit is `SSSXXX` inside a `SimpleDateFormat` pattern in DataExporter.kt.)
+  - All 6 GitHub workflows parse as valid YAML.
+  - All 4 plists, 7 Android XML resources, and the xcscheme parse.
+  - pbxproj: 176 objects, ZERO dangling references, braces balanced.
+  - Gradle wrapper checksum verifies.
+  - edge-functions: `typecheck` clean, `lint` clean, 55/55 tests pass.
+  - website: `astro check` 0 errors, `npm run build` succeeds.
+- DEPLOYMENT.md: every secret introduced by this batch documented (`FCM_PROJECT_ID`,
+  `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY`, `APPLE_TEAM_ID`, `ANDROID_SHA256_CERT`,
+  `PLAY_SERVICE_ACCOUNT_JSON`, `ANDROID_KEYSTORE_*`, `SENTRY_DSN_IOS`,
+  `SENTRY_DSN_ANDROID`, `SENTRY_DSN`, `APP_VERSION`, `RATE_LIMIT_STORE`), plus new
+  sections §4b (Universal/App Links), §6b (Android release), §6c (observability) and
+  expanded verification for push on both platforms, deep links, and `/health`.
+- store-listing: `app-store.md` gained submission answers + the provisioning-profile
+  capability list; `app-privacy.md` now names Sentry and describes the scrubbing.
+- progress.txt Codebase Patterns rewritten around what actually matters for future
+  iterations: verification reality, caller-auditing, cross-platform invariants, secrets
+  handling, and CI gotchas.
+- **Open item**: PROD-018 is partially complete and PROD-019 (localization) was not
+  started — see the notes on those stories.
+---
+
+## 2026-07-30 - Batch summary (PROD-001..021)
+19 of 21 stories closed. Two remain, both deliberately, and neither blocks the others:
+
+- **PROD-018 (partial)** — all code done and verified; blocked only on capturing real
+  device screenshots, which needs a simulator/emulator this environment does not have.
+  Drop the files into `website/public/screenshots/` per its README.
+- **PROD-019 (not started)** — localization. Sequenced last on purpose: it is a large
+  mechanical sweep across ~40 SwiftUI views and 31 Compose call sites, and neither app
+  compiles here. Run it after android-ci and ios-ci go green once, so any compile error
+  is unambiguously attributable to it.
+
+Ship-blockers fixed in this batch that were NOT in the original story list, found while
+implementing others:
+- `deploy-ios.yml` never wrote `Secrets.xcconfig`, so a TestFlight/App Store archive would
+  have shipped placeholder credentials and `AppSecrets.validate()` would `fatalError` on
+  first launch (fixed in PROD-009).
+- `AnalyticsService.configure()` on Android had no caller (fixed in PROD-011).
+- `PaywallScreen.onDismiss` assumed onboarding was its only entry point and would have
+  pushed Home on top of Settings (fixed in PROD-010).
+- `SecureStorageService` silently fell back to PLAINTEXT SharedPreferences under the same
+  file name when encrypted prefs were unreadable — exactly what a restore triggers
+  (fixed in PROD-015).
+---
+
+## 2026-07-30 - PROD-019
+### Android
+- ~120 user-facing literals moved out of 11 UI files plus `BiometricService`,
+  `NotificationService`, the Glance widget, and `Auth/Home/SettingsViewModel` into
+  `res/values/strings.xml` (152 entries, 4 of them `<plurals>`).
+- `stringResource()` is @Composable and CANNOT be called inside a `semantics {}` lambda —
+  hoisted into captured vals (`termsA11y`, `settingsA11y`, `addTrackerA11y`,
+  `packageA11y`, `chipA11y`, stat-card `a11y`).
+- Non-Composable call sites use `context.getString(...)` /
+  `resources.getQuantityString(...)`. The three ViewModels gained
+  `@ApplicationContext private val context: Context` (Hilt auto-wires it).
+- New `android/check-hardcoded-strings.sh`, run in Android CI.
+### iOS
+- `SWIFT_EMIT_LOC_STRINGS = YES` was ALREADY set on all four build configs, so SwiftUI
+  `Text("literal")` was already extraction-ready. The actual gaps were (a) no String
+  Catalog to hold translations and (b) `String`-typed messages, which SwiftUI never
+  localizes.
+- Added `LastLogged/Localizable.xcstrings` (14 keys, 3 with plural `substitutions`) and
+  registered it as a resource in project.pbxproj.
+- Converted all 14 `errorMessage` / password-rule literals to `String(localized:)`,
+  replacing a hand-rolled `attempt\(remaining == 1 ? "" : "s")` pluralisation.
+- New `scripts/check-ios-strings.sh`, run in iOS CI.
+### Verification
+- Every `R.string`/`R.plurals` reference resolves; every required import present.
+- Every `String(localized:)` call site cross-checked against catalog keys using
+  balanced-paren interpolation normalisation: zero mismatches, zero orphan keys.
+- BOTH CI gates proven by reintroducing a literal and confirming the gate fails.
+- pbxproj: 178 objects, zero dangling refs. edge-functions 55/55, website 0 errors.
+- **Learnings for future iterations:**
+  - `stringResource()` inside `semantics {}` does NOT compile — that lambda is not
+    @Composable. Read the string into a `val` in the enclosing composable first. Same for
+    `remember {}` and any non-composable lambda.
+  - Grep for MORE than `Text("`. Custom composables (`SectionHeader("Account")`),
+    `when` expressions returning literals, `?:` fallbacks (`userEmail ?: "Signed In"`),
+    and ViewModel message assignments all hide literals. Cross-checking *unused* string
+    resources is what surfaced them.
+  - `String(localized: "key \(value)")` resolves to the key **including the format
+    specifier** — `"key %lld"` for Int, `"key %@"` for String. The catalog key must match
+    exactly or the raw key is displayed to the user.
+  - xcstrings plurals inside an interpolated string use `substitutions`: the top-level
+    value references `%#@arg1@` and the substitution holds the one/other forms.
+  - A missing catalog key is not fatal — Xcode's build-time extraction adds it (English =
+    the key), so this self-heals on the next build. Still worth opening the catalog in
+    Xcode once to confirm the plural rules render.
+  - Adding a constructor param to a @HiltViewModel breaks any test that constructs it
+    directly — `AuthViewModelTest` needed a relaxed mockk Context.
+  - 11 pre-existing unused string resources remain (`auth_title`, `save`, `confirm`,
+    `add_from_templates`, …). They were dead before this change; left in place rather
+    than pruned blind.
 ---

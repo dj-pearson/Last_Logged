@@ -79,10 +79,10 @@ final class AuthViewModel {
     var passwordValidationMessages: [String] {
         guard isSignUp else { return [] }
         var messages: [String] = []
-        if password.count < 8 { messages.append("At least 8 characters") }
-        if password.range(of: "[A-Z]", options: .regularExpression) == nil { messages.append("One uppercase letter") }
-        if password.range(of: "[a-z]", options: .regularExpression) == nil { messages.append("One lowercase letter") }
-        if password.range(of: "[0-9]", options: .regularExpression) == nil { messages.append("One number") }
+        if password.count < 8 { messages.append(String(localized: "auth.password.minLength")) }
+        if password.range(of: "[A-Z]", options: .regularExpression) == nil { messages.append(String(localized: "auth.password.uppercase")) }
+        if password.range(of: "[a-z]", options: .regularExpression) == nil { messages.append(String(localized: "auth.password.lowercase")) }
+        if password.range(of: "[0-9]", options: .regularExpression) == nil { messages.append(String(localized: "auth.password.number")) }
         return messages
     }
 
@@ -108,7 +108,7 @@ final class AuthViewModel {
                   let identityTokenData = appleIDCredential.identityToken,
                   let idToken = String(data: identityTokenData, encoding: .utf8),
                   let nonce = currentNonce else {
-                errorMessage = "Failed to get Apple ID credentials."
+                errorMessage = String(localized: "auth.error.appleCredentials")
                 return
             }
 
@@ -138,7 +138,7 @@ final class AuthViewModel {
     func submitEmailForm() {
         guard isFormValid else { return }
         guard !isLockedOut else {
-            errorMessage = "Too many attempts. Wait \(cooldownSecondsRemaining)s."
+            errorMessage = String(localized: "auth.error.cooldownShort \(cooldownSecondsRemaining)")
             return
         }
 
@@ -151,7 +151,7 @@ final class AuthViewModel {
             // Server-side rate limit check
             let serverAllowed = await SupabaseService.shared.checkAuthRateLimit()
             guard serverAllowed else {
-                errorMessage = "Too many authentication attempts. Please try again later."
+                errorMessage = String(localized: "auth.error.tooManyAttemptsGeneric")
                 isLoading = false
                 return
             }
@@ -186,11 +186,11 @@ final class AuthViewModel {
                 failedAttemptCount += 1
                 if failedAttemptCount >= Self.maxFailedAttempts {
                     startCooldown()
-                    errorMessage = "Too many failed attempts. Please wait \(Int(Self.cooldownDuration)) seconds."
+                    errorMessage = String(localized: "auth.error.cooldownLong \(Int(Self.cooldownDuration))")
                 } else {
                     let remaining = Self.maxFailedAttempts - failedAttemptCount
                     let friendlyMessage = Self.sanitizeAuthError(error)
-                    errorMessage = "\(friendlyMessage) (\(remaining) attempt\(remaining == 1 ? "" : "s") remaining)"
+                    errorMessage = String(localized: "auth.error.attemptsRemaining \(friendlyMessage) \(remaining)")
                 }
             }
             isLoading = false
@@ -209,7 +209,7 @@ final class AuthViewModel {
                 try await SupabaseService.shared.resendConfirmation(email: signUpEmail_)
                 startResendCooldown()
             } catch {
-                errorMessage = "Unable to resend confirmation. Please try again."
+                errorMessage = String(localized: "auth.error.resendFailed")
             }
             isLoading = false
         }
@@ -238,11 +238,11 @@ final class AuthViewModel {
     func resetPassword() {
         let trimmedEmail = email.trimmingCharacters(in: .whitespaces)
         guard !trimmedEmail.isEmpty else {
-            errorMessage = "Please enter your email address."
+            errorMessage = String(localized: "auth.error.emailRequired")
             return
         }
         guard !isLockedOut else {
-            errorMessage = "Too many attempts. Wait \(cooldownSecondsRemaining)s."
+            errorMessage = String(localized: "auth.error.cooldownShort \(cooldownSecondsRemaining)")
             return
         }
 
@@ -257,9 +257,9 @@ final class AuthViewModel {
                 failedAttemptCount += 1
                 if failedAttemptCount >= Self.maxFailedAttempts {
                     startCooldown()
-                    errorMessage = "Too many attempts. Please wait \(Int(Self.cooldownDuration)) seconds."
+                    errorMessage = String(localized: "auth.error.cooldownLong \(Int(Self.cooldownDuration))")
                 } else {
-                    errorMessage = "Unable to send reset link. Please check your email and try again."
+                    errorMessage = String(localized: "auth.error.resetLinkFailed")
                 }
             }
             isLoading = false

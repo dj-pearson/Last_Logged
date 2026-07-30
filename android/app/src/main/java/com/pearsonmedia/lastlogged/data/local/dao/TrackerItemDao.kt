@@ -27,6 +27,11 @@ interface TrackerItemDao {
     @Query("SELECT COUNT(*) FROM tracker_items WHERE is_archived = 0")
     suspend fun getActiveItemCount(): Int
 
+    /** One-shot snapshot for data export. Includes archived items — the user
+     *  is entitled to everything the app stores, not just what is on screen. */
+    @Query("SELECT * FROM tracker_items ORDER BY sort_order ASC")
+    suspend fun getAllItemsOnce(): List<TrackerItem>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: TrackerItem)
 

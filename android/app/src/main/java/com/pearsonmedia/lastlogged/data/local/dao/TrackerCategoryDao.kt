@@ -19,6 +19,10 @@ interface TrackerCategoryDao {
     @Query("SELECT COUNT(*) FROM tracker_categories")
     suspend fun getCategoryCount(): Int
 
+    /** One-shot snapshot for data export. */
+    @Query("SELECT * FROM tracker_categories ORDER BY sort_order ASC")
+    suspend fun getAllCategoriesOnce(): List<TrackerCategory>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(category: TrackerCategory)
 

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import HeroScreenshot from '../components/HeroScreenshot.astro';
 
 const title = 'Last Logged — When Did I Last...? | Recurring Task Tracker App';
 const description =
@@ -90,9 +91,7 @@ const playStoreUrl = import.meta.env.PUBLIC_PLAY_STORE_URL || '/coming-soon';
         </div>
       </div>
       <div class="hero-image">
-        <div class="screenshot-placeholder">
-          <span>App Screenshot</span>
-        </div>
+        <HeroScreenshot />
       </div>
     </div>
   </section>
@@ -443,20 +442,6 @@ const playStoreUrl = import.meta.env.PUBLIC_PLAY_STORE_URL || '/coming-soon';
     flex: 1;
     display: flex;
     justify-content: center;
-  }
-
-  .screenshot-placeholder {
-    width: 280px;
-    height: 560px;
-    background: var(--color-bg);
-    border-radius: 2rem;
-    border: 2px solid var(--color-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-muted);
-    font-size: 1rem;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
   }
 
   /* Social Proof */
@@ -865,11 +850,6 @@ const playStoreUrl = import.meta.env.PUBLIC_PLAY_STORE_URL || '/coming-soon';
 
     .hero-text h1 {
       font-size: 1.85rem;
-    }
-
-    .screenshot-placeholder {
-      width: 220px;
-      height: 440px;
     }
 
     .features-grid {

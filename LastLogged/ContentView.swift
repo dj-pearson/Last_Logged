@@ -17,6 +17,11 @@ struct ContentView: View {
                 lockScreen
             }
         }
+        .onOpenURL { url in
+            // Universal Links and the widget's lastlogged:// scheme both land
+            // here. Unrecognised URLs are dropped by the router.
+            DeepLinkRouter.shared.handle(url)
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
                 biometricService.lock()

@@ -76,7 +76,8 @@ class SupabaseService @Inject constructor(
     private val trackerItemDao: TrackerItemDao,
     private val completionLogDao: CompletionLogDao,
     private val trackerCategoryDao: TrackerCategoryDao,
-    private val secureStorageService: SecureStorageService
+    private val secureStorageService: SecureStorageService,
+    private val analyticsService: AnalyticsService
 ) {
     companion object {
         private const val TAG = "SupabaseService"
@@ -154,11 +155,15 @@ class SupabaseService @Inject constructor(
                         _sessionExpired.value = false
                         _currentUserEmail.value = status.session.user?.email
                         cachedUserId = null // Clear cache, will be refreshed on next sync
+                        // Attribute analytics to a hash of the auth id — never the raw
+                        // id and never the email.
+                        analyticsService.identify(status.session.user?.id)
                     }
                     is io.github.jan.supabase.gotrue.SessionStatus.NotAuthenticated -> {
                         _isSignedIn.value = false
                         _currentUserEmail.value = null
                         cachedUserId = null
+                        analyticsService.identify(null)
                         if (_sessionExpired.value.not()) {
                             // Only set expired if we were previously signed in
                         }
@@ -206,6 +211,7 @@ class SupabaseService @Inject constructor(
         _isSignedIn.value = false
         _currentUserEmail.value = null
         _sessionExpired.value = false
+        analyticsService.identify(null)
     }
 
     suspend fun restoreSession() {

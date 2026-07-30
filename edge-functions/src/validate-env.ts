@@ -34,5 +34,32 @@ export function validateRequiredEnv(): void {
     process.exit(1);
   }
 
+  warnOptionalEnv();
+
   console.log("[startup] All required environment variables validated.");
+}
+
+/**
+ * Variables the server can boot without, but whose absence silently disables a
+ * user-visible feature. Warn loudly rather than failing — an iOS-only
+ * deployment is a legitimate configuration.
+ */
+function warnOptionalEnv(): void {
+  const fcmKeys = ["FCM_PROJECT_ID", "FCM_CLIENT_EMAIL", "FCM_PRIVATE_KEY"];
+  const missingFcm = fcmKeys.filter((key) => {
+    const value = process.env[key];
+    return !value || value.startsWith("your-") || value.includes("YOUR_KEY_HERE");
+  });
+
+  if (missingFcm.length === fcmKeys.length) {
+    console.warn(
+      "[startup] FCM is not configured — Android devices will be SKIPPED by the " +
+        "reminder digest. Set FCM_PROJECT_ID, FCM_CLIENT_EMAIL, and FCM_PRIVATE_KEY."
+    );
+  } else if (missingFcm.length > 0) {
+    console.warn(
+      `[startup] FCM is partially configured; missing: ${missingFcm.join(", ")}. ` +
+        "Android pushes will fail until all three are set."
+    );
+  }
 }

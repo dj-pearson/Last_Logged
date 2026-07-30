@@ -65,9 +65,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pearsonmedia.lastlogged.R
 import com.pearsonmedia.lastlogged.service.RevenueCatService
 import com.pearsonmedia.lastlogged.util.AccessibilityUtil
+import com.pearsonmedia.lastlogged.util.UrlOpener
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,7 +85,8 @@ fun PaywallScreen(
     val error by viewModel.error.collectAsState()
     var selectedPackageId by remember { mutableStateOf(RevenueCatService.PRODUCT_ANNUAL) }
     val reduceMotion = AccessibilityUtil.rememberReduceMotion()
-    val activity = LocalContext.current.findActivity()
+    val context = LocalContext.current
+    val activity = context.findActivity()
 
     Scaffold(
         topBar = {
@@ -96,7 +100,7 @@ fun PaywallScreen(
                                 onDismiss()
                             }
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = "Close")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cancel))
                         }
                     }
                 }
@@ -112,13 +116,13 @@ fun PaywallScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Unlock Premium",
+                text = stringResource(R.string.paywall_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Track everything, worry about nothing",
+                text = stringResource(R.string.paywall_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -182,7 +186,7 @@ fun PaywallScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Subscribe", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.subscribe), fontWeight = FontWeight.SemiBold)
                 }
             }
             LaunchedEffect(ctaPressed) {
@@ -194,7 +198,7 @@ fun PaywallScreen(
 
             // Restore purchases
             TextButton(onClick = { viewModel.restorePurchases() }) {
-                Text("Restore Purchases")
+                Text(stringResource(R.string.restore_purchases))
             }
 
             // Continue with free (hard paywall only)
@@ -203,7 +207,7 @@ fun PaywallScreen(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Continue with Free")
+                    Text(stringResource(R.string.continue_with_free))
                 }
             }
 
@@ -223,11 +227,11 @@ fun PaywallScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                TextButton(onClick = { /* TODO: Open terms */ }) {
-                    Text("Terms", style = MaterialTheme.typography.labelSmall)
+                TextButton(onClick = { UrlOpener.openTerms(context) }) {
+                    Text(stringResource(R.string.terms_short), style = MaterialTheme.typography.labelSmall)
                 }
-                TextButton(onClick = { /* TODO: Open privacy */ }) {
-                    Text("Privacy", style = MaterialTheme.typography.labelSmall)
+                TextButton(onClick = { UrlOpener.openPrivacy(context) }) {
+                    Text(stringResource(R.string.privacy_short), style = MaterialTheme.typography.labelSmall)
                 }
             }
 
@@ -252,7 +256,7 @@ private fun SocialProofRow() {
         }
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Loved by thousands of trackers",
+            text = stringResource(R.string.paywall_social_proof),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -366,6 +370,9 @@ private fun PackageCard(
     }
     val borderWidth = if (isSelected) 2.dp else 1.dp
 
+    // Read outside the semantics {} lambda — stringResource() is @Composable.
+    val packageA11y = stringResource(R.string.package_a11y, title, price)
+
     Box(modifier = Modifier.fillMaxWidth()) {
         Card(
             onClick = onClick,
@@ -378,7 +385,7 @@ private fun PackageCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 6.dp)
-                .semantics { contentDescription = "$title - $price" }
+                .semantics { contentDescription = packageA11y }
         ) {
             Row(
                 modifier = Modifier
@@ -434,7 +441,7 @@ private fun PackageCard(
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "MOST POPULAR",
+                    text = stringResource(R.string.most_popular),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimary

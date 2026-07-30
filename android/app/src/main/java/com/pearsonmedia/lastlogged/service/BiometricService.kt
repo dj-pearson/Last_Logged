@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.pearsonmedia.lastlogged.R
 
 @Singleton
 class BiometricService @Inject constructor(
@@ -93,7 +94,7 @@ class BiometricService @Inject constructor(
                     }
                     BiometricPrompt.ERROR_LOCKOUT,
                     BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> {
-                        onFailure("Too many failed attempts. Please try again later.")
+                        onFailure(context.getString(R.string.biometric_too_many_attempts))
                     }
                     else -> {
                         onFailure(errString.toString())
@@ -111,8 +112,8 @@ class BiometricService @Inject constructor(
         val biometricPrompt = BiometricPrompt(activity, executor, callback)
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock Last Logged")
-            .setSubtitle("Use your biometric credential to access the app")
+            .setTitle(context.getString(R.string.biometric_prompt_title))
+            .setSubtitle(context.getString(R.string.biometric_prompt_subtitle))
             .setAllowedAuthenticators(
                 BiometricManager.Authenticators.BIOMETRIC_STRONG or
                     BiometricManager.Authenticators.BIOMETRIC_WEAK or

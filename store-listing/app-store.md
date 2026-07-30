@@ -86,3 +86,32 @@ tracker,reminder,habits,maintenance,car,home,health,hvac,oil,vet,log,recurring,t
 - All data entered by the reviewer can be deleted via Settings → Account →
   Delete Account (typing DELETE).
 - Contact: support@lastlogged.com
+
+## Submission answers
+
+Recorded here so every release answers App Store Connect the same way.
+
+| Question | Answer | Source of truth |
+|----------|--------|-----------------|
+| Does your app use encryption? | **No** (exempt) | `ITSAppUsesNonExemptEncryption = false` in `LastLogged/Info.plist`. The app only uses HTTPS/TLS and Apple's Keychain — both exempt under the standard exemption, so no annual self-classification report is required. |
+| Export compliance documentation | Not required | Follows from the above. |
+| Content rights — third-party content | No | All copy and imagery is original. |
+| Advertising identifier (IDFA) | No | No ad SDKs. TelemetryDeck receives a salted hash, never the IDFA. |
+| Third-party analytics | Yes — TelemetryDeck | See `app-privacy.md`. |
+| Account required to use the app? | No | Sign-in is optional and only enables cross-device sync. |
+| Account deletion available in-app? | Yes | Settings → Account → Delete Account (requires typing `DELETE`). |
+
+### Capabilities the provisioning profile must include
+
+Keep this list in sync with `LastLogged/LastLogged.entitlements`:
+
+- App Groups — `group.com.pearsonmedia.lastlogged` (widget + Live Activity share the store)
+- Push Notifications — `aps-environment` (server reminder digest)
+- Associated Domains — `applinks:lastlogged.com`, `webcredentials:lastlogged.com`
+
+A missing capability on the profile fails the archive in `deploy-ios.yml`, not
+at review time.
+
+### Declared background modes
+
+- `remote-notification` — the reminder digest delivers alerts to a backgrounded app.

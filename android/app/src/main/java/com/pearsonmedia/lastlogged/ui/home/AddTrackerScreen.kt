@@ -33,9 +33,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pearsonmedia.lastlogged.R
 import com.pearsonmedia.lastlogged.data.local.entity.TrackerCategory
 import com.pearsonmedia.lastlogged.util.InputSanitizer
 
@@ -71,10 +74,20 @@ fun AddTrackerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditing) "Edit Tracker" else "New Tracker") },
+                title = {
+                        Text(
+                            stringResource(
+                                if (isEditing) R.string.edit_tracker_title
+                                else R.string.add_tracker_title
+                            )
+                        )
+                    },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back_a11y)
+                        )
                     }
                 }
             )
@@ -91,10 +104,10 @@ fun AddTrackerScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it.take(InputSanitizer.MAX_TRACKER_NAME) },
-                label = { Text("Tracker Name") },
+                label = { Text(stringResource(R.string.tracker_name_label)) },
                 supportingText = {
                     if (remainingChars < 20) {
-                        Text("$remainingChars characters remaining")
+                        Text(pluralStringResource(R.plurals.characters_remaining, remainingChars, remainingChars))
                     }
                 },
                 isError = name.isNotBlank() && name.length > InputSanitizer.MAX_TRACKER_NAME,
@@ -113,7 +126,7 @@ fun AddTrackerScreen(
                     value = selectedCategory?.name ?: "No Category",
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Category") },
+                    label = { Text(stringResource(R.string.category_label)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryMenuExpanded) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -124,7 +137,7 @@ fun AddTrackerScreen(
                     onDismissRequest = { categoryMenuExpanded = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("No Category") },
+                        text = { Text(stringResource(R.string.no_category)) },
                         onClick = {
                             selectedCategory = null
                             categoryMenuExpanded = false
@@ -150,7 +163,7 @@ fun AddTrackerScreen(
                 onValueChange = { input ->
                     input.toIntOrNull()?.let { reminderDays = it.coerceIn(1, 3650) }
                 },
-                label = { Text("Reminder Interval (days)") },
+                label = { Text(stringResource(R.string.reminder_interval_label)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
@@ -175,7 +188,7 @@ fun AddTrackerScreen(
                 enabled = isFormValid && !isSaved,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (isEditing) "Save Changes" else "Create Tracker")
+                Text(stringResource(if (isEditing) R.string.save_changes else R.string.create_tracker))
             }
         }
     }

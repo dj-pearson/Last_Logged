@@ -34,8 +34,10 @@ android {
         applicationId = "com.pearsonmedia.lastlogged"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        // Overridden by deploy-android.yml (VERSION_CODE from the run number,
+        // VERSION_NAME from the git tag). Defaults keep local builds working.
+        versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -54,6 +56,9 @@ android {
             "\"${localProperties.getProperty("TELEMETRYDECK_APP_ID", "")}\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID",
             "\"${localProperties.getProperty("GOOGLE_WEB_CLIENT_ID", "")}\"")
+        // Optional. Blank disables crash reporting entirely.
+        buildConfigField("String", "SENTRY_DSN",
+            "\"${localProperties.getProperty("SENTRY_DSN", "")}\"")
 
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
@@ -111,6 +116,14 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    // Room's exported schema JSON must be readable by MigrationTestHelper at
+    // runtime, so expose app/schemas/ as androidTest assets.
+    sourceSets {
+        getByName("androidTest") {
+            assets.srcDir("$projectDir/schemas")
         }
     }
 }
@@ -191,13 +204,24 @@ dependencies {
     // Core
     implementation("androidx.core:core-ktx:1.12.0")
 
+    // Custom Tabs (Terms / Privacy links)
+    implementation("androidx.browser:browser:1.7.0")
+
+    // Crash reporting (no-op unless SENTRY_DSN is set)
+    implementation("io.sentry:sentry-android:7.14.0")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("io.mockk:mockk:1.13.9")
     testImplementation("androidx.room:room-testing:2.6.1")
     testImplementation("app.cash.turbine:turbine:1.0.0")
+    // The android.jar stub throws on every org.json call in unit tests; this
+    // puts a real implementation ahead of it on the test classpath.
+    testImplementation("org.json:json:20231013")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.room:room-testing:2.6.1")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
 }

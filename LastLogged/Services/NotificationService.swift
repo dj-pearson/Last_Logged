@@ -72,6 +72,10 @@ final class NotificationService {
         let granted = await requestPermissionIfNeeded()
         guard granted else { return }
 
+        // Permission may have just been granted for the first time — register now
+        // rather than making the user relaunch before server digests can reach them.
+        await AppDelegate.registerForPushIfAuthorized()
+
         // Remove all existing notifications and reschedule
         center.removeAllPendingNotificationRequests()
 
@@ -199,5 +203,50 @@ final class NotificationService {
         guard let lastCompleted = item.lastCompletedAt else { return nil }
         let elapsed = Date().timeIntervalSince(lastCompleted)
         return max(1, Int(elapsed / 86400))
+    }
+
+    // MARK: - Notification Actions
+
+    /// Logs a completion in response to the "Log Now" notification action.
+    ///
+    /// Runs without any view being alive, so it opens its own context on the
+    /// shared App Group container — the same store the app and widget use, so
+    /// all three agree immediately.
+    @MainActor
+    func logCompletionFromNotification(trackerId: UUID) async {
+        guard let container = WidgetDataProvider.shared.makeSharedModelContainer() else {
+            return
+        }
+
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<TrackerItem>(
+            predicate: #Predicate { $0.id == trackerId }
+        )
+
+        // The tracker may have been deleted between the notification being
+        // scheduled and the user acting on it.
+        guard let item = try? context.fetch(descriptor).first else { return }
+
+        let now = Date()
+        let log = CompletionLog(trackerItemId: item.id)
+        log.completedAt = now
+        context.insert(log)
+
+        item.lastCompletedAt = now
+        item.syncStatus = .pending
+        item.updatedAt = now
+
+        do {
+            try context.save()
+        } catch {
+            AnalyticsService.shared.trackError("notification_log_failed", error: error)
+            return
+        }
+
+        AnalyticsService.shared.trackItemLogged()
+
+        // The reminder that just fired is spent; reschedule so the next one
+        // reflects the new completion date instead of re-firing immediately.
+        await rescheduleAllNotifications(modelContext: context)
     }
 }

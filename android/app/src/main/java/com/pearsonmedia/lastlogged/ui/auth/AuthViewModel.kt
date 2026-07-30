@@ -3,12 +3,14 @@ package com.pearsonmedia.lastlogged.ui.auth
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pearsonmedia.lastlogged.R
 import com.pearsonmedia.lastlogged.service.GoogleSignInException
 import com.pearsonmedia.lastlogged.service.GoogleSignInService
 import com.pearsonmedia.lastlogged.service.PushTokenService
 import com.pearsonmedia.lastlogged.service.RevenueCatService
 import com.pearsonmedia.lastlogged.service.SupabaseService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,7 +41,8 @@ class AuthViewModel @Inject constructor(
     private val supabaseService: SupabaseService,
     private val revenueCatService: RevenueCatService,
     private val pushTokenService: PushTokenService,
-    private val googleSignInService: GoogleSignInService
+    private val googleSignInService: GoogleSignInService,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     val isGoogleSignInAvailable: Boolean
@@ -171,7 +174,7 @@ class AuthViewModel @Inject constructor(
                 supabaseService.resetPassword(email)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    successMessage = "Check your email for a reset link"
+                    successMessage = context.getString(R.string.reset_password_sent)
                 )
             } catch (e: Exception) {
                 handleAuthError(e)
@@ -188,7 +191,7 @@ class AuthViewModel @Inject constructor(
                 supabaseService.resendConfirmation(email)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    successMessage = "Confirmation email sent"
+                    successMessage = context.getString(R.string.confirmation_email_sent)
                 )
             } catch (e: Exception) {
                 handleAuthError(e)
@@ -210,7 +213,7 @@ class AuthViewModel @Inject constructor(
             } catch (e: GoogleSignInException) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Google Sign-In failed. Please try again."
+                    error = context.getString(R.string.google_sign_in_failed)
                 )
             } catch (e: Exception) {
                 handleAuthError(e)
