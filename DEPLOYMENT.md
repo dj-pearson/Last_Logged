@@ -72,6 +72,9 @@ Strongly recommended:
 |----------|-------|
 | `APNS_KEY_CONTENT` | Base64-encoded `.p8` contents — preferred over `APNS_KEY_PATH` |
 | `APNS_TOPIC` | Bundle id: `com.pearsonmedia.lastlogged` |
+| `FCM_PROJECT_ID` | Firebase Console → Project Settings → General. **Android digests are skipped without this.** |
+| `FCM_CLIENT_EMAIL` | `client_email` from the Firebase service-account JSON |
+| `FCM_PRIVATE_KEY` | `private_key` from the same JSON; `\n`-escaped newlines are handled |
 | `CRON_SECRET` | Random string; guards `/cleanup-old-data` + `/reminder-digest` cron endpoints |
 | `APP_ENV` | `production` |
 | `APNS_ENVIRONMENT` | `production` once released (use `sandbox` for TestFlight-only testing) |

@@ -1,7 +1,13 @@
 import { Hono } from "hono";
+import type apn from "@parse/node-apn";
 import { supabase } from "./supabase.js";
-import { log, logError } from "./logger.js";
-import { getApnProvider, buildDigestNotification, OverdueItem } from "./apns.js";
+import { log, logError, logWarn } from "./logger.js";
+import {
+  buildDigestNotification,
+  sendApnsNotification,
+  OverdueItem,
+} from "./apns.js";
+import { buildDigestPayload, sendFcmNotification, PushResult } from "./fcm.js";
 
 const LOCAL_NOTIFICATION_LIMIT = 64;
 
@@ -12,6 +18,7 @@ interface DeviceRow {
   user_id: string;
   device_token: string;
   device_name: string | null;
+  platform: string | null;
   last_seen_at: string;
 }
 
@@ -31,7 +38,7 @@ async function getActiveDevices(): Promise<DeviceRow[]> {
 
   const { data, error } = await supabase
     .from("user_devices")
-    .select("id, user_id, device_token, device_name, last_seen_at")
+    .select("id, user_id, device_token, device_name, platform, last_seen_at")
     .gte("last_seen_at", staleCutoff.toISOString());
 
   if (error) {
@@ -91,15 +98,36 @@ async function countUserTrackers(userId: string): Promise<number> {
   return count ?? 0;
 }
 
+/**
+ * Deletes a device row whose token the push provider reported as permanently
+ * dead. Left in place, these accumulate forever and every future digest run
+ * burns a request on them.
+ */
+async function pruneDeadDevice(deviceId: string, userId: string): Promise<void> {
+  const { error } = await supabase.from("user_devices").delete().eq("id", deviceId);
+  if (error) {
+    logError("digest_prune_device_failed", error.message, { userId, deviceId });
+    return;
+  }
+  log("digest_pruned_dead_device", { userId, deviceId });
+}
+
 export async function sendReminderDigests(): Promise<{
   sent: number;
   skipped: number;
   errors: number;
+  pruned: number;
+  unsupportedPlatform: number;
 }> {
-  const stats = { sent: 0, skipped: 0, errors: 0 };
+  const stats = {
+    sent: 0,
+    skipped: 0,
+    errors: 0,
+    pruned: 0,
+    unsupportedPlatform: 0,
+  };
 
   const devices = await getActiveDevices();
-  const provider = getApnProvider();
 
   // Group devices by user_id
   const devicesByUser = new Map<string, DeviceRow[]>();
@@ -125,18 +153,56 @@ export async function sendReminderDigests(): Promise<{
         continue;
       }
 
-      const notification = buildDigestNotification(overdueItems);
+      // Built lazily per platform so an all-Android user never touches APNs.
+      let apnsNotification: apn.Notification | null = null;
 
-      // Send to all of the user's active devices
+      // Send to all of the user's active devices, routed by platform. Sending
+      // an FCM token to APNs (the previous behaviour) always fails.
       for (const device of userDevices) {
-        const result = await provider.send(notification, device.device_token);
+        const platform = (device.platform ?? "").toLowerCase();
+        let result: PushResult;
 
-        if (result.failed.length > 0) {
-          logError("digest_send_failed", result.failed[0].response, { userId, deviceId: device.id });
-          stats.errors++;
+        if (platform === "ios") {
+          apnsNotification ??= buildDigestNotification(overdueItems);
+          result = await sendApnsNotification(device.device_token, apnsNotification);
+        } else if (platform === "android") {
+          result = await sendFcmNotification(
+            device.device_token,
+            buildDigestPayload(overdueItems)
+          );
         } else {
-          log("digest_send_success", { userId, deviceId: device.id, overdueCount: overdueItems.length });
+          // Unknown platform: skip rather than guessing a provider, which
+          // would guarantee a failure and could prune a valid token.
+          logWarn("digest_unsupported_platform", {
+            userId,
+            deviceId: device.id,
+            platform: device.platform,
+          });
+          stats.unsupportedPlatform++;
+          continue;
+        }
+
+        if (result.ok) {
+          log("digest_send_success", {
+            userId,
+            deviceId: device.id,
+            platform,
+            overdueCount: overdueItems.length,
+          });
           stats.sent++;
+          continue;
+        }
+
+        logError("digest_send_failed", result.error, {
+          userId,
+          deviceId: device.id,
+          platform,
+        });
+        stats.errors++;
+
+        if (result.unregistered) {
+          await pruneDeadDevice(device.id, userId);
+          stats.pruned++;
         }
       }
     } catch (err) {

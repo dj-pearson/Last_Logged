@@ -1564,3 +1564,36 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - Found but out of scope: the registered `LOG_NOW_ACTION` notification button has no
     `didReceive:` handler, so it does nothing. Tracked as PROD-021.
 ---
+
+## 2026-07-30 - PROD-004
+- New `edge-functions/src/fcm.ts`: FCM HTTP v1 sender. Mints a service-account JWT with
+  `node:crypto` (RS256) and exchanges it at oauth2.googleapis.com — no googleapis dep.
+  Access token cached with a 60s refresh skew.
+- New `sendApnsNotification` in apns.ts returning the same `PushResult` shape as FCM so
+  the digest treats both platforms uniformly.
+- `sendReminderDigests` now selects `user_devices.platform`, routes ios->APNs and
+  android->FCM, counts unknown platforms as `unsupportedPlatform` instead of guessing,
+  and prunes rows whose token the provider called permanently dead.
+- `validate-env.ts` warns (never fatal) when FCM is unconfigured or partially configured.
+- Files changed: edge-functions/src/fcm.ts (new), edge-functions/src/apns.ts,
+  edge-functions/src/reminder-digest.ts, edge-functions/src/validate-env.ts,
+  edge-functions/.env.example, DEPLOYMENT.md
+- **Learnings for future iterations:**
+  - The digest previously pushed EVERY `user_devices` row through APNs regardless of the
+    `platform` column, so every Android token failed. `platform` existed in the schema
+    from PH-018 but was never read.
+  - Env vars are read at module load in this codebase (apns.ts and fcm.ts both do it), so
+    tests must set `process.env` *before* importing the module, or re-import with a
+    cache-busting query string.
+  - Service-account private keys arrive `\n`-escaped from CI secrets and .env files.
+    Always `raw.replace(/\\n/g, "\n")` before handing the PEM to `crypto.createSign`.
+    Verified by round-tripping a generated RSA key through sign/verify.
+  - FCM's `android.notification.channel_id` must match the channel NotificationService.kt
+    creates ("tracker_reminders") and the manifest's
+    `com.google.firebase.messaging.default_notification_channel_id`, or Android 8+
+    silently drops the notification.
+  - Dead-token signals worth pruning on: APNs 410 / Unregistered / BadDeviceToken /
+    DeviceTokenNotForTopic; FCM 404 / UNREGISTERED / INVALID_ARGUMENT.
+  - `npm run typecheck` in edge-functions/ is fast and works in the sandbox — always run
+    it before committing backend changes.
+---

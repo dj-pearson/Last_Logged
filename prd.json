@@ -90,7 +90,8 @@
         "npm run typecheck passes"
       ],
       "priority": 4,
-      "passes": false
+      "passes": true,
+      "notes": "Added edge-functions/src/fcm.ts (FCM HTTP v1, service-account JWT signed with node:crypto, access token cached with a 60s skew, handles \\n-escaped PEMs). Added sendApnsNotification to apns.ts returning the same PushResult shape. sendReminderDigests now selects user_devices.platform and routes ios->APNs / android->FCM, skips+counts unknown platforms instead of guessing, and deletes rows for dead tokens (APNs 410/BadDeviceToken, FCM UNREGISTERED/INVALID_ARGUMENT). FCM_* documented in .env.example + DEPLOYMENT.md and warned (not fatal) by validate-env. npm run typecheck passes; JWT signing and digest copy verified by running the code."
     },
     {
       "id": "PROD-005",
