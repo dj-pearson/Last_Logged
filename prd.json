@@ -174,7 +174,8 @@
         "PrivacyInfo.xcprivacy and store-listing/app-privacy.md updated for crash-data collection"
       ],
       "priority": 9,
-      "passes": false
+      "passes": true,
+      "notes": "Sentry wired on all three surfaces, each a no-op without a DSN. iOS: new Services/CrashReportingService.swift + sentry-cocoa SPM package (both registered in pbxproj), configured first in LastLoggedApp.init, AppSecrets.sentryDSN (deliberately excluded from validate() so an absent DSN cannot fail a release build). Android: new service/CrashReportingService.kt + io.sentry:sentry-android, SENTRY_DSN BuildConfig field, configured first in LastLoggedApp.onCreate. Edge functions: src/crash-reporting.ts with app.onError plus unhandledRejection/uncaughtException handlers. PII scrubbing everywhere: sendDefaultPii off, screenshots/view-hierarchy off, beforeSend strips user/serverName/extras/request headers+cookies+body, beforeBreadcrumb strips messages and data. PrivacyInfo.xcprivacy already declared CrashData/PerformanceData; app-privacy.md now names Sentry. 55 edge tests pass (6 new). ALSO fixed a ship-blocker found here: deploy-ios.yml never wrote Secrets.xcconfig, so a release archive fell through to placeholders and AppSecrets.validate() would fatalError on first launch."
     },
     {
       "id": "PROD-010",

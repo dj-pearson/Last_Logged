@@ -11,6 +11,10 @@ struct LastLoggedApp: App {
     init() {
         AppSecrets.validate()
 
+        // First thing after secrets: a crash during the rest of init should
+        // still be reported.
+        CrashReportingService.configure()
+
         // Migrate sensitive values from UserDefaults to Keychain (one-time)
         KeychainService.migrateDateFromUserDefaults(key: "com.pearsonmedia.lastlogged.lastSyncTimestamp")
         KeychainService.migrateBoolFromUserDefaults(key: "isPremium")

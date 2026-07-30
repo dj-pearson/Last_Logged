@@ -2011,3 +2011,53 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - Route notification taps through `DeepLinkRouter` so there is exactly one place that
     decides where a tracker id navigates.
 ---
+
+## 2026-07-30 - PROD-009
+- Sentry on all three surfaces, each a complete no-op when its DSN is absent:
+  - iOS: `Services/CrashReportingService.swift` + the `sentry-cocoa` SPM package (package
+    reference, product dependency, and the source file all registered in pbxproj).
+    Configured as the first statement of `LastLoggedApp.init` after `AppSecrets.validate()`.
+  - Android: `service/CrashReportingService.kt` + `io.sentry:sentry-android:7.14.0`, a
+    `SENTRY_DSN` BuildConfig field, configured first in `LastLoggedApp.onCreate`.
+  - Edge functions: `src/crash-reporting.ts`, wired to `app.onError` plus
+    `unhandledRejection` / `uncaughtException` process handlers.
+- PII scrubbing on every surface: `sendDefaultPii` off, screenshots and view hierarchies
+  off, `beforeSend` strips user/serverName/extras and (server) request headers, cookies,
+  body, and query string; `beforeBreadcrumb` strips messages and data.
+- `AppSecrets.sentryDSN` is deliberately NOT in `validate()` — that function `fatalError`s
+  in release, and an optional feature must never be able to block a ship.
+- `PrivacyInfo.xcprivacy` already declared CrashData + PerformanceData; `app-privacy.md`
+  now names Sentry and describes the scrubbing.
+- 55 edge-function tests pass (6 new covering the gating and non-Error captures).
+- **Also fixed a ship-blocker found while wiring this**: `deploy-ios.yml` never wrote
+  `Secrets.xcconfig`. `Release.xcconfig` falls back to `Secrets.example.xcconfig`, so a
+  TestFlight/App Store archive would have shipped placeholder credentials and
+  `AppSecrets.validate()` would `fatalError` on first launch. The workflow now writes the
+  file from secrets (failing fast if the required three are missing) and deletes it in the
+  `always()` cleanup.
+- Files changed: LastLogged/Services/CrashReportingService.swift (new),
+  LastLogged/Utilities/AppSecrets.swift, LastLogged/Config/Secrets.example.xcconfig,
+  LastLogged/Info.plist, LastLogged/LastLoggedApp.swift, LastLogged.xcodeproj/project.pbxproj,
+  android/.../service/CrashReportingService.kt (new), android/.../LastLoggedApp.kt,
+  android/app/build.gradle.kts, android/local.properties.example,
+  edge-functions/src/{crash-reporting.ts (new),index.ts}, edge-functions/.env.example,
+  edge-functions/test/crash-reporting.test.ts (new),
+  .github/workflows/{deploy-ios.yml,android-ci.yml}, store-listing/app-privacy.md, DEPLOYMENT.md
+- **Learnings for future iterations:**
+  - Keep OPTIONAL secrets out of `AppSecrets.validate()`. It `fatalError`s in Release, so
+    adding a new key there turns a missing nice-to-have into a launch crash.
+  - `Release.xcconfig` uses `#include?` with an example fallback, which means a missing
+    `Secrets.xcconfig` fails SILENTLY at build time and loudly at runtime. Any workflow
+    that archives must write the real file.
+  - xcconfig treats `//` as a comment even inside values — escape URLs as
+    `https:$()//host`. The workflow does this with `sed 's|//|$()//|g'`; verified.
+  - ES module imports are HOISTED, so a call placed between import statements does not run
+    first. Put `initCrashReporting()` at the top of the module body instead.
+  - Adding an SPM package to pbxproj takes three edits: XCRemoteSwiftPackageReference,
+    XCSwiftPackageProductDependency, and entries in both the project `packageReferences`
+    list and the target's `packageProductDependencies`.
+  - Sentry defaults leak user content on this app: `attachScreenshot` and
+    `attachViewHierarchy` would capture the entire tracker list. Turn both off explicitly.
+  - Next free pbxproj IDs: A1...003E (BuildFile), A2...003B (FileRef),
+    A9...0005 (PackageRef), AA...0006 (ProductDep).
+---

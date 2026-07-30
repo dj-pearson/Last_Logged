@@ -30,6 +30,7 @@
 		A10000000000000000000011 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* TemplatePickerView.swift */; };
 		A10000000000000000000012 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* NotificationService.swift */; };
 		A10000000000000000000037 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* AppDelegate.swift */; };
+		A1000000000000000000003D /* CrashReportingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003A /* CrashReportingService.swift */; };
 		A10000000000000000000013 /* WidgetDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* WidgetDataProvider.swift */; };
 		A10000000000000000000014 /* LastLoggedWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* LastLoggedWidgetBundle.swift */; };
 		A10000000000000000000015 /* LastLoggedWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* LastLoggedWidget.swift */; };
@@ -125,6 +126,7 @@
 		A20000000000000000000011 /* TemplatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatePickerView.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		A20000000000000000000033 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A2000000000000000000003A /* CrashReportingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashReportingService.swift; sourceTree = "<group>"; };
 		A20000000000000000000013 /* WidgetDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataProvider.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* LastLoggedWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedWidgetBundle.swift; sourceTree = "<group>"; };
 		A20000000000000000000015 /* LastLoggedWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLoggedWidget.swift; sourceTree = "<group>"; };
@@ -327,6 +329,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000033 /* AppDelegate.swift */,
+				A2000000000000000000003A /* CrashReportingService.swift */,
 				A20000000000000000000023 /* AnalyticsService.swift */,
 				A20000000000000000000012 /* NotificationService.swift */,
 				A20000000000000000000019 /* RevenueCatService.swift */,
@@ -428,6 +431,7 @@
 				AA0000000000000000000001 /* Supabase */,
 				AA0000000000000000000002 /* RevenueCat */,
 				AA0000000000000000000003 /* TelemetryDeck */,
+				AA0000000000000000000005 /* Sentry */,
 			);
 			productName = LastLogged;
 			productReference = A20000000000000000000006 /* LastLogged.app */;
@@ -485,6 +489,7 @@
 			);
 			mainGroup = A30000000000000000000001;
 			packageReferences = (
+				A90000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 				A90000000000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				A90000000000000000000002 /* XCRemoteSwiftPackageReference "purchases-ios" */,
 				A90000000000000000000003 /* XCRemoteSwiftPackageReference "SwiftClient" */,
@@ -557,6 +562,7 @@
 				A10000000000000000000011 /* TemplatePickerView.swift in Sources */,
 				A10000000000000000000012 /* NotificationService.swift in Sources */,
 				A10000000000000000000037 /* AppDelegate.swift in Sources */,
+				A1000000000000000000003D /* CrashReportingService.swift in Sources */,
 				A1000000000000000000001D /* RevenueCatService.swift in Sources */,
 				A1000000000000000000001E /* PaywallView.swift in Sources */,
 				A1000000000000000000001F /* SupabaseService.swift in Sources */,
@@ -928,6 +934,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		A90000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
 		A90000000000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift.git";
@@ -955,6 +969,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		AA0000000000000000000005 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A90000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
 		AA0000000000000000000001 /* Supabase */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A90000000000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */;

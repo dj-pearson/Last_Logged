@@ -79,6 +79,7 @@ Strongly recommended:
 | `CRON_SECRET` | Random string; guards `/cleanup-old-data` + `/reminder-digest` cron endpoints |
 | `APP_ENV` | `production` |
 | `APP_VERSION` | Reported by `GET /health`; set to the release tag or commit sha |
+| `SENTRY_DSN` | Optional. Crash reporting is disabled entirely when unset. |
 | `RATE_LIMIT_STORE` | Leave unset in production (Postgres-backed). `memory` only for local dev. |
 | `APNS_ENVIRONMENT` | `production` once released (use `sandbox` for TestFlight-only testing) |
 
@@ -231,6 +232,7 @@ For `android-ci.yml` + `ios-ci.yml` + the existing deploy workflows, set:
 | `ANDROID_KEY_PASSWORD` | deploy-android |
 | `PLAY_SERVICE_ACCOUNT_JSON` | deploy-android (Play Console → API access → service account JSON) |
 | `SENTRY_DSN_ANDROID` | deploy-android, android-ci |
+| `SENTRY_DSN_IOS` | deploy-ios (written into `Secrets.xcconfig`) |
 | `APPLE_ID` | ios-deploy |
 | `APPLE_APP_SPECIFIC_PASSWORD` | ios-deploy |
 | `APPLE_TEAM_ID` | ios-deploy, **deploy-website** (apple-app-site-association) |

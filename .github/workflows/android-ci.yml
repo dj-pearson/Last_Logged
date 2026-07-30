@@ -64,6 +64,7 @@ jobs:
             echo "REVENUECAT_API_KEY=${{ secrets.REVENUECAT_ANDROID_API_KEY || 'placeholder-key' }}"
             echo "TELEMETRYDECK_APP_ID=${{ secrets.TELEMETRYDECK_APP_ID || '' }}"
             echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || '' }}"
+            echo "SENTRY_DSN=${{ secrets.SENTRY_DSN_ANDROID || '' }}"
           } > local.properties
 
       - name: Grant execute permission to gradlew

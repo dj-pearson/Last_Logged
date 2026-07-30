@@ -16,15 +16,28 @@ import { exportData } from "./export-data.js";
 import { cleanup, runCleanup } from "./cleanup.js";
 import { deleteAccount } from "./delete-account.js";
 import { authRateLimit } from "./auth-rate-limit.js";
+import { initCrashReporting, captureError } from "./crash-reporting.js";
 import { supabase } from "./supabase.js";
 
 // Surfaced by /health so a deploy can be identified without shell access.
 const APP_VERSION = process.env.APP_VERSION ?? "dev";
 
+// First statement in the module body: ES imports are hoisted, so this is the
+// earliest point at which anything can run, and it must precede
+// validateRequiredEnv() (which exits the process on a bad config).
+initCrashReporting();
+
 // Validate environment before starting
 validateRequiredEnv();
 
 const app = new Hono();
+
+// Any exception a route does not handle lands here. Without this Hono returns
+// a bare 500 and the failure is invisible.
+app.onError((err, c) => {
+  captureError(err, `${c.req.method} ${new URL(c.req.url).pathname}`);
+  return c.json({ error: "Internal server error" }, 500);
+});
 
 // ---- Global Middleware ----
 app.use("*", requestLogger);
@@ -148,6 +161,16 @@ cron.schedule("0 3 * * 0", async () => {
 log("server_starting", { port });
 log("cron_scheduled", { schedule: "0 8 * * *", job: "reminder_digest" });
 log("cron_scheduled", { schedule: "0 3 * * 0", job: "data_cleanup" });
+
+// A rejected promise outside a request would otherwise terminate the process
+// silently under Node's default behaviour.
+process.on("unhandledRejection", (reason) => {
+  captureError(reason, "unhandledRejection");
+});
+
+process.on("uncaughtException", (error) => {
+  captureError(error, "uncaughtException");
+});
 
 serve({
   fetch: app.fetch,

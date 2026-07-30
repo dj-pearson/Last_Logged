@@ -56,6 +56,9 @@ android {
             "\"${localProperties.getProperty("TELEMETRYDECK_APP_ID", "")}\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID",
             "\"${localProperties.getProperty("GOOGLE_WEB_CLIENT_ID", "")}\"")
+        // Optional. Blank disables crash reporting entirely.
+        buildConfigField("String", "SENTRY_DSN",
+            "\"${localProperties.getProperty("SENTRY_DSN", "")}\"")
 
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
@@ -203,6 +206,9 @@ dependencies {
 
     // Custom Tabs (Terms / Privacy links)
     implementation("androidx.browser:browser:1.7.0")
+
+    // Crash reporting (no-op unless SENTRY_DSN is set)
+    implementation("io.sentry:sentry-android:7.14.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

@@ -17,3 +17,6 @@ TELEMETRYDECK_APP_ID=your-telemetrydeck-app-id
 # (NOT the Android client ID). Also used server-side by Supabase for token
 # validation. Leave empty to hide the "Continue with Google" button.
 GOOGLE_WEB_CLIENT_ID=your-google-web-oauth-client-id.apps.googleusercontent.com
+
+# Sentry crash reporting (optional). Leave empty to disable entirely.
+SENTRY_DSN=
