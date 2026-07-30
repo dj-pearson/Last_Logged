@@ -1923,3 +1923,41 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - Keep secret-dependent deploy steps optional so the workflow is testable before all
     store credentials exist.
 ---
+
+## 2026-07-30 - PROD-012
+- Added the `LastLoggedTests` unit-test target to `project.pbxproj`: PBXNativeTarget
+  (`com.apple.product-type.bundle.unit-test`), PBXContainerItemProxy + PBXTargetDependency
+  on the app, Sources/Frameworks/Resources phases, Debug+Release XCBuildConfigurations with
+  `TEST_HOST` + `BUNDLE_LOADER`, `TargetAttributes.TestTargetID`, and the `.xctest` entry in
+  the Products group.
+- Added a SHARED scheme at `LastLogged.xcodeproj/xcshareddata/xcschemes/LastLogged.xcscheme`
+  with a `<Testables>` entry — without a shared scheme, `xcodebuild test -scheme LastLogged`
+  cannot see the target from a fresh clone.
+- 4 test files, 48 test methods: `InputSanitizerTests` (13), `CategoryTemplatesTests` (8),
+  `WidgetDataProviderTests` (12), `AuthViewModelTests` (15).
+- `ios-ci.yml` now runs `xcodebuild test` (replacing the build-only step — `test` builds
+  everything anyway) and uploads the `.xcresult` bundle on failure.
+- Files changed: LastLoggedTests/*.swift (4 new), LastLogged.xcodeproj/project.pbxproj,
+  LastLogged.xcodeproj/xcshareddata/xcschemes/LastLogged.xcscheme (new),
+  .github/workflows/ios-ci.yml
+- **Learnings for future iterations:**
+  - Adding a TEST target to pbxproj needs far more than a source file: PBXNativeTarget,
+    PBXContainerItemProxy, PBXTargetDependency, three build phases, two
+    XCBuildConfigurations + an XCConfigurationList, the Products group entry, the project
+    `targets` list, AND `TargetAttributes` with `TestTargetID`.
+  - `TEST_HOST` + `BUNDLE_LOADER = "$(TEST_HOST)"` are what make `@testable import
+    LastLogged` link. Without them the target compiles but cannot see internal symbols.
+  - A shared scheme under `xcshareddata/xcschemes/` is REQUIRED for CI. `.gitignore`
+    excludes `xcuserdata` but not `xcshareddata` — verified with `git check-ignore`.
+  - Validate pbxproj edits by extracting every `^\t\t<24-hex>` definition and every 24-hex
+    reference and diffing them. This run: 172 objects, ZERO dangling references. Cheap and
+    catches every typo'd id.
+  - Next free pbxproj IDs after this story: A1...003D (BuildFile), A2...003A (FileRef),
+    A3...001B (Group), A4...000B (BuildPhase), A5...0004 (Target), A7...0009 (BuildConfig),
+    A8...0005 (ConfigList), AB...0003 (Proxy), AC...0003 (Dependency).
+  - `AuthViewModel` requires a `ModelContext`; tests build one from
+    `ModelConfiguration(isStoredInMemoryOnly: true)` with `SchemaV1`.
+  - The rate-limit property is `isLockedOut`, not `isInCooldown`.
+  - NOT COMPILE-VERIFIED: no macOS/Xcode in the sandbox. The pbxproj is structurally sound
+    but the first CI run is the real check.
+---
