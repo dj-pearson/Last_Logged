@@ -1716,3 +1716,28 @@ Closed the final three launch-readiness stories with deliverables that are durab
     with the existing destination-based `NavigationLink`s in the list.
   - The Play Console fingerprint to use is the **app signing key**, not the upload key.
 ---
+
+## 2026-07-30 - PROD-008
+- New `service/BootCompletedReceiver.kt`: `@AndroidEntryPoint` BroadcastReceiver that
+  re-arms reminder alarms after `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED`.
+- Reads active trackers via `TrackerRepository.getActiveItems().first()` and calls
+  `NotificationService.rescheduleAllNotifications` on `Dispatchers.IO`, holding the
+  broadcast open with `goAsync()` / `pendingResult.finish()`.
+- Returns immediately when `secureStorageService.getRemindersEnabled()` is false.
+- Manifest: added `RECEIVE_BOOT_COMPLETED` and the receiver (`exported="false"`,
+  `directBootAware="false"`).
+- Files changed: service/BootCompletedReceiver.kt (new), AndroidManifest.xml
+- **Learnings for future iterations:**
+  - Android wipes ALL AlarmManager alarms on reboot. Any feature scheduled through
+    AlarmManager needs a BOOT_COMPLETED receiver or it silently stops working forever
+    after the user's first restart.
+  - `MY_PACKAGE_REPLACED` matters too — an app update also clears alarms.
+  - `onReceive` runs on the main thread with a ~10s budget and the process may be killed
+    the moment it returns. Any I/O needs `goAsync()` + `pendingResult.finish()` in a
+    `finally`.
+  - Do NOT make a receiver `directBootAware` when it touches
+    `SecureStorageService`/EncryptedSharedPreferences — credential-encrypted storage is
+    unreadable before first unlock, so `LOCKED_BOOT_COMPLETED` is intentionally unhandled.
+  - Hilt field injection works in a `BroadcastReceiver` via `@AndroidEntryPoint` +
+    `@Inject lateinit var`.
+---

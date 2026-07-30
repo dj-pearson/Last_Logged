@@ -157,7 +157,8 @@
         "Also reschedules after the app is updated (MY_PACKAGE_REPLACED)"
       ],
       "priority": 8,
-      "passes": false
+      "passes": true,
+      "notes": "New service/BootCompletedReceiver.kt (@AndroidEntryPoint, exported=false) listening for BOOT_COMPLETED and MY_PACKAGE_REPLACED. Reads active trackers from TrackerRepository and calls NotificationService.rescheduleAllNotifications on Dispatchers.IO, keeping the broadcast alive with goAsync()/pendingResult.finish(). No-ops when reminders are disabled. RECEIVE_BOOT_COMPLETED permission added. directBootAware=false because SecureStorageService uses EncryptedSharedPreferences."
     },
     {
       "id": "PROD-009",

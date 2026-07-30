@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- AlarmManager alarms are wiped on reboot; BootCompletedReceiver re-arms them. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".LastLoggedApp"
@@ -68,6 +70,19 @@
         <receiver
             android:name=".service.NotificationReceiver"
             android:exported="false" />
+
+        <!-- Restores reminder alarms after a reboot or an app update. Not
+             exported: only the system delivers these broadcasts. -->
+        <receiver
+            android:name=".service.BootCompletedReceiver"
+            android:enabled="true"
+            android:exported="false"
+            android:directBootAware="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".service.LastLoggedMessagingService"
