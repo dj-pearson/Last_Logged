@@ -33,7 +33,25 @@ jobs:
 
       - name: Build
         working-directory: website
+        env:
+          # Generate valid /.well-known association files. REQUIRE_APP_LINKS
+          # makes a placeholder value fail the deploy instead of silently
+          # shipping association files both platforms reject.
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ANDROID_SHA256_CERT: ${{ secrets.ANDROID_SHA256_CERT }}
+          REQUIRE_APP_LINKS: 'true'
         run: npm run build
+
+      - name: Verify app association files
+        working-directory: website
+        run: |
+          for f in dist/.well-known/apple-app-site-association dist/.well-known/assetlinks.json; do
+            test -f "$f" || { echo "::error::$f was not generated"; exit 1; }
+            if grep -qE 'TEAMID|REPLACE_WITH_YOUR_SHA256_FINGERPRINT' "$f"; then
+              echo "::error::$f still contains placeholder values"; exit 1
+            fi
+          done
+          echo "Association files look valid."
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

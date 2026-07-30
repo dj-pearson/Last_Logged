@@ -141,7 +141,8 @@
         "DEPLOYMENT.md documents where the team id and signing fingerprint come from"
       ],
       "priority": 7,
-      "passes": false
+      "passes": true,
+      "notes": "Association files are now build-time Astro endpoints (website/src/pages/.well-known/) fed by src/config/app-association.ts from APPLE_TEAM_ID / ANDROID_SHA256_CERT; static placeholder files deleted. REQUIRE_APP_LINKS=true in deploy-website.yml makes placeholders fatal, plus a grep verification step. iOS: associated-domains entitlement, CFBundleURLTypes for lastlogged://, new Utilities/DeepLinkRouter.swift (registered in pbxproj), ContentView.onOpenURL, HomeView .navigationDestination(item:) resolving the UUID against SwiftData. Android: autoVerify https intent filter for /tracker/, /share/, /open (routing already landed in PROD-005). Unknown/malformed paths return nil on both platforms and stay on Home. Verified by building the site three ways: placeholders warn, real env values inject correctly, REQUIRE_APP_LINKS exits 1."
     },
     {
       "id": "PROD-008",

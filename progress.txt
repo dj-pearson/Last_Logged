@@ -1675,3 +1675,44 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - `SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")` with a UTC TimeZone emits a
     trailing `Z`. Test expectations were verified independently before commit.
 ---
+
+## 2026-07-30 - PROD-007
+- Deleted `website/public/.well-known/*` (they shipped literal `TEAMID` and
+  `REPLACE_WITH_YOUR_SHA256_FINGERPRINT` to production) and replaced them with build-time
+  Astro endpoints: `src/pages/.well-known/apple-app-site-association.ts` and
+  `assetlinks.json.ts`, fed by `src/config/app-association.ts`.
+- `deploy-website.yml` passes `APPLE_TEAM_ID` / `ANDROID_SHA256_CERT` and sets
+  `REQUIRE_APP_LINKS=true` so placeholders fail the deploy; a follow-up step greps the
+  built files as a second gate.
+- iOS: added `com.apple.developer.associated-domains` + `CFBundleURLTypes`, new
+  `Utilities/DeepLinkRouter.swift` (registered in pbxproj), `ContentView.onOpenURL`, and
+  `HomeView.navigationDestination(item:)` resolving the UUID against SwiftData.
+- Android: added the `autoVerify` https intent filter (`/tracker/`, `/share/`, `/open`).
+- DEPLOYMENT.md §4b documents both secrets, where the fingerprint comes from, and the
+  three files that must stay in sync.
+- Files changed: website/src/config/app-association.ts (new),
+  website/src/pages/.well-known/*.ts (2 new), website/public/.well-known/* (deleted),
+  .github/workflows/deploy-website.yml, LastLogged/Utilities/DeepLinkRouter.swift (new),
+  LastLogged/ContentView.swift, LastLogged/Views/Home/HomeView.swift,
+  LastLogged/LastLogged.entitlements, LastLogged/Info.plist,
+  LastLogged.xcodeproj/project.pbxproj, android/app/src/main/AndroidManifest.xml,
+  DEPLOYMENT.md
+- **Learnings for future iterations:**
+  - The website CAN be built and typechecked in the sandbox (`npm run build`,
+    `npx astro check`). Use it — this story was verified three ways: default build warns,
+    real env values inject correctly, `REQUIRE_APP_LINKS=true` exits 1.
+  - Astro static endpoints emit the exact route path, so
+    `src/pages/.well-known/apple-app-site-association.ts` produces a file with NO
+    extension at `/.well-known/apple-app-site-association`, which is what Apple requires.
+    Use `export const prerender = true` and `export const GET: APIRoute`.
+  - A file in `public/` and a route at the same path conflict — delete the public copy
+    when converting to an endpoint.
+  - `process.env` (not `import.meta.env`) is what reaches non-PUBLIC_ vars at build time.
+  - `plistlib.dump()` DESTROYS comments in .entitlements/.plist files. Re-add any
+    explanatory comments with a text edit afterwards, or edit the XML as text.
+  - Only list hosts in `associated-domains` that actually serve an AASA. `www.` was
+    dropped because only the apex is generated.
+  - iOS deep-link navigation: `.navigationDestination(item:)` (iOS 17+) coexists fine
+    with the existing destination-based `NavigationLink`s in the list.
+  - The Play Console fingerprint to use is the **app signing key**, not the upload key.
+---

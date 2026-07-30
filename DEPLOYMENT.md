@@ -155,6 +155,46 @@ Use Supabase scheduled functions, GitHub Actions cron, or your platform cron:
 
 ---
 
+## 4b. Universal Links / App Links
+
+The `/.well-known` association files are **generated at build time** by
+`website/src/pages/.well-known/`. They are no longer static files, because the
+committed placeholders (`TEAMID`, `REPLACE_WITH_YOUR_SHA256_FINGERPRINT`) were
+being served from production, which silently broke deep linking on both
+platforms.
+
+### 4b.1 Values
+
+| Env var | Where to get it |
+|---------|-----------------|
+| `APPLE_TEAM_ID` | Apple Developer → Membership → Team ID (10 chars) |
+| `ANDROID_SHA256_CERT` | Play Console → Release → Setup → App signing → **SHA-256 certificate fingerprint** of the *app signing key*, not the upload key. Colon-separated uppercase hex. |
+
+`deploy-website.yml` sets `REQUIRE_APP_LINKS=true`, so a deploy **fails** rather
+than shipping placeholders, and a follow-up step greps the built files to be sure.
+
+### 4b.2 App-side configuration
+
+- iOS: `com.apple.developer.associated-domains` in `LastLogged.entitlements`
+  (`applinks:lastlogged.com`, `webcredentials:lastlogged.com`). The provisioning
+  profile must have the Associated Domains capability enabled.
+- Android: the `autoVerify` intent filter on `MainActivity` in `AndroidManifest.xml`.
+
+### 4b.3 Verify
+
+- [ ] `curl https://lastlogged.com/.well-known/apple-app-site-association` returns
+      JSON with the real team id and `Content-Type: application/json`
+- [ ] `curl https://lastlogged.com/.well-known/assetlinks.json` returns the real fingerprint
+- [ ] Android: `adb shell pm get-app-links com.pearsonmedia.lastlogged` reports `verified`
+- [ ] Tapping `https://lastlogged.com/tracker/<uuid>` opens the app on both platforms
+- [ ] Tapping an unknown path (e.g. `/tracker/not-a-uuid`) opens the app on Home, not a crash
+
+**Paths are declared in three places and must stay in sync:**
+`website/src/config/app-association.ts` (`APP_LINK_PATHS`),
+`android/.../util/DeepLinks.kt`, and `LastLogged/Utilities/DeepLinkRouter.swift`.
+
+---
+
 ## 5. Google Sign-In (Android)
 
 - [ ] OAuth Web Client ID created in Google Cloud Console
@@ -185,7 +225,8 @@ For `android-ci.yml` + `ios-ci.yml` + the existing deploy workflows, set:
 | `ANDROID_KEY_PASSWORD` | (future) android-release workflow |
 | `APPLE_ID` | ios-deploy |
 | `APPLE_APP_SPECIFIC_PASSWORD` | ios-deploy |
-| `APPLE_TEAM_ID` | ios-deploy |
+| `APPLE_TEAM_ID` | ios-deploy, **deploy-website** (apple-app-site-association) |
+| `ANDROID_SHA256_CERT` | **deploy-website** (assetlinks.json) |
 | `APP_STORE_CONNECT_API_KEY_ID` | ios-deploy |
 | `APP_STORE_CONNECT_API_ISSUER_ID` | ios-deploy |
 | `APP_STORE_CONNECT_API_PRIVATE_KEY` | ios-deploy |

@@ -51,6 +51,7 @@
 		A10000000000000000000029 /* CancellationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* CancellationView.swift */; };
 		A1000000000000000000002A /* WidgetPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* WidgetPromptView.swift */; };
 		A1000000000000000000002B /* AppSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* AppSecrets.swift */; };
+		A10000000000000000000038 /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000034 /* DeepLinkRouter.swift */; };
 		A1000000000000000000002C /* SchemaVersions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* SchemaVersions.swift */; };
 		A1000000000000000000002D /* SchemaVersions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* SchemaVersions.swift */; };
 		A1000000000000000000002E /* BiometricService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* BiometricService.swift */; };
@@ -128,6 +129,7 @@
 		A20000000000000000000024 /* CancellationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancellationView.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* WidgetPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPromptView.swift; sourceTree = "<group>"; };
 		A20000000000000000000026 /* AppSecrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSecrets.swift; sourceTree = "<group>"; };
+		A20000000000000000000034 /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
 		A20000000000000000000027 /* SchemaVersions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaVersions.swift; sourceTree = "<group>"; };
 		A20000000000000000000028 /* BiometricService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricService.swift; sourceTree = "<group>"; };
 		A20000000000000000000029 /* InputSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSanitizer.swift; sourceTree = "<group>"; };
@@ -305,6 +307,7 @@
 		A3000000000000000000000C /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				A20000000000000000000034 /* DeepLinkRouter.swift */,
 				A2000000000000000000000B /* DataSeeder.swift */,
 				A20000000000000000000010 /* CategoryTemplates.swift */,
 				A20000000000000000000026 /* AppSecrets.swift */,
@@ -495,6 +498,7 @@
 				A10000000000000000000029 /* CancellationView.swift in Sources */,
 				A1000000000000000000002A /* WidgetPromptView.swift in Sources */,
 				A1000000000000000000002B /* AppSecrets.swift in Sources */,
+				A10000000000000000000038 /* DeepLinkRouter.swift in Sources */,
 				A1000000000000000000002C /* SchemaVersions.swift in Sources */,
 				A10000000000000000000031 /* LastLoggedActivityAttributes.swift in Sources */,
 				A10000000000000000000032 /* LiveActivityManager.swift in Sources */,
