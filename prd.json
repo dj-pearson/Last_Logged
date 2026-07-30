@@ -318,7 +318,8 @@
         "Lighthouse performance and accessibility unaffected (images have alt text and explicit dimensions)"
       ],
       "priority": 18,
-      "passes": false
+      "passes": false,
+      "notes": "PARTIAL \u2014 blocked on assets. DONE: new website/src/components/HeroScreenshot.astro replaces the grey 'App Screenshot' box; renders <picture> with WebP source + PNG fallback, explicit 1170x2532 intrinsic dimensions (no CLS), descriptive alt text, loading=eager + fetchpriority=high for LCP; falls back to a deliberate device skeleton and logs a build warning while assets are absent. screenshot-placeholder CSS removed. public/screenshots/README.md documents dimensions and capture commands. Both branches verified by building with and without a test image. BLOCKED: the actual device-framed PNG/WebP files cannot be produced in this environment \u2014 there is no iOS simulator or Android emulator and neither app compiles here. Capture them per public/screenshots/README.md and drop them in; no code change is then required."
     },
     {
       "id": "PROD-019",

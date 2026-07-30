@@ -1,0 +1,106 @@
+---
+/**
+ * Hero app screenshot.
+ *
+ * Renders a real screenshot when one is present, and a labelled skeleton
+ * otherwise — the page previously always shipped an empty grey box reading
+ * "App Screenshot" to production.
+ *
+ * Drop the assets in as:
+ *   website/public/screenshots/hero.webp   (preferred)
+ *   website/public/screenshots/hero.png    (fallback)
+ *
+ * Both must be 1170x2532 (iPhone 14 Pro @3x) or any 9:19.5 image; the CSS
+ * constrains the rendered size and the intrinsic width/height below prevent
+ * layout shift.
+ */
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+// Resolved against the project root, not import.meta.url: Astro compiles this
+// component into a build directory, so import.meta.url does not point at the
+// source tree.
+const publicDir = join(process.cwd(), 'public', 'screenshots');
+
+const hasPng = existsSync(join(publicDir, 'hero.png'));
+const hasWebp = existsSync(join(publicDir, 'hero.webp'));
+const hasScreenshot = hasPng || hasWebp;
+
+if (!hasScreenshot) {
+  console.warn(
+    '[hero] No hero screenshot found. Add website/public/screenshots/hero.{webp,png} — ' +
+      'the hero is rendering a skeleton until then.'
+  );
+}
+
+// Intrinsic dimensions, set explicitly so the browser reserves space before
+// the image decodes (avoids CLS on the largest element above the fold).
+const WIDTH = 1170;
+const HEIGHT = 2532;
+---
+
+{
+  hasScreenshot ? (
+    <picture class="hero-screenshot">
+      {hasWebp && <source srcset="/screenshots/hero.webp" type="image/webp" />}
+      <img
+        src={hasPng ? '/screenshots/hero.png' : '/screenshots/hero.webp'}
+        width={WIDTH}
+        height={HEIGHT}
+        alt="The Last Logged home screen, showing tracked items grouped by category with colour-coded urgency indicators and a one-tap log button."
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
+      />
+    </picture>
+  ) : (
+    <div class="hero-screenshot hero-screenshot--pending" role="img" aria-label="App screenshot coming soon">
+      <div class="hero-screenshot__frame">
+        <span class="hero-screenshot__label">Last Logged</span>
+      </div>
+    </div>
+  )
+}
+
+<style>
+  .hero-screenshot {
+    display: block;
+    width: 280px;
+    max-width: 100%;
+  }
+
+  .hero-screenshot img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Shown only until real assets land. Reads as a deliberate device mock
+     rather than a broken image. */
+  .hero-screenshot--pending .hero-screenshot__frame {
+    width: 280px;
+    aspect-ratio: 1170 / 2532;
+    border-radius: 2rem;
+    border: 2px solid var(--color-border);
+    background: linear-gradient(160deg, var(--color-bg-alt), var(--color-bg));
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-screenshot__label {
+    color: var(--color-text-muted);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 640px) {
+    .hero-screenshot,
+    .hero-screenshot--pending .hero-screenshot__frame {
+      width: 220px;
+    }
+  }
+</style>

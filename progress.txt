@@ -2061,3 +2061,33 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - Next free pbxproj IDs: A1...003E (BuildFile), A2...003B (FileRef),
     A9...0005 (PackageRef), AA...0006 (ProductDep).
 ---
+
+## 2026-07-30 - PROD-018 (PARTIAL — blocked on assets)
+- New `website/src/components/HeroScreenshot.astro` replaces the hardcoded grey
+  `screenshot-placeholder` box that read "App Screenshot" on the live landing page.
+- Renders `<picture>` with a WebP `<source>` and PNG fallback, explicit 1170x2532
+  intrinsic `width`/`height` (reserves space, no CLS on the LCP element), descriptive
+  alt text, `loading="eager"` + `fetchpriority="high"`.
+- With no assets present it renders a deliberate device skeleton and logs a build
+  warning, rather than an empty grey rectangle.
+- Removed the `.screenshot-placeholder` CSS from both the base rules and the media query.
+- `public/screenshots/README.md` documents required files, dimensions, and the
+  `simctl` / `adb` / `cwebp` capture commands.
+- Verified by building BOTH ways: with no image (1 warning, skeleton rendered) and with a
+  synthesised 1170x2532 PNG (0 warnings, correct `<img>` with intrinsic dimensions).
+  `npx astro check`: 0 errors.
+- **STILL BLOCKED**: the real device-framed screenshots cannot be produced here. There is
+  no iOS simulator or Android emulator in this environment and neither app compiles
+  (no Xcode, and dl.google.com is proxy-blocked so no Android SDK). Capture them per
+  `public/screenshots/README.md` and drop the files in — no further code change needed.
+- Files changed: website/src/components/HeroScreenshot.astro (new),
+  website/src/pages/index.astro, website/public/screenshots/README.md (new)
+- **Learnings for future iterations:**
+  - `import.meta.url` in an Astro component resolves against the COMPILED output, not the
+    source tree. Use `process.cwd()` for build-time filesystem checks (the build always
+    runs with cwd = `website/`).
+  - Astro components can do build-time `existsSync` checks — a clean way to make an asset
+    optional and warn loudly instead of shipping a broken-looking placeholder.
+  - Always set intrinsic `width`/`height` on the hero image; it is the LCP element and
+    omitting them causes layout shift.
+---
