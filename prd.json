@@ -266,7 +266,8 @@
         "App still launches cleanly after a simulated restore (no crash on missing prefs)"
       ],
       "priority": 15,
-      "passes": false
+      "passes": true,
+      "notes": "Added res/xml/backup_rules.xml (fullBackupContent, API<=30) and res/xml/data_extraction_rules.xml (cloud-backup + device-transfer, API 31+), both referenced from the manifest. Excludes lastlogged.db (+ -shm/-wal), lastlogged_secure_prefs.xml, and datastore/. Also hardened SecureStorageService: an undecryptable prefs file now deletes and re-creates encrypted prefs instead of silently falling through to PLAINTEXT SharedPreferences under the same name \u2014 that fallback is exactly what a restore would have triggered."
     },
     {
       "id": "PROD-016",

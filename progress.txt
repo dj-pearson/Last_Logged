@@ -1798,3 +1798,29 @@ Closed the final three launch-readiness stories with deliverables that are durab
     dashboard; if v2 wants `payload` as an array of `"key:value"` strings instead of an
     object, only `buildPayload` needs to change and the tests will catch it.
 ---
+
+## 2026-07-30 - PROD-015
+- Added `res/xml/backup_rules.xml` (`android:fullBackupContent`, API <= 30) and
+  `res/xml/data_extraction_rules.xml` (`android:dataExtractionRules`, API 31+, covering
+  both cloud-backup and device-transfer), wired into `<application>`.
+- Excluded: `lastlogged.db` and its `-shm`/`-wal` sidecars, `lastlogged_secure_prefs.xml`,
+  and `datastore/`.
+- Hardened `SecureStorageService`: the previous catch fell straight through to
+  `context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)` — i.e. PLAINTEXT prefs under
+  the same file name — which is precisely what a restored, undecryptable file would have
+  triggered. Now it deletes the unreadable file and retries encrypted creation first.
+- Files changed: res/xml/backup_rules.xml (new), res/xml/data_extraction_rules.xml (new),
+  AndroidManifest.xml, service/SecureStorageService.kt
+- **Learnings for future iterations:**
+  - `allowBackup="true"` with no rules means Room + EncryptedSharedPreferences are
+    eligible for Google's auto-backup. The AndroidKeyStore master key is hardware-bound
+    and is NOT backed up, so a restore produces an undecryptable prefs file — the data is
+    both exposed and useless. Exclude both.
+  - You need BOTH files: `fullBackupContent` for API <= 30 and `dataExtractionRules` for
+    API 31+. Shipping only one leaves half the install base unprotected.
+  - Remember the SQLite `-shm` and `-wal` sidecars; excluding only the `.db` still backs
+    up recent writes.
+  - `context.deleteSharedPreferences()` requires API 24 — fine at minSdk 26.
+  - The prefs file name (`lastlogged_secure_prefs`) is `PREFS_NAME` in
+    SecureStorageService; keep the backup rules in sync if it ever changes.
+---

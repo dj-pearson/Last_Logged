@@ -28,18 +28,32 @@ class SecureStorageService @Inject constructor(
 
     private val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
 
+    private fun createEncryptedPrefs() = EncryptedSharedPreferences.create(
+        PREFS_NAME,
+        masterKeyAlias,
+        context,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
     private val prefs by lazy {
         try {
-            EncryptedSharedPreferences.create(
-                PREFS_NAME,
-                masterKeyAlias,
-                context,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
+            createEncryptedPrefs()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create EncryptedSharedPreferences, falling back to regular prefs: ${e.message}")
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            // Typically an undecryptable file: the AndroidKeyStore master key is
+            // hardware-bound and does not survive a restore or a keystore reset.
+            // Drop the unreadable file and re-create rather than falling straight
+            // through to PLAINTEXT prefs under the same name — the values here
+            // are auth and subscription state.
+            Log.w(TAG, "EncryptedSharedPreferences unreadable, recreating: ${e.message}")
+            context.deleteSharedPreferences(PREFS_NAME)
+
+            try {
+                createEncryptedPrefs()
+            } catch (retry: Exception) {
+                Log.e(TAG, "Encrypted prefs unavailable on this device: ${retry.message}")
+                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            }
         }
     }
 
