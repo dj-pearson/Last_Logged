@@ -1986,3 +1986,28 @@ Closed the final three launch-readiness stories with deliverables that are durab
     Associated Domains). Push and Associated Domains were both added during this batch, so
     the existing profile in the deploy secrets is stale and must be regenerated.
 ---
+
+## 2026-07-30 - PROD-021
+- `AppDelegate` implements `userNotificationCenter(_:didReceive:)`. The registered
+  `LOG_NOW_ACTION` button previously did nothing but foreground the app.
+- New `NotificationService.logCompletionFromNotification(trackerId:)`: opens its own
+  `ModelContext` on the App Group container (no view is alive at that point), resolves the
+  tracker, inserts a `CompletionLog`, advances `lastCompletedAt`, sets `syncStatus =
+  .pending`, then reschedules notifications so the reminder that just fired does not
+  immediately re-fire.
+- A default tap (`UNNotificationDefaultActionIdentifier`) sets
+  `DeepLinkRouter.shared.pendingTarget`, reusing the PROD-007 routing rather than adding a
+  parallel mechanism.
+- Deleted trackers and malformed `userInfo` return early instead of crashing.
+- Files changed: LastLogged/Services/AppDelegate.swift, LastLogged/Services/NotificationService.swift
+- **Learnings for future iterations:**
+  - `content.userInfo["trackerItemId"]` was already being set by
+    `makeNotificationRequest` — the data was there, only the handler was missing.
+  - Notification actions run with no view hierarchy. Use
+    `WidgetDataProvider.shared.makeSharedModelContainer()` to reach the App Group store
+    rather than expecting a `ModelContext` from the environment.
+  - Always reschedule after logging from a notification, or the next reminder still
+    reflects the old `lastCompletedAt`.
+  - Route notification taps through `DeepLinkRouter` so there is exactly one place that
+    decides where a tracker id navigates.
+---

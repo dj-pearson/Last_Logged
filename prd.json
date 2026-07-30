@@ -362,7 +362,8 @@
         "Unknown or deleted tracker ids are ignored without crashing"
       ],
       "priority": 21,
-      "passes": false
+      "passes": true,
+      "notes": "AppDelegate now implements userNotificationCenter(_:didReceive:). LOG_NOW_ACTION calls the new NotificationService.logCompletionFromNotification(trackerId:), which opens its own ModelContext on the shared App Group container, resolves the tracker (no-op if deleted), inserts a CompletionLog, advances lastCompletedAt, marks syncStatus pending, and reschedules so the reminder does not immediately re-fire. A default tap routes through DeepLinkRouter.pendingTarget to the tracker detail screen. Non-UUID or missing userInfo returns early."
     }
   ],
   "previousStories": [

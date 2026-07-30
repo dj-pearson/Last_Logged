@@ -69,4 +69,39 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     ) async -> UNNotificationPresentationOptions {
         [.banner, .list, .sound]
     }
+
+    /// Handles taps on a reminder.
+    ///
+    /// `NotificationService` registers a `TRACKER_REMINDER` category with a
+    /// "Log Now" button, but nothing implemented this callback — pressing it
+    /// just foregrounded the app and dropped the action.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        let userInfo = response.notification.request.content.userInfo
+
+        guard
+            let rawId = userInfo["trackerItemId"] as? String,
+            let trackerId = UUID(uuidString: rawId)
+        else {
+            return
+        }
+
+        switch response.actionIdentifier {
+        case NotificationService.logActionIdentifier:
+            await NotificationService.shared.logCompletionFromNotification(trackerId: trackerId)
+
+        case UNNotificationDefaultActionIdentifier:
+            // A plain tap opens the tracker, reusing the deep-link path so
+            // there is one place that decides where a tracker id navigates.
+            await MainActor.run {
+                DeepLinkRouter.shared.pendingTarget = .trackerDetail(trackerId)
+            }
+
+        default:
+            // Dismiss and any future actions need no handling.
+            break
+        }
+    }
 }
