@@ -1857,3 +1857,38 @@ Closed the final three launch-readiness stories with deliverables that are durab
     config; there is no automatic `env: node`.
   - Renaming a CI job changes the required-status-check name in branch protection.
 ---
+
+## 2026-07-30 - PROD-016
+- New migration `20260730000001_shared_rate_limits.sql`:
+  - `rate_limits` table keyed by `"<keyPrefix>:<ip>"`, RLS enabled with NO policies so
+    only the service role (which bypasses RLS) can touch it.
+  - `increment_rate_limit(bucket_key, window_ms)` — a single atomic upsert that resets an
+    elapsed window and returns the post-increment count. Read-then-write from the app
+    would race between instances, which is the exact bug this replaces.
+  - `prune_rate_limits()` wired into `runCleanup()` (weekly) so the table stays bounded.
+- `middleware.ts`: `consumeBudget()` calls the RPC, with the old in-memory Map kept as an
+  automatic fallback plus a 30s backoff after a failure — a DB outage degrades to
+  per-instance limits instead of failing open or hammering a dead database.
+  `RATE_LIMIT_STORE=memory` forces local (used by the tests).
+- `/health` now actually checks Supabase and returns 503 with the failure reason; adds
+  `version` and `uptimeSeconds`. Added `/health/live` for probes that must not touch the DB.
+- 49 edge-function tests pass, 6 new ones covering the shared store: RPC shape, 429 from a
+  shared count, non-array RPC result, fallback on error, the 30s backoff, and empty-row.
+- Files changed: supabase/migrations/20260730000001_shared_rate_limits.sql (new),
+  edge-functions/src/{middleware.ts,index.ts,cleanup.ts}, edge-functions/.env.example,
+  edge-functions/test/{rate-limit-store.test.ts (new),middleware.test.ts}, DEPLOYMENT.md
+- **Learnings for future iterations:**
+  - `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` with zero policies is the idiom for a
+    service-role-only table: it denies anon/authenticated (which would otherwise reach it
+    through the public REST API) while the service role bypasses RLS. `auth_rate_limits`
+    has the same intent but never enabled RLS — worth revisiting.
+  - Supabase `.rpc()` on a function with `RETURNS TABLE` gives an ARRAY. Handle both
+    shapes (`Array.isArray(data) ? data[0] : data`).
+  - Adding an import of `src/supabase.js` to a module makes every test that imports it
+    fail with "supabaseUrl is required" — `createClient()` runs at import time. Add
+    `vi.mock('../src/supabase.js', ...)` to those test files.
+  - When a middleware gains an external dependency, give it an env escape hatch
+    (`RATE_LIMIT_STORE=memory`) so existing tests stay fast and hermetic.
+  - A health check that returns a static 200 is worse than none — it keeps a broken
+    instance in the load-balancer rotation.
+---

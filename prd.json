@@ -283,7 +283,8 @@
         "Migration added for the rate-limit table with RLS enabled and service-role-only access"
       ],
       "priority": 16,
-      "passes": false
+      "passes": true,
+      "notes": "New migration 20260730000001_shared_rate_limits.sql: rate_limits table (RLS enabled, no policies -> service-role only), atomic increment_rate_limit(bucket_key, window_ms) SECURITY DEFINER upsert that resets an elapsed window, and prune_rate_limits() wired into the weekly cleanup job. middleware.ts consumeBudget() uses the RPC with an automatic in-memory fallback plus a 30s failure backoff so a database outage degrades instead of failing open; RATE_LIMIT_STORE=memory forces local. /health now verifies Supabase connectivity and returns 503 with a reason, plus version and uptimeSeconds; added /health/live for DB-free liveness probes. 49 edge-function tests pass (6 new for the shared store)."
     },
     {
       "id": "PROD-017",

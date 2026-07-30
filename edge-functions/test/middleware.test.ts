@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { rateLimit, bodyLimit, cronAuth } from '../src/middleware.js';
+// Pin these cases to the in-memory store; the shared Postgres path has its own
+// suite in rate-limit-store.test.ts.
+process.env.RATE_LIMIT_STORE = 'memory';
+
+// middleware.ts imports the Supabase client for the shared store, and
+// createClient() throws at import time without credentials.
+vi.mock('../src/supabase.js', () => ({
+  supabase: { rpc: vi.fn() },
+}));
+
+const { rateLimit, bodyLimit, cronAuth } = await import('../src/middleware.js');
 
 function appWith(middleware: Parameters<Hono['use']>[1]) {
   const app = new Hono();

@@ -16,6 +16,10 @@ import { exportData } from "./export-data.js";
 import { cleanup, runCleanup } from "./cleanup.js";
 import { deleteAccount } from "./delete-account.js";
 import { authRateLimit } from "./auth-rate-limit.js";
+import { supabase } from "./supabase.js";
+
+// Surfaced by /health so a deploy can be identified without shell access.
+const APP_VERSION = process.env.APP_VERSION ?? "dev";
 
 // Validate environment before starting
 validateRequiredEnv();
@@ -53,10 +57,41 @@ app.use(
   rateLimit({ windowMs: 15 * 60_000, max: 100, keyPrefix: "global" })
 );
 
-// Health check (no auth required, lightweight)
-app.get("/health", (c) => {
-  return c.json({ status: "ok" });
+// Health check. Verifies Supabase connectivity rather than always reporting
+// "ok" — a static 200 tells a load balancer nothing and kept a broken instance
+// in rotation.
+const startedAt = Date.now();
+
+app.get("/health", async (c) => {
+  const checks: Record<string, string> = {};
+  let healthy = true;
+
+  try {
+    const { error } = await supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .limit(1);
+
+    if (error) throw new Error(error.message);
+    checks.database = "ok";
+  } catch (err) {
+    healthy = false;
+    checks.database = err instanceof Error ? err.message : String(err);
+    logError("health_check_failed", err);
+  }
+
+  const body = {
+    status: healthy ? "ok" : "degraded",
+    version: APP_VERSION,
+    uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
+    checks,
+  };
+
+  return c.json(body, healthy ? 200 : 503);
 });
+
+// Liveness only — for platforms that need a probe which never touches the DB.
+app.get("/health/live", (c) => c.json({ status: "ok" }));
 
 // Reminder digest routes (manual trigger requires cron secret)
 reminderDigest.use("/send-reminder-digest", cronAuth());

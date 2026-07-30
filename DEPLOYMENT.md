@@ -31,6 +31,7 @@ Migrations live in `supabase/migrations/`. Apply in order:
 20260401000002_user_devices.sql
 20260401000003_agreed_to_terms.sql
 20260402000001_auth_rate_limits.sql
+20260730000001_shared_rate_limits.sql
 ```
 
 Either use Supabase CLI:
@@ -77,6 +78,8 @@ Strongly recommended:
 | `FCM_PRIVATE_KEY` | `private_key` from the same JSON; `\n`-escaped newlines are handled |
 | `CRON_SECRET` | Random string; guards `/cleanup-old-data` + `/reminder-digest` cron endpoints |
 | `APP_ENV` | `production` |
+| `APP_VERSION` | Reported by `GET /health`; set to the release tag or commit sha |
+| `RATE_LIMIT_STORE` | Leave unset in production (Postgres-backed). `memory` only for local dev. |
 | `APNS_ENVIRONMENT` | `production` once released (use `sandbox` for TestFlight-only testing) |
 
 ### 2.2 Deploy
@@ -90,6 +93,9 @@ Manual: `gh workflow run deploy-edge-functions.yml`.
 - [ ] `GET /export-data` with a valid Bearer token returns the user's data as JSON
 - [ ] `POST /auth/check-rate-limit` returns `X-Auth-RateLimit-Remaining` header
 - [ ] `POST /delete-account` with a valid JWT deletes + signs out
+- [ ] `GET /health` returns 200 with `checks.database = "ok"`; returns 503 if Supabase is unreachable
+- [ ] `GET /health/live` returns 200 without touching the database
+- [ ] Rate limits hold across instances (`rate_limits` table gains rows under load)
 
 ### 2.4 Cron jobs
 

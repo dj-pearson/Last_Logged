@@ -11,8 +11,13 @@ const ARCHIVED_ITEM_RETENTION_DAYS = 180;
 export async function runCleanup(): Promise<{
   deletedSoftDeletedLogs: number;
   deletedArchivedItems: number;
+  prunedRateLimits: number;
 }> {
-  const stats = { deletedSoftDeletedLogs: 0, deletedArchivedItems: 0 };
+  const stats = {
+    deletedSoftDeletedLogs: 0,
+    deletedArchivedItems: 0,
+    prunedRateLimits: 0,
+  };
 
   // 1. Permanently delete soft-deleted completion_logs older than 90 days
   const softDeleteCutoff = new Date();
@@ -67,6 +72,15 @@ export async function runCleanup(): Promise<{
         }
       }
     }
+  }
+
+  // 3. Prune expired shared rate-limit buckets so the table stays bounded.
+  const { data: prunedCount, error: pruneError } = await supabase.rpc("prune_rate_limits");
+
+  if (pruneError) {
+    logError("cleanup_prune_rate_limits_failed", pruneError.message);
+  } else {
+    stats.prunedRateLimits = Number(prunedCount ?? 0);
   }
 
   return stats;
