@@ -34,8 +34,10 @@ android {
         applicationId = "com.pearsonmedia.lastlogged"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        // Overridden by deploy-android.yml (VERSION_CODE from the run number,
+        // VERSION_NAME from the git tag). Defaults keep local builds working.
+        versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

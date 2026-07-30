@@ -1892,3 +1892,34 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - A health check that returns a static 200 is worse than none — it keeps a broken
     instance in the load-balancer rotation.
 ---
+
+## 2026-07-30 - PROD-014
+- New `.github/workflows/deploy-android.yml`: `v*` tags + workflow_dispatch with a track
+  selector (internal / alpha / beta / production).
+- Version calculation mirrors `deploy-ios.yml`. `build.gradle.kts` now reads
+  `VERSION_NAME` / `VERSION_CODE` from the environment with local-safe defaults
+  (1.0.0 / 1), so CI can set them without editing the file.
+- Keystore decoded from `ANDROID_KEYSTORE_BASE64` into `keystore.properties`;
+  `google-services.json` written from a secret; unit tests run; `bundleRelease` builds a
+  signed AAB; AAB and `mapping.txt` (90-day retention) uploaded as artifacts; publish via
+  `r0adkll/upload-google-play`.
+- Degrades instead of failing: no keystore -> unsigned artifact only; no Play service
+  account -> upload skipped. A summary step states exactly what was skipped and why.
+- `always()` cleanup step removes the keystore, keystore.properties, local.properties, and
+  google-services.json from the runner.
+- Files changed: .github/workflows/deploy-android.yml (new), android/app/build.gradle.kts,
+  DEPLOYMENT.md (§6b + secrets table)
+- **Learnings for future iterations:**
+  - The `secrets` context is NOT available in a step's `if:`. Convert secret-presence
+    checks into step outputs (`echo "has_x=true" >> "$GITHUB_OUTPUT"`) and gate on
+    `steps.<id>.outputs.*`. Step-level `env` in the same step's `if:` is also unreliable.
+  - `defaults.run.working-directory` only applies to `run` steps. Inputs to `uses:` actions
+    (artifact paths, releaseFiles) are relative to the workspace root — they need the
+    `android/` prefix.
+  - `versionCode` must strictly increase for every Play upload; `GITHUB_RUN_NUMBER` is the
+    simplest monotonic source.
+  - Release builds have `isMinifyEnabled = true`, so `mapping.txt` is mandatory for
+    readable crash reports. Upload it as an artifact AND pass it to the Play upload.
+  - Keep secret-dependent deploy steps optional so the workflow is testable before all
+    store credentials exist.
+---

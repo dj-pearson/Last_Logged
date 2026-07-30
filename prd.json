@@ -253,7 +253,8 @@
         "Required secrets documented in DEPLOYMENT.md"
       ],
       "priority": 14,
-      "passes": false
+      "passes": true,
+      "notes": "New .github/workflows/deploy-android.yml on v* tags + workflow_dispatch with an internal/alpha/beta/production track selector. Mirrors deploy-ios.yml version calculation; versionName from the tag and versionCode from the run number, both read by build.gradle.kts from VERSION_NAME/VERSION_CODE env with local-safe defaults. Decodes the keystore from a base64 secret into keystore.properties, writes google-services.json, runs unit tests, builds a signed AAB via bundleRelease, uploads it and mapping.txt (90d) as artifacts, and publishes via r0adkll/upload-google-play. Missing keystore or service account degrades to artifact-only with an explicit summary rather than failing. Secrets scrubbed from the runner in an always() step. Secrets documented in DEPLOYMENT.md 6b."
     },
     {
       "id": "PROD-015",

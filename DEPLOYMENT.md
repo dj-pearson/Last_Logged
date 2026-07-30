@@ -224,11 +224,13 @@ For `android-ci.yml` + `ios-ci.yml` + the existing deploy workflows, set:
 | `REVENUECAT_ANDROID_API_KEY` | android-ci |
 | `TELEMETRYDECK_APP_ID` | both |
 | `GOOGLE_WEB_CLIENT_ID` | android-ci |
-| `GOOGLE_SERVICES_JSON` | (future) android-release workflow |
-| `ANDROID_KEYSTORE_BASE64` | (future) android-release workflow |
-| `ANDROID_KEYSTORE_PASSWORD` | (future) android-release workflow |
-| `ANDROID_KEY_ALIAS` | (future) android-release workflow |
-| `ANDROID_KEY_PASSWORD` | (future) android-release workflow |
+| `GOOGLE_SERVICES_JSON` | deploy-android (full file contents; enables FCM) |
+| `ANDROID_KEYSTORE_BASE64` | deploy-android (`base64 -w0 lastlogged-release.jks`) |
+| `ANDROID_KEYSTORE_PASSWORD` | deploy-android |
+| `ANDROID_KEY_ALIAS` | deploy-android |
+| `ANDROID_KEY_PASSWORD` | deploy-android |
+| `PLAY_SERVICE_ACCOUNT_JSON` | deploy-android (Play Console → API access → service account JSON) |
+| `SENTRY_DSN_ANDROID` | deploy-android, android-ci |
 | `APPLE_ID` | ios-deploy |
 | `APPLE_APP_SPECIFIC_PASSWORD` | ios-deploy |
 | `APPLE_TEAM_ID` | ios-deploy, **deploy-website** (apple-app-site-association) |
@@ -239,6 +241,32 @@ For `android-ci.yml` + `ios-ci.yml` + the existing deploy workflows, set:
 | `DEVELOPER_CERTIFICATE_P12_BASE64` | ios-deploy |
 | `DEVELOPER_CERTIFICATE_PASSWORD` | ios-deploy |
 | `PROVISIONING_PROFILE_BASE64` | ios-deploy |
+
+---
+
+## 6b. Android release
+
+`deploy-android.yml` runs on a `v*` tag or via workflow_dispatch (track selector:
+internal / alpha / beta / production).
+
+- `versionName` comes from the tag, `versionCode` from the run number. Both are
+  read by `build.gradle.kts` from `VERSION_NAME` / `VERSION_CODE` env vars, so a
+  local build still defaults to 1.0.0 / 1.
+- **`versionCode` must strictly increase for every Play upload.** The run number
+  handles this automatically; use the `version_code` input if you ever need to
+  jump ahead of a manually uploaded build.
+- Missing secrets degrade rather than fail: without `ANDROID_KEYSTORE_BASE64` the
+  job builds an unsigned AAB, and without `PLAY_SERVICE_ACCOUNT_JSON` it skips the
+  upload. The AAB is always attached to the run as the `app-release-aab` artifact
+  and the summary says exactly what was skipped.
+- The R8 `mapping.txt` is uploaded as an artifact (90-day retention) and passed to
+  the Play upload. Without it, production crash reports are unreadable.
+
+### Verify
+
+- [ ] Tag a prerelease and confirm the run produces a signed AAB
+- [ ] Confirm the build appears on the Play internal track
+- [ ] Confirm `mapping.txt` is attached to both the run and the Play release
 
 ---
 
