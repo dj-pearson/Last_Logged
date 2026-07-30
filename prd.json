@@ -334,7 +334,8 @@
         "Both apps build and existing tests pass"
       ],
       "priority": 19,
-      "passes": false
+      "passes": false,
+      "notes": "NOT STARTED \u2014 deliberately sequenced last. This is a large mechanical sweep across ~40 SwiftUI views and 31 Compose call sites, and NEITHER app compiles in the agent sandbox (no Xcode; dl.google.com is proxy-blocked so no Android SDK). Landing an unverifiable several-hundred-line string-extraction change on top of the first-ever-working CI would make any resulting build failure expensive to attribute. RECOMMENDATION: run this AFTER android-ci.yml and ios-ci.yml go green once on this branch, so a compile error is unambiguously from the localization change. Suggested order: (1) add Localizable.xcstrings to the iOS target and migrate Views/ one file at a time, (2) complete android strings.xml + <plurals> and replace the remaining hardcoded Compose literals, (3) add a lint gate that fails on a new user-facing literal. Nothing else in this PRD depends on it."
     },
     {
       "id": "PROD-020",

@@ -2167,3 +2167,27 @@ Closed the final three launch-readiness stories with deliverables that are durab
 - **Open item**: PROD-018 is partially complete and PROD-019 (localization) was not
   started — see the notes on those stories.
 ---
+
+## 2026-07-30 - Batch summary (PROD-001..021)
+19 of 21 stories closed. Two remain, both deliberately, and neither blocks the others:
+
+- **PROD-018 (partial)** — all code done and verified; blocked only on capturing real
+  device screenshots, which needs a simulator/emulator this environment does not have.
+  Drop the files into `website/public/screenshots/` per its README.
+- **PROD-019 (not started)** — localization. Sequenced last on purpose: it is a large
+  mechanical sweep across ~40 SwiftUI views and 31 Compose call sites, and neither app
+  compiles here. Run it after android-ci and ios-ci go green once, so any compile error
+  is unambiguously attributable to it.
+
+Ship-blockers fixed in this batch that were NOT in the original story list, found while
+implementing others:
+- `deploy-ios.yml` never wrote `Secrets.xcconfig`, so a TestFlight/App Store archive would
+  have shipped placeholder credentials and `AppSecrets.validate()` would `fatalError` on
+  first launch (fixed in PROD-009).
+- `AnalyticsService.configure()` on Android had no caller (fixed in PROD-011).
+- `PaywallScreen.onDismiss` assumed onboarding was its only entry point and would have
+  pushed Home on top of Settings (fixed in PROD-010).
+- `SecureStorageService` silently fell back to PLAINTEXT SharedPreferences under the same
+  file name when encrypted prefs were unreadable — exactly what a restore triggers
+  (fixed in PROD-015).
+---
