@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pearsonmedia.lastlogged.R
 import com.pearsonmedia.lastlogged.data.repository.TrackerRepository
 import com.pearsonmedia.lastlogged.service.BiometricService
 import com.pearsonmedia.lastlogged.service.SecureStorageService
@@ -157,7 +158,7 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isExporting = false,
-                    error = "Export failed: ${e.message}"
+                    error = context.getString(R.string.error_export_failed, e.message.orEmpty())
                 )
             }
         }
@@ -181,7 +182,7 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isClearing = false,
-                    error = "Clear data failed: ${e.message}"
+                    error = context.getString(R.string.error_clear_data_failed, e.message.orEmpty())
                 )
             }
         }
@@ -216,7 +217,7 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isDeletingAccount = false,
-                    error = "Account deletion failed: ${e.message}"
+                    error = context.getString(R.string.error_delete_account_failed, e.message.orEmpty())
                 )
             }
         }
@@ -228,7 +229,7 @@ class SettingsViewModel @Inject constructor(
                 supabaseService.signOut()
                 _uiState.value = _uiState.value.copy(isSignedIn = false, userEmail = null)
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Sign out failed: ${e.message}")
+                _uiState.value = _uiState.value.copy(error = context.getString(R.string.error_sign_out_failed, e.message.orEmpty()))
             }
         }
     }

@@ -27,7 +27,11 @@ class AuthViewModelTest {
         val revenueCat = mockk<RevenueCatService>(relaxed = true)
         val pushTokens = mockk<PushTokenService>(relaxed = true)
         val googleSignIn = mockk<GoogleSignInService>(relaxed = true)
-        viewModel = AuthViewModel(supabase, revenueCat, pushTokens, googleSignIn)
+        // AuthViewModel takes an @ApplicationContext to resolve localized
+        // messages; relaxed mock is enough since these tests assert on state,
+        // not on the message text.
+        val context = mockk<android.content.Context>(relaxed = true)
+        viewModel = AuthViewModel(supabase, revenueCat, pushTokens, googleSignIn, context)
     }
 
     @Test

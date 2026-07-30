@@ -185,8 +185,12 @@ class NotificationService @Inject constructor(
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID_OVERFLOW)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Reminder Limit Reached")
-            .setContentText("You have $skippedCount trackers without reminders. Open Last Logged to review.")
+            .setContentTitle(context.getString(R.string.notification_overflow_title))
+            .setContentText(
+                context.resources.getQuantityString(
+                    R.plurals.notification_overflow_body, skippedCount, skippedCount
+                )
+            )
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setAutoCancel(true)
             .build()
@@ -228,8 +232,8 @@ class NotificationReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, NotificationService.CHANNEL_ID_REMINDERS)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle("Time to log: $trackerName")
-            .setContentText("It's been a while since you last logged this.")
+            .setContentTitle(context.getString(R.string.notification_reminder_title, trackerName))
+            .setContentText(context.getString(R.string.notification_reminder_body))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             // Deep link to tracker detail would go here

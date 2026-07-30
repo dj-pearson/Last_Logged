@@ -30,6 +30,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
+import com.pearsonmedia.lastlogged.R
 import com.pearsonmedia.lastlogged.data.repository.TrackerRepository
 import com.pearsonmedia.lastlogged.ui.MainActivity
 import com.pearsonmedia.lastlogged.util.DeepLinks
@@ -124,7 +125,7 @@ private fun WidgetContent(context: Context, items: List<WidgetTrackerItem>) {
             .clickable(actionStartActivity(homeIntent(context)))
     ) {
         Text(
-            text = "Top Overdue",
+            text = context.getString(R.string.widget_title),
             style = TextStyle(
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
@@ -136,7 +137,7 @@ private fun WidgetContent(context: Context, items: List<WidgetTrackerItem>) {
 
         if (items.isEmpty()) {
             Text(
-                text = "All caught up!",
+                text = context.getString(R.string.widget_empty),
                 style = TextStyle(
                     fontSize = 12.sp,
                     color = GlanceTheme.colors.onBackground

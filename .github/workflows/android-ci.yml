@@ -83,6 +83,9 @@ jobs:
       - name: Run unit tests
         run: ./gradlew test --stacktrace
 
+      - name: Check for hardcoded strings
+        run: ./check-hardcoded-strings.sh
+
       - name: Run lint
         run: ./gradlew lint --stacktrace
 

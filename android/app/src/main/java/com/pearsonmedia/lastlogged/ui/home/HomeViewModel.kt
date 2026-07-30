@@ -1,7 +1,9 @@
 package com.pearsonmedia.lastlogged.ui.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pearsonmedia.lastlogged.R
 import com.pearsonmedia.lastlogged.data.local.entity.CompletionLog
 import com.pearsonmedia.lastlogged.data.local.entity.TrackerCategory
 import com.pearsonmedia.lastlogged.data.local.entity.TrackerItem
@@ -10,6 +12,7 @@ import com.pearsonmedia.lastlogged.service.SuccessSoundService
 import com.pearsonmedia.lastlogged.service.SupabaseService
 import com.pearsonmedia.lastlogged.util.StreakUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,7 +40,8 @@ data class MilestoneEvent(
 class HomeViewModel @Inject constructor(
     private val repository: TrackerRepository,
     private val supabaseService: SupabaseService,
-    private val successSoundService: SuccessSoundService
+    private val successSoundService: SuccessSoundService,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _undoState = MutableStateFlow<UndoState?>(null)
@@ -103,7 +107,7 @@ class HomeViewModel @Inject constructor(
                     _undoState.value = null
                 }
             } catch (e: Exception) {
-                _error.value = "Failed to log completion: ${e.message}"
+                _error.value = context.getString(R.string.error_log_failed, e.message.orEmpty())
             }
         }
     }
@@ -115,7 +119,7 @@ class HomeViewModel @Inject constructor(
                 repository.undoLog(state.logId, state.trackerItemId, state.previousCompletedAt)
                 _undoState.value = null
             } catch (e: Exception) {
-                _error.value = "Failed to undo: ${e.message}"
+                _error.value = context.getString(R.string.error_undo_failed, e.message.orEmpty())
             }
         }
     }
@@ -125,7 +129,7 @@ class HomeViewModel @Inject constructor(
             try {
                 repository.archiveItem(item.id)
             } catch (e: Exception) {
-                _error.value = "Failed to archive: ${e.message}"
+                _error.value = context.getString(R.string.error_archive_failed, e.message.orEmpty())
             }
         }
     }

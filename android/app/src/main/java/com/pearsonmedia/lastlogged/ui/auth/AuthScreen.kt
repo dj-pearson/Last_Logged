@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pearsonmedia.lastlogged.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,17 +67,22 @@ fun AuthScreen(
             TopAppBar(
                 title = {
                     Text(
-                        when (uiState.mode) {
-                            AuthMode.SIGN_IN -> "Sign In"
-                            AuthMode.SIGN_UP -> "Sign Up"
-                            AuthMode.FORGOT_PASSWORD -> "Reset Password"
-                            AuthMode.EMAIL_CONFIRMATION -> "Check Your Email"
-                        }
+                        stringResource(
+                            when (uiState.mode) {
+                                AuthMode.SIGN_IN -> R.string.sign_in
+                                AuthMode.SIGN_UP -> R.string.sign_up
+                                AuthMode.FORGOT_PASSWORD -> R.string.reset_password_title
+                                AuthMode.EMAIL_CONFIRMATION -> R.string.email_confirmation_title
+                            }
+                        )
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back_a11y)
+                        )
                     }
                 }
             )
@@ -114,12 +121,12 @@ private fun AuthFormContent(
     OutlinedTextField(
         value = uiState.email,
         onValueChange = { viewModel.updateEmail(it) },
-        label = { Text("Email") },
+        label = { Text(stringResource(R.string.email_label)) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         isError = uiState.email.isNotEmpty() && !viewModel.isEmailValid,
         supportingText = {
             if (uiState.email.isNotEmpty() && !viewModel.isEmailValid) {
-                Text("Enter a valid email address", color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.email_invalid), color = MaterialTheme.colorScheme.error)
             }
         },
         singleLine = true,
@@ -132,7 +139,7 @@ private fun AuthFormContent(
         OutlinedTextField(
             value = uiState.password,
             onValueChange = { viewModel.updatePassword(it) },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.password_label)) },
             visualTransformation = if (passwordVisible) VisualTransformation.None
                 else PasswordVisualTransformation(),
             trailingIcon = {
@@ -156,7 +163,7 @@ private fun AuthFormContent(
                 Spacer(modifier = Modifier.height(4.dp))
                 messages.forEach { msg ->
                     Text(
-                        text = "- $msg",
+                        text = stringResource(R.string.password_rule_bullet, msg),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -165,6 +172,10 @@ private fun AuthFormContent(
         }
     }
 
+    // stringResource() is @Composable and cannot be called inside the
+    // semantics {} lambda, so it is read here and captured.
+    val termsA11y = stringResource(R.string.terms_agreement_a11y)
+
     // Terms agreement (sign up only)
     if (uiState.mode == AuthMode.SIGN_UP) {
         Spacer(modifier = Modifier.height(12.dp))
@@ -172,7 +183,7 @@ private fun AuthFormContent(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = "Agree to Terms of Service and Privacy Policy" }
+                .semantics { contentDescription = termsA11y }
         ) {
             Checkbox(
                 checked = uiState.hasAgreedToTerms,
@@ -180,7 +191,7 @@ private fun AuthFormContent(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "I agree to the Terms of Service and Privacy Policy",
+                text = stringResource(R.string.terms_agreement),
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -214,7 +225,11 @@ private fun AuthFormContent(
     if (uiState.cooldownSeconds > 0) {
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Too many attempts. Try again in ${uiState.cooldownSeconds} seconds.",
+            text = pluralStringResource(
+                R.plurals.rate_limit_cooldown,
+                uiState.cooldownSeconds,
+                uiState.cooldownSeconds
+            ),
             color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodySmall
         )
@@ -244,9 +259,9 @@ private fun AuthFormContent(
         } else {
             Text(
                 when (uiState.mode) {
-                    AuthMode.SIGN_IN -> "Sign In"
-                    AuthMode.SIGN_UP -> "Sign Up"
-                    AuthMode.FORGOT_PASSWORD -> "Send Reset Link"
+                    AuthMode.SIGN_IN -> stringResource(R.string.sign_in)
+                    AuthMode.SIGN_UP -> stringResource(R.string.sign_up)
+                    AuthMode.FORGOT_PASSWORD -> stringResource(R.string.send_reset_link)
                     AuthMode.EMAIL_CONFIRMATION -> ""
                 }
             )
@@ -265,7 +280,7 @@ private fun AuthFormContent(
         ) {
             Divider(modifier = Modifier.weight(1f))
             Text(
-                text = " or ",
+                text = stringResource(R.string.auth_divider_or),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 8.dp)
@@ -292,20 +307,20 @@ private fun AuthFormContent(
     when (uiState.mode) {
         AuthMode.SIGN_IN -> {
             TextButton(onClick = { viewModel.setMode(AuthMode.SIGN_UP) }) {
-                Text("Don't have an account? Sign Up")
+                Text(stringResource(R.string.auth_no_account_prompt))
             }
             TextButton(onClick = { viewModel.setMode(AuthMode.FORGOT_PASSWORD) }) {
-                Text("Forgot Password?")
+                Text(stringResource(R.string.forgot_password))
             }
         }
         AuthMode.SIGN_UP -> {
             TextButton(onClick = { viewModel.setMode(AuthMode.SIGN_IN) }) {
-                Text("Already have an account? Sign In")
+                Text(stringResource(R.string.auth_have_account_prompt))
             }
         }
         AuthMode.FORGOT_PASSWORD -> {
             TextButton(onClick = { viewModel.setMode(AuthMode.SIGN_IN) }) {
-                Text("Back to Sign In")
+                Text(stringResource(R.string.back_to_sign_in))
             }
         }
         AuthMode.EMAIL_CONFIRMATION -> { /* handled separately */ }
@@ -329,7 +344,7 @@ private fun EmailConfirmationContent(
     Spacer(modifier = Modifier.height(24.dp))
 
     Text(
-        text = "We sent a confirmation link to",
+        text = stringResource(R.string.email_confirmation_sent_to),
         style = MaterialTheme.typography.bodyLarge,
         textAlign = TextAlign.Center
     )
@@ -344,7 +359,7 @@ private fun EmailConfirmationContent(
     Spacer(modifier = Modifier.height(16.dp))
 
     Text(
-        text = "Please check your inbox and confirm your email to sign in.",
+        text = stringResource(R.string.email_confirmation_check_inbox),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
@@ -354,7 +369,7 @@ private fun EmailConfirmationContent(
     Spacer(modifier = Modifier.height(32.dp))
 
     TextButton(onClick = onBackToSignIn) {
-        Text("Back to Sign In")
+        Text(stringResource(R.string.back_to_sign_in))
     }
 }
 

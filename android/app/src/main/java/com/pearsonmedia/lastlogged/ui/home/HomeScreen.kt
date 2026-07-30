@@ -81,7 +81,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pearsonmedia.lastlogged.R
 import com.pearsonmedia.lastlogged.data.local.entity.TrackerCategory
 import com.pearsonmedia.lastlogged.data.local.entity.TrackerItem
 import com.pearsonmedia.lastlogged.ui.theme.UrgencyColors
@@ -114,14 +116,19 @@ fun HomeScreen(
         if (!isRefreshing) pullState.endRefresh()
     }
 
+    // stringResource() is @Composable and cannot be called inside a
+    // semantics {} lambda, so these are read here and captured.
+    val settingsA11y = stringResource(R.string.settings_a11y)
+    val addTrackerA11y = stringResource(R.string.add_tracker_a11y)
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Last Logged", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.home_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(
                         onClick = onNavigateToSettings,
-                        modifier = Modifier.semantics { contentDescription = "Settings" }
+                        modifier = Modifier.semantics { contentDescription = settingsA11y }
                     ) {
                         Icon(Icons.Default.Settings, contentDescription = null)
                     }
@@ -130,7 +137,7 @@ fun HomeScreen(
                     Box {
                         IconButton(
                             onClick = { showAddMenu = true },
-                            modifier = Modifier.semantics { contentDescription = "Add tracker" }
+                            modifier = Modifier.semantics { contentDescription = addTrackerA11y }
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                         }
@@ -139,7 +146,7 @@ fun HomeScreen(
                             onDismissRequest = { showAddMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("New Tracker") },
+                                text = { Text(stringResource(R.string.new_tracker)) },
                                 onClick = {
                                     showAddMenu = false
                                     onNavigateToAddTracker()
@@ -222,11 +229,11 @@ fun HomeScreen(
                 Snackbar(
                     action = {
                         TextButton(onClick = { viewModel.undoLastLog() }) {
-                            Text("Undo", color = MaterialTheme.colorScheme.inversePrimary)
+                            Text(stringResource(R.string.undo), color = MaterialTheme.colorScheme.inversePrimary)
                         }
                     }
                 ) {
-                    Text("Logged!")
+                    Text(stringResource(R.string.logged_message))
                 }
             }
 
@@ -250,7 +257,7 @@ fun HomeScreen(
                         .padding(16.dp),
                     action = {
                         TextButton(onClick = { viewModel.dismissError() }) {
-                            Text("Dismiss")
+                            Text(stringResource(R.string.dismiss))
                         }
                     }
                 ) {
@@ -360,7 +367,7 @@ private fun TrackerRow(
             ) {
                 Icon(
                     Icons.Default.Archive,
-                    contentDescription = "Archive",
+                    contentDescription = stringResource(R.string.archive),
                     tint = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
@@ -511,13 +518,13 @@ private fun EmptyState(
         }
         Spacer(modifier = Modifier.height(20.dp))
         Text(
-            text = "Start Tracking What Matters",
+            text = stringResource(R.string.empty_state_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Tap + to add your first tracker and never forget the small things again.",
+            text = stringResource(R.string.empty_state_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -525,7 +532,7 @@ private fun EmptyState(
         androidx.compose.material3.FilledTonalButton(onClick = onAddTracker) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Add your first tracker")
+            Text(stringResource(R.string.empty_state_cta))
         }
     }
 }
@@ -566,7 +573,7 @@ private fun QuickLogSheet(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Log this completion",
+                text = stringResource(R.string.quick_log_title),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -577,7 +584,7 @@ private fun QuickLogSheet(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("When:", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.quick_log_when), style = MaterialTheme.typography.labelLarge)
                 Spacer(modifier = Modifier.width(12.dp))
                 androidx.compose.material3.AssistChip(
                     onClick = { showDatePicker = true },
@@ -590,7 +597,7 @@ private fun QuickLogSheet(
             androidx.compose.material3.OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Notes (optional)") },
+                label = { Text(stringResource(R.string.quick_log_notes_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2,
                 maxLines = 4
@@ -609,7 +616,7 @@ private fun QuickLogSheet(
             ) {
                 Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Log completion", fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.quick_log_submit), fontWeight = FontWeight.SemiBold)
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -624,10 +631,10 @@ private fun QuickLogSheet(
                     TextButton(onClick = {
                         datePickerState.selectedDateMillis?.let { completedAt = it }
                         showDatePicker = false
-                    }) { Text("OK") }
+                    }) { Text(stringResource(R.string.ok)) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                    TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) }
                 }
             ) {
                 androidx.compose.material3.DatePicker(state = datePickerState)
