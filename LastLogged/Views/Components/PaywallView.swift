@@ -314,7 +314,7 @@ struct PaywallView: View {
     @MainActor
     private func performPurchase() async {
         guard let package = packageFor(selectedTier) else {
-            errorMessage = "Product not available. Please try again later."
+            errorMessage = String(localized: "paywall.error.productUnavailable")
             return
         }
         isPurchasing = true
@@ -341,7 +341,7 @@ struct PaywallView: View {
             if revenueCatService.isPremium {
                 dismiss()
             } else {
-                errorMessage = "No active subscription found."
+                errorMessage = String(localized: "paywall.error.noSubscription")
             }
         } catch {
             errorMessage = error.localizedDescription

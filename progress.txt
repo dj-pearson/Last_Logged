@@ -2191,3 +2191,54 @@ implementing others:
   file name when encrypted prefs were unreadable — exactly what a restore triggers
   (fixed in PROD-015).
 ---
+
+## 2026-07-30 - PROD-019
+### Android
+- ~120 user-facing literals moved out of 11 UI files plus `BiometricService`,
+  `NotificationService`, the Glance widget, and `Auth/Home/SettingsViewModel` into
+  `res/values/strings.xml` (152 entries, 4 of them `<plurals>`).
+- `stringResource()` is @Composable and CANNOT be called inside a `semantics {}` lambda —
+  hoisted into captured vals (`termsA11y`, `settingsA11y`, `addTrackerA11y`,
+  `packageA11y`, `chipA11y`, stat-card `a11y`).
+- Non-Composable call sites use `context.getString(...)` /
+  `resources.getQuantityString(...)`. The three ViewModels gained
+  `@ApplicationContext private val context: Context` (Hilt auto-wires it).
+- New `android/check-hardcoded-strings.sh`, run in Android CI.
+### iOS
+- `SWIFT_EMIT_LOC_STRINGS = YES` was ALREADY set on all four build configs, so SwiftUI
+  `Text("literal")` was already extraction-ready. The actual gaps were (a) no String
+  Catalog to hold translations and (b) `String`-typed messages, which SwiftUI never
+  localizes.
+- Added `LastLogged/Localizable.xcstrings` (14 keys, 3 with plural `substitutions`) and
+  registered it as a resource in project.pbxproj.
+- Converted all 14 `errorMessage` / password-rule literals to `String(localized:)`,
+  replacing a hand-rolled `attempt\(remaining == 1 ? "" : "s")` pluralisation.
+- New `scripts/check-ios-strings.sh`, run in iOS CI.
+### Verification
+- Every `R.string`/`R.plurals` reference resolves; every required import present.
+- Every `String(localized:)` call site cross-checked against catalog keys using
+  balanced-paren interpolation normalisation: zero mismatches, zero orphan keys.
+- BOTH CI gates proven by reintroducing a literal and confirming the gate fails.
+- pbxproj: 178 objects, zero dangling refs. edge-functions 55/55, website 0 errors.
+- **Learnings for future iterations:**
+  - `stringResource()` inside `semantics {}` does NOT compile — that lambda is not
+    @Composable. Read the string into a `val` in the enclosing composable first. Same for
+    `remember {}` and any non-composable lambda.
+  - Grep for MORE than `Text("`. Custom composables (`SectionHeader("Account")`),
+    `when` expressions returning literals, `?:` fallbacks (`userEmail ?: "Signed In"`),
+    and ViewModel message assignments all hide literals. Cross-checking *unused* string
+    resources is what surfaced them.
+  - `String(localized: "key \(value)")` resolves to the key **including the format
+    specifier** — `"key %lld"` for Int, `"key %@"` for String. The catalog key must match
+    exactly or the raw key is displayed to the user.
+  - xcstrings plurals inside an interpolated string use `substitutions`: the top-level
+    value references `%#@arg1@` and the substitution holds the one/other forms.
+  - A missing catalog key is not fatal — Xcode's build-time extraction adds it (English =
+    the key), so this self-heals on the next build. Still worth opening the catalog in
+    Xcode once to confirm the plural rules render.
+  - Adding a constructor param to a @HiltViewModel breaks any test that constructs it
+    directly — `AuthViewModelTest` needed a relaxed mockk Context.
+  - 11 pre-existing unused string resources remain (`auth_title`, `save`, `confirm`,
+    `add_from_templates`, …). They were dead before this change; left in place rather
+    than pruned blind.
+---

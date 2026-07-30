@@ -48,6 +48,9 @@ jobs:
           restore-keys: |
             spm-${{ runner.os }}-
 
+      - name: Check localization invariants
+        run: ./scripts/check-ios-strings.sh
+
       - name: Seed Secrets.xcconfig
         run: |
           # CI uses the committed example so builds compile; AppSecrets.validate()
