@@ -1478,3 +1478,24 @@ Closed the final three launch-readiness stories with deliverables that are durab
 
 
 ---
+
+## 2026-07-30 - PROD-001
+- Restored the Gradle wrapper: committed `android/gradle/wrapper/gradle-wrapper.jar`
+  (Gradle 8.5 official artifact) and `android/gradlew.bat` for Windows devs.
+- Added `android/gradle/wrapper/gradle-wrapper.jar.sha256` pinning the exact binary.
+- android-ci.yml now runs `gradle/actions/wrapper-validation@v4` right after checkout
+  and a `sha256sum -c` + `./gradlew --version` smoke step before the build steps.
+- Files changed: android/gradle/wrapper/gradle-wrapper.jar (new),
+  android/gradle/wrapper/gradle-wrapper.jar.sha256 (new), android/gradlew.bat (new),
+  .github/workflows/android-ci.yml
+- **Learnings for future iterations:**
+  - The wrapper JAR was never committed, so *every* `./gradlew` step in android-ci.yml
+    has been failing since the workflow was added. The Android app has never actually
+    been compiled by CI — do not trust the previous "compiles successfully" story notes.
+  - Verified locally: `./gradlew --version` now downloads gradle-8.5-bin.zip and prints
+    "Gradle 8.5". The agent sandbox *can* reach services.gradle.org for the distribution
+    zip, but `services.gradle.org/*.sha256` and `dl.google.com` are proxy-blocked (403),
+    so the Android SDK still cannot be installed and full `assembleDebug` remains
+    unverifiable locally.
+  - `./gradlew` prints a harmless `ulimit: Illegal option -u` warning under dash; ignore it.
+---

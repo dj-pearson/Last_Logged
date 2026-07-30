@@ -41,7 +41,8 @@
         "android-ci.yml verifies the wrapper before running (./gradlew --version)"
       ],
       "priority": 1,
-      "passes": false
+      "passes": true,
+      "notes": "Committed gradle-wrapper.jar (Gradle 8.5, sha256 d3b261c2...) + gradlew.bat. Added gradle-wrapper.jar.sha256 and two CI gates: gradle/actions/wrapper-validation@v4 for authenticity and a sha256sum -c + ./gradlew --version smoke check. Verified locally: ./gradlew --version reports Gradle 8.5."
     },
     {
       "id": "PROD-002",
