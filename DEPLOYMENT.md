@@ -289,6 +289,26 @@ internal / alpha / beta / production).
 
 ---
 
+## 6d. Localization
+
+Both apps are translation-ready; only English ships today.
+
+- **Android**: `android/app/src/main/res/values/strings.xml`. Add a locale by
+  creating `values-<lang>/strings.xml`. `android/check-hardcoded-strings.sh`
+  fails CI on a new user-facing literal.
+- **iOS**: `LastLogged/Localizable.xcstrings`. Add a language in Xcode
+  (Project → Info → Localizations); `SWIFT_EMIT_LOC_STRINGS` extracts new
+  `Text(...)` strings automatically on build. `scripts/check-ios-strings.sh`
+  fails CI on a `String`-typed user-facing literal.
+
+### Verify
+
+- [ ] Open `Localizable.xcstrings` in Xcode once and confirm the three plural
+      rules render (`auth.error.cooldownShort/Long`, `auth.error.attemptsRemaining`)
+- [ ] Run the app in a pseudo-locale to spot any literal that escaped the gates
+
+---
+
 ## 7. Website
 
 - [ ] `PUBLIC_APP_STORE_URL` env var set in Cloudflare Pages env

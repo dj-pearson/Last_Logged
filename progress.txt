@@ -46,6 +46,17 @@ Started: 2026-03-24
 - xcconfig treats `//` as a comment even inside values — escape URLs as `https:$()//host`.
 - `plistlib.dump()` and `json.dump()` DESTROY comments. Re-add them with a text edit.
 
+### Localization
+- `stringResource()` cannot be called inside `semantics {}` / `remember {}` — hoist it
+  into a `val` in the enclosing @Composable.
+- `String(localized: "key \(v)")` resolves to `"key %lld"` (Int) or `"key %@"` (String).
+  The xcstrings key must include the specifier.
+- Grep for more than `Text("`: custom composables, `when` branches, `?:` fallbacks, and
+  ViewModel message assignments all hide literals. Listing UNUSED string resources is the
+  reliable way to find what a naive grep missed.
+- Two CI gates guard regressions: `android/check-hardcoded-strings.sh` and
+  `scripts/check-ios-strings.sh`.
+
 ### CI
 - The `secrets` context is NOT available in a step's `if:`. Convert presence checks into
   step outputs and gate on `steps.<id>.outputs.*`.
