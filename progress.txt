@@ -1961,3 +1961,28 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - NOT COMPILE-VERIFIED: no macOS/Xcode in the sandbox. The pbxproj is structurally sound
     but the first CI run is the real check.
 ---
+
+## 2026-07-30 - PROD-017
+- `Info.plist`: added `ITSAppUsesNonExemptEncryption = false` (App Store Connect otherwise
+  asks the encryption question on EVERY upload) and
+  `UIBackgroundModes = [remote-notification]`, which the PROD-003 digest needs.
+  `CFBundleURLTypes` for the `lastlogged://` scheme landed earlier in PROD-007.
+- Deliberately did NOT add `CFBundleDisplayName` / `CFBundleShortVersionString` /
+  `CFBundleVersion` to the file: `GENERATE_INFOPLIST_FILE = YES` already synthesises them
+  from `INFOPLIST_KEY_CFBundleDisplayName`, `MARKETING_VERSION`, and
+  `CURRENT_PROJECT_VERSION`. Declaring them in both places is redundant and risks a
+  duplicate-key conflict at build time. They ARE build-setting driven, which is what the
+  story asked for.
+- `store-listing/app-store.md`: added a Submission answers table (encryption, export
+  compliance, IDFA, analytics, account requirements), the provisioning-profile capability
+  checklist, and the declared background modes.
+- Files changed: LastLogged/Info.plist, store-listing/app-store.md
+- **Learnings for future iterations:**
+  - With `GENERATE_INFOPLIST_FILE = YES`, prefer `INFOPLIST_KEY_*` build settings over
+    editing Info.plist. Only put keys in the file that have no `INFOPLIST_KEY_` equivalent
+    (here: `ITSAppUsesNonExemptEncryption`, `CFBundleURLTypes`, the `$(VAR)` secret keys).
+  - `plistlib.dump()` strips comments — same trap as the entitlements file in PROD-007.
+  - The provisioning profile now needs THREE capabilities (App Groups, Push Notifications,
+    Associated Domains). Push and Associated Domains were both added during this batch, so
+    the existing profile in the deploy secrets is stale and must be regenerated.
+---

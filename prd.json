@@ -301,7 +301,8 @@
         "store-listing/app-store.md updated with the final submission answers"
       ],
       "priority": 17,
-      "passes": false
+      "passes": true,
+      "notes": "Info.plist: added ITSAppUsesNonExemptEncryption=false (removes the encryption prompt on every upload) and UIBackgroundModes=[remote-notification] (required by the PROD-003 digest). CFBundleURLTypes for lastlogged:// landed in PROD-007. Deliberately did NOT duplicate CFBundleDisplayName/CFBundleShortVersionString/CFBundleVersion into the file \u2014 GENERATE_INFOPLIST_FILE=YES already synthesises them from INFOPLIST_KEY_CFBundleDisplayName/MARKETING_VERSION/CURRENT_PROJECT_VERSION, and duplicating risks a conflict. store-listing/app-store.md gained a Submission answers table, the provisioning-profile capability list, and the background-mode declaration."
     },
     {
       "id": "PROD-018",
