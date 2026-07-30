@@ -88,6 +88,34 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
+      # assembleDebug re-exports Room's schema JSON. If the committed copy no
+      # longer matches the entities, the working tree goes dirty here — that is
+      # a schema change that was never exported, which is exactly the mistake
+      # that ships an unmigratable database.
+      #
+      # Bootstrap: while app/schemas/ is still empty this only warns, so the very
+      # first green Android build can produce the baseline JSON to commit.
+      - name: Check Room schema is committed and current
+        run: |
+          if [ -z "$(git ls-files 'app/schemas/**/*.json')" ]; then
+            echo "::warning::No Room schema committed yet. Download the 'room-schemas'"
+            echo "::warning::artifact from this run and commit app/schemas/ to enable this gate."
+            exit 0
+          fi
+          if ! git diff --exit-code -- app/schemas; then
+            echo "::error::Room schema is stale. Run './gradlew assembleDebug' and commit app/schemas/."
+            exit 1
+          fi
+          echo "Room schema is up to date."
+
+      - name: Upload Room schemas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: room-schemas
+          path: android/app/schemas/
+          if-no-files-found: warn
+
       - name: Upload lint report
         if: always()
         uses: actions/upload-artifact@v4

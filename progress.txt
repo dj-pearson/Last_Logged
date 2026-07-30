@@ -1499,3 +1499,37 @@ Closed the final three launch-readiness stories with deliverables that are durab
     unverifiable locally.
   - `./gradlew` prints a harmless `ulimit: Illegal option -u` warning under dash; ignore it.
 ---
+
+## 2026-07-30 - PROD-002
+- Removed `android/app/schemas/` from .gitignore (with an explanatory comment so it
+  is not re-added) and documented the export workflow in `android/app/schemas/README.md`.
+- `AppDatabase` now exposes `NAME` and an explicit `MIGRATIONS` array; `AppModule`
+  calls `.addMigrations(*AppDatabase.MIGRATIONS)`. Still no `fallbackToDestructiveMigration`.
+- Created the `androidTest` source set (it did not exist) with `AppDatabaseMigrationTest`
+  covering v1 creatability and v1 -> latest validation via `MigrationTestHelper`.
+- build.gradle.kts: `androidTest` assets now include `$projectDir/schemas`; added
+  `room-testing` + `kotlinx-coroutines-test` to `androidTestImplementation`.
+- android-ci.yml: new "Check Room schema is committed and current" step plus a
+  `room-schemas` artifact upload.
+- Files changed: .gitignore, android/app/build.gradle.kts,
+  android/app/src/main/java/.../data/local/AppDatabase.kt,
+  android/app/src/main/java/.../di/AppModule.kt,
+  android/app/src/androidTest/java/.../AppDatabaseMigrationTest.kt (new),
+  android/app/schemas/README.md (new), .github/workflows/android-ci.yml
+- **Learnings for future iterations:**
+  - Room's exported schema JSON CANNOT be hand-authored. It carries an `identityHash`
+    that Room computes from the compiled entities during annotation processing — a
+    hand-written value makes `MigrationTestHelper` fail in a confusing way. The
+    baseline must come from a real build.
+  - Because of that, the CI schema gate is deliberately two-stage: it warns while
+    `app/schemas/**/*.json` is untracked and only becomes blocking once a baseline
+    is committed. Use `git ls-files 'app/schemas/**/*.json'` (not the directory) for
+    the check, otherwise README.md arms the gate prematurely.
+  - `MigrationTestHelper` needs the schema JSON as *androidTest assets*, which
+    requires the `sourceSets { getByName("androidTest") { assets.srcDir(...) } }`
+    block — adding `room-testing` alone is not enough.
+  - `room-testing` was previously only in `testImplementation`; instrumentation
+    tests need it in `androidTestImplementation` too.
+  - DAO methods are `suspend`, so instrumentation tests need `runBlocking` around
+    DAO calls.
+---

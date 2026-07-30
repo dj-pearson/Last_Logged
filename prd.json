@@ -56,7 +56,8 @@
         "android-ci.yml fails if the exported schema is out of date with the entities"
       ],
       "priority": 2,
-      "passes": false
+      "passes": true,
+      "notes": "Un-gitignored android/app/schemas/, added AppDatabase.MIGRATIONS (explicitly empty, no destructive fallback) wired through AppModule, created the androidTest source set with AppDatabaseMigrationTest (MigrationTestHelper), exposed schemas/ as androidTest assets, and added a CI gate that fails on a stale schema. Baseline 1.json cannot be hand-authored (Room derives identityHash during annotation processing) so the gate warns until the first green Android build uploads it as the room-schemas artifact."
     },
     {
       "id": "PROD-003",

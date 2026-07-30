@@ -23,8 +23,12 @@ object AppModule {
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
-            "lastlogged.db"
-        ).build()
+            AppDatabase.NAME
+        )
+            // Explicit and exhaustive: no destructive fallback, so a missing
+            // migration throws instead of dropping the user's tracker history.
+            .addMigrations(*AppDatabase.MIGRATIONS)
+            .build()
     }
 
     @Provides

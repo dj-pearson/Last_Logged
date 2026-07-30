@@ -46,7 +46,8 @@ Pods/
 android/.gradle/
 android/build/
 android/app/build/
-android/app/schemas/
+# NOTE: android/app/schemas/ is intentionally NOT ignored. Room's exported
+# schema JSON must be committed so migrations can be validated and tested.
 android/local.properties
 android/keystore.properties
 android/app/google-services.json
