@@ -1767,3 +1767,34 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - When adding a second entry point to an existing screen, re-check its dismiss/back
     handling — hardcoded `popUpTo` chains are usually written for one caller only.
 ---
+
+## 2026-07-30 - PROD-011
+- `AnalyticsService` now really sends: POSTs the TelemetryDeck v2 signal array to
+  `https://nom.telemetrydeck.com/v2/` with `appID` from `BuildConfig.TELEMETRYDECK_APP_ID`.
+- Fire-and-forget on a `SupervisorJob() + Dispatchers.IO` scope with a
+  `CoroutineExceptionHandler`; a network failure is logged and nothing else.
+- Complete no-op when the app id is blank (the CI/unit-test default), so no traffic and
+  no storage access at all.
+- `clientUser` is a SHA-256 hash of the Supabase user id — the raw id and the email never
+  leave the device. `identify()` is wired into `SupabaseService`'s auth state listener and
+  `signOut()`. Before sign-in a random per-install UUID is used.
+- Fixed a second gap found along the way: `AnalyticsService.configure()` had NO caller.
+  Now invoked from `LastLoggedApp.onCreate()` alongside RevenueCat and PushTokenService.
+- `buildPayload` is `internal` so tests can assert on the exact body without a network.
+- Files changed: service/AnalyticsService.kt, service/SupabaseService.kt,
+  LastLoggedApp.kt, app/src/test/.../AnalyticsServiceTest.kt (new)
+- **Learnings for future iterations:**
+  - Same lesson as PROD-003: grep for CALLERS. `AnalyticsService.configure()` existed and
+    was never invoked, exactly like `SupabaseService.registerDeviceToken` on iOS.
+  - Event name strings are the join key between the iOS and Android funnels.
+    `AnalyticsServiceTest` asserts the full list — update both platforms together.
+  - Expose an `internal` payload builder for services that do network I/O; it gives unit
+    tests a seam without HTTP mocking.
+  - `verify { mock wasNot Called }` needs `import io.mockk.Called` — `wasNot` is an infix
+    inside the verification scope and is NOT imported.
+  - NOT VERIFIED AGAINST LIVE INGEST: the TelemetryDeck v2 body shape
+    (`[{appID, clientUser, type, payload:{...}}]`) is written from the documented format
+    but no request has been made. Confirm with one real signal before relying on the
+    dashboard; if v2 wants `payload` as an array of `"key:value"` strings instead of an
+    object, only `buildPayload` needs to change and the tests will catch it.
+---

@@ -205,7 +205,8 @@
         "Unit test covers payload construction and the blank-app-id no-op path"
       ],
       "priority": 11,
-      "passes": false
+      "passes": true,
+      "notes": "AnalyticsService now POSTs signals to the TelemetryDeck ingest endpoint using TELEMETRYDECK_APP_ID from BuildConfig, on a SupervisorJob+Dispatchers.IO scope with a CoroutineExceptionHandler (fire-and-forget, never blocks or crashes a caller). Complete no-op when the app id is blank. clientUser is a SHA-256 of the Supabase user id (identify() wired into SupabaseService auth state + signOut) with a random per-install anonymous id before sign-in. Event names verified identical to iOS. Also fixed AnalyticsService.configure() never being called \u2014 now invoked from LastLoggedApp.onCreate. 8 unit tests in AnalyticsServiceTest. NOTE: the exact TelemetryDeck v2 payload shape is unverified against live ingest."
     },
     {
       "id": "PROD-012",
