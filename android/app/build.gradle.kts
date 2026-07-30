@@ -205,6 +205,9 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.9")
     testImplementation("androidx.room:room-testing:2.6.1")
     testImplementation("app.cash.turbine:turbine:1.0.0")
+    // The android.jar stub throws on every org.json call in unit tests; this
+    // puts a real implementation ahead of it on the test classpath.
+    testImplementation("org.json:json:20231013")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

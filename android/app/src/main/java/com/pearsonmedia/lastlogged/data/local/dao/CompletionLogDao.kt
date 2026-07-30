@@ -22,6 +22,10 @@ interface CompletionLogDao {
     @Query("SELECT COUNT(*) FROM completion_logs WHERE tracker_item_id = :trackerItemId")
     suspend fun getLogCountForTracker(trackerItemId: String): Int
 
+    /** One-shot snapshot for data export. */
+    @Query("SELECT * FROM completion_logs ORDER BY completed_at DESC")
+    suspend fun getAllLogsOnce(): List<CompletionLog>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(log: CompletionLog)
 

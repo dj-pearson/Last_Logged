@@ -123,7 +123,8 @@
         "Unit test asserts the serialized payload contains all three collections"
       ],
       "priority": 6,
-      "passes": false
+      "passes": true,
+      "notes": "New util/DataExporter.kt builds the export JSON (schemaVersion, exportedAt, platform, categories/trackerItems/completionLogs) matching the iOS camelCase shape. Added one-shot getAll*Once() DAO queries + TrackerRepository.exportSnapshot(). SettingsViewModel.exportData now runs on Dispatchers.IO, writes cacheDir/exports/lastlogged-export-<date>.json, returns a FileProvider URI, and surfaces real errors; SettingsScreen consumes it via LaunchedEffect to open an ACTION_SEND chooser. Added FileProvider + res/xml/file_paths.xml scoped to the exports subdir. 9 unit tests in DataExporterTest (org.json:json added to testImplementation); ISO timestamps independently verified."
     },
     {
       "id": "PROD-007",

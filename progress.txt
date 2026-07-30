@@ -1640,3 +1640,38 @@ Closed the final three launch-readiness stories with deliverables that are durab
   - The `WidgetItemsTest` expectations were verified by re-running the algorithm
     independently before commit, since Kotlin tests cannot run in the sandbox.
 ---
+
+## 2026-07-30 - PROD-006
+- New `util/DataExporter.kt`: builds the export document (`schemaVersion`, `exportedAt`,
+  `platform`, `categories`, `trackerItems`, `completionLogs`) using the same camelCase
+  keys and ISO-8601 timestamps as iOS `exportDataLocally()`.
+- Added one-shot `getAllItemsOnce()` / `getAllLogsOnce()` / `getAllCategoriesOnce()` DAO
+  queries and `TrackerRepository.exportSnapshot()`. Archived items ARE included — a
+  data-rights export has to be complete.
+- `SettingsViewModel.exportData()` now really exports: Dispatchers.IO, writes
+  `cacheDir/exports/lastlogged-export-<date>.json`, clears older exports, returns a
+  `FileProvider` URI in `exportedFileUri`, and reports failures instead of faking success.
+- `SettingsScreen` opens the ACTION_SEND chooser from a `LaunchedEffect` and calls
+  `clearExportedFile()` so it fires once.
+- Manifest: added the `FileProvider` (`${applicationId}.fileprovider`, not exported) and
+  `res/xml/file_paths.xml` scoped to the `exports/` cache subdirectory only.
+- Files changed: util/DataExporter.kt (new), data/local/dao/*.kt (3),
+  data/repository/TrackerRepository.kt, ui/settings/SettingsViewModel.kt,
+  ui/settings/SettingsScreen.kt, res/xml/file_paths.xml (new), AndroidManifest.xml,
+  app/build.gradle.kts, app/src/test/.../DataExporterTest.kt (new)
+- **Learnings for future iterations:**
+  - `org.json` in the android.jar stub THROWS on every call in unit tests. Add
+    `testImplementation("org.json:json:20231013")` so the real implementation wins on the
+    test classpath — do this before writing any test that touches JSONObject.
+  - `JSONObject.put(key, null)` REMOVES the key. That is what we want for absent optional
+    fields, and it means an exported doc omits keys rather than writing `"null"`.
+  - Scope FileProvider `<cache-path>` to a subdirectory (`exports/`), never the whole
+    cache — otherwise a share grant could expose unrelated cached files.
+  - Keep Activity launches (share sheet) out of the ViewModel: expose a URI on the UI
+    state and let a `LaunchedEffect` in the composable start the chooser with
+    `LocalContext.current`.
+  - Export key names are camelCase to match iOS, NOT the snake_case Room column names.
+    If you change one platform's shape, change both and bump `DataExporter.SCHEMA_VERSION`.
+  - `SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")` with a UTC TimeZone emits a
+    trailing `Z`. Test expectations were verified independently before commit.
+---

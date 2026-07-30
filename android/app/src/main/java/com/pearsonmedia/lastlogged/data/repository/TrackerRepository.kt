@@ -128,6 +128,17 @@ class TrackerRepository @Inject constructor(
 
     // --- Data Management ---
 
+    /**
+     * One-shot snapshot of everything stored locally, for data export.
+     * Includes archived items — a data-rights export must be complete.
+     */
+    suspend fun exportSnapshot(): Triple<List<TrackerCategory>, List<TrackerItem>, List<CompletionLog>> =
+        Triple(
+            trackerCategoryDao.getAllCategoriesOnce(),
+            trackerItemDao.getAllItemsOnce(),
+            completionLogDao.getAllLogsOnce()
+        )
+
     suspend fun clearAllData() {
         completionLogDao.deleteAll()
         trackerItemDao.deleteAll()
