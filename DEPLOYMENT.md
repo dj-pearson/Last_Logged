@@ -150,12 +150,17 @@ Use Supabase scheduled functions, GitHub Actions cron, or your platform cron:
 
 - [ ] Firebase project has an Android app registered with package `com.pearsonmedia.lastlogged`
 - [ ] `google-services.json` downloaded and placed at `android/app/google-services.json`
-  (gitignored; CI must inject from `GOOGLE_SERVICES_JSON` secret if ever used)
-- [ ] FCM server key available for server-side sends (store in edge-function env later if needed)
-- [ ] `reminder-digest.ts` confirmed to fan out to both APNs and FCM tokens in `user_devices`
+  (gitignored; `deploy-android.yml` injects it from the `GOOGLE_SERVICES_JSON` secret)
+- [ ] Firebase service account created; `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, and
+  `FCM_PRIVATE_KEY` set in the edge-function env (see §2.1). **Android digests are
+  skipped entirely without these** — `validate-env.ts` warns at startup.
+- [ ] `reminder-digest.ts` routes by `user_devices.platform`: `ios` → APNs, `android` → FCM
 
 ### 4.3 Verify
 
+- [ ] iOS: grant notification permission → `AppDelegate` registers for APNs and a row
+      appears in `user_devices` with `platform='ios'` (this had NO caller before; if the
+      row is missing, check the `aps-environment` entitlement and the provisioning profile)
 - [ ] iOS device logs into the app → new row appears in `user_devices` with `platform='ios'`
 - [ ] Android device logs into the app → new row appears with `platform='android'`
 - [ ] Trigger `/reminder-digest` manually → notifications arrive on both
@@ -269,6 +274,18 @@ internal / alpha / beta / production).
 - [ ] Tag a prerelease and confirm the run produces a signed AAB
 - [ ] Confirm the build appears on the Play internal track
 - [ ] Confirm `mapping.txt` is attached to both the run and the Play release
+
+---
+
+## 6c. Observability
+
+- [ ] Sentry projects created for iOS, Android, and the edge functions
+- [ ] `SENTRY_DSN_IOS`, `SENTRY_DSN_ANDROID`, and the server `SENTRY_DSN` set
+- [ ] Confirm a test crash appears in each project
+- [ ] Confirm no tracker names, notes, or emails appear in any event
+      (`sendDefaultPii` is off and `beforeSend` scrubs; verify once after launch)
+- [ ] `mapping.txt` from `deploy-android.yml` uploaded so Android traces deobfuscate
+- [ ] Reporting is disabled, not broken, when a DSN is absent
 
 ---
 

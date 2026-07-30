@@ -349,7 +349,8 @@
         "progress.txt Codebase Patterns section updated with patterns from this batch"
       ],
       "priority": 20,
-      "passes": false
+      "passes": true,
+      "notes": "Verification sweep complete. Zero real TODO/FIXME markers remain in shipped iOS, Android, or edge-function source (the one grep hit is 'SSSXXX' inside a SimpleDateFormat pattern). All 6 workflows parse as valid YAML; all 4 plists, 7 XML files, and the xcscheme parse; pbxproj has 176 objects with zero dangling references; the Gradle wrapper checksum verifies. edge-functions: typecheck + lint clean, 55/55 tests pass. website: astro check 0 errors, build succeeds. DEPLOYMENT.md updated with every new secret (FCM_*, APPLE_TEAM_ID, ANDROID_SHA256_CERT, PLAY_*, ANDROID_KEYSTORE_*, SENTRY_DSN_*, APP_VERSION, RATE_LIMIT_STORE) plus new sections 4b (App Links), 6b (Android release), 6c (observability) and expanded push/health verification steps. store-listing app-store.md and app-privacy.md reconciled. progress.txt Codebase Patterns rewritten around verification reality, caller-auditing, cross-platform invariants, secrets, and CI gotchas."
     },
     {
       "id": "PROD-021",

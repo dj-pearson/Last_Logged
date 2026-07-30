@@ -3,6 +3,57 @@ Started: 2026-03-24
 
 ## Codebase Patterns
 
+### Verification reality (READ FIRST)
+- edge-functions/ and website/ REALLY BUILD AND TEST in the agent sandbox. Always run
+  `npm run typecheck && npm run lint && npm test` (edge-functions) and
+  `npx astro check && npm run build` (website) before committing.
+- iOS and Android DO NOT compile here: no Xcode, and dl.google.com is proxy-blocked so
+  there is no Android SDK. Those changes are code-review-verified only — say so in commit
+  notes rather than claiming "compiles successfully".
+- The Gradle wrapper DOES work (`./gradlew --version` downloads gradle-8.5 fine); only the
+  Android SDK is unavailable.
+- Validate what you can without a compiler: YAML via `yaml.safe_load`, plists via
+  `plistlib.load`, XML via `xml.dom.minidom.parse`, JSON via `json.load`, and pbxproj by
+  diffing `^\t\t<24-hex>` definitions against all 24-hex references (dangling refs = typo).
+- When you cannot run a test, re-derive its expectations independently (e.g. reimplement
+  the sort in Python) before committing.
+
+### Auditing
+- GREP FOR CALLERS, not just definitions. Three separate production gaps in this batch
+  were fully-written functions with zero call sites: `SupabaseService.registerDeviceToken`
+  (iOS), `AnalyticsService.configure` (Android), and the `LOG_NOW_ACTION` handler.
+- A green CI badge proves nothing until you check the steps actually ran — every
+  `./gradlew` step had been failing since the workflow was added because the wrapper JAR
+  was never committed.
+
+### Cross-platform invariants (change both sides together)
+- Overdue ordering is a RATIO (elapsed / interval), never a raw day count.
+  `WidgetItems.kt` (Android) and `WidgetDataProvider.swift` (iOS) must agree.
+- Analytics event name strings are the join key between the two funnels.
+  `AnalyticsServiceTest.kt` asserts the full list.
+- Data-export JSON uses camelCase keys matching iOS, NOT snake_case column names.
+  Bump `DataExporter.SCHEMA_VERSION` when the shape changes.
+- Deep-link paths are declared in THREE places: `website/src/config/app-association.ts`
+  (`APP_LINK_PATHS`), `android/.../util/DeepLinks.kt`, and
+  `LastLogged/Utilities/DeepLinkRouter.swift`.
+
+### Secrets
+- Keep OPTIONAL secrets out of `AppSecrets.validate()` — it `fatalError`s in Release, so a
+  missing nice-to-have becomes a launch crash.
+- `Release.xcconfig` uses `#include?` with an example fallback, so a missing
+  `Secrets.xcconfig` fails SILENTLY at build time and loudly at runtime. Any archiving
+  workflow must write the real file.
+- xcconfig treats `//` as a comment even inside values — escape URLs as `https:$()//host`.
+- `plistlib.dump()` and `json.dump()` DESTROY comments. Re-add them with a text edit.
+
+### CI
+- The `secrets` context is NOT available in a step's `if:`. Convert presence checks into
+  step outputs and gate on `steps.<id>.outputs.*`.
+- `defaults.run.working-directory` applies only to `run` steps; `uses:` action inputs are
+  relative to the workspace root.
+- Renaming a CI job changes the required-status-check name in branch protection.
+
+
 ### Android App (android/)
 - Android project uses MVVM: data/local/{entity,dao,converter}/, data/repository/, di/, ui/{home,auth,settings,detail,onboarding,components,theme,navigation}/, service/, util/
 - Gradle Kotlin DSL with Compose BOM 2024.01.00, Hilt 2.50, Room 2.6.1, Supabase BOM 2.1.3
@@ -2090,4 +2141,29 @@ Closed the final three launch-readiness stories with deliverables that are durab
     optional and warn loudly instead of shipping a broken-looking placeholder.
   - Always set intrinsic `width`/`height` on the hero image; it is the LCP element and
     omitting them causes layout shift.
+---
+
+## 2026-07-30 - PROD-020
+- Verification sweep across everything this batch touched:
+  - No real TODO/FIXME left in shipped iOS, Android, or edge-function source. (The single
+    grep hit is `SSSXXX` inside a `SimpleDateFormat` pattern in DataExporter.kt.)
+  - All 6 GitHub workflows parse as valid YAML.
+  - All 4 plists, 7 Android XML resources, and the xcscheme parse.
+  - pbxproj: 176 objects, ZERO dangling references, braces balanced.
+  - Gradle wrapper checksum verifies.
+  - edge-functions: `typecheck` clean, `lint` clean, 55/55 tests pass.
+  - website: `astro check` 0 errors, `npm run build` succeeds.
+- DEPLOYMENT.md: every secret introduced by this batch documented (`FCM_PROJECT_ID`,
+  `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY`, `APPLE_TEAM_ID`, `ANDROID_SHA256_CERT`,
+  `PLAY_SERVICE_ACCOUNT_JSON`, `ANDROID_KEYSTORE_*`, `SENTRY_DSN_IOS`,
+  `SENTRY_DSN_ANDROID`, `SENTRY_DSN`, `APP_VERSION`, `RATE_LIMIT_STORE`), plus new
+  sections §4b (Universal/App Links), §6b (Android release), §6c (observability) and
+  expanded verification for push on both platforms, deep links, and `/health`.
+- store-listing: `app-store.md` gained submission answers + the provisioning-profile
+  capability list; `app-privacy.md` now names Sentry and describes the scrubbing.
+- progress.txt Codebase Patterns rewritten around what actually matters for future
+  iterations: verification reality, caller-auditing, cross-platform invariants, secrets
+  handling, and CI gotchas.
+- **Open item**: PROD-018 is partially complete and PROD-019 (localization) was not
+  started — see the notes on those stories.
 ---
