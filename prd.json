@@ -509,7 +509,7 @@
         "vitest cases in edge-functions cover every mapped event, an unknown event that must not grant premium, and a webhook whose app_user_id matches a real users.auth_id row and updates it",
         "Typecheck passes"
       ],
-      "priority": 29,
+      "priority": 0.05,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-002). Not planned in prd.json or LastLogged_PRD.docx; it is a correctness fix, but every paid tier below rests on it. Competitive claim removed: the draft said no competitor offers account-portable purchases across iOS and Android, which was unsupported. Size: M. Success metric: reconciliation of RevenueCat active subscribers against users rows shows 0 tier mismatches."
     },
@@ -528,7 +528,7 @@
         "Unit tests cover bucket-to-date backdating and the keep-5 archive on both platforms",
         "Typecheck passes"
       ],
-      "priority": 30,
+      "priority": 0.1,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-003), with the overdue share card folded in from the replaced LEAP-015 and the trial_started fix folded in from the replaced LEAP-017. Not planned: the docx funnel assumes a 7-day trial and a soft paywall (US-022). The draft's '23 templates' count was unverified and is dropped. RevenueCat's State of Subscription Apps reports longer trials converting better; quote the exact figures only after checking https://www.revenuecat.com/state-of-subscription-apps-2025/ . Size: L. Success metric: trial-to-paid >= 35%; median trackers with a real lastCompletedAt after onboarding >= 8."
     },
@@ -546,7 +546,7 @@
         "Unit tests cover CSV parsing (quoted fields, ISO and US dates, bad rows reported by line), interval inference, and merge-by-name on both platforms",
         "Typecheck passes"
       ],
-      "priority": 31,
+      "priority": 0.14,
       "passes": false,
       "notes": "NEW (replaces the draft's LEAP-004 App Intents story, which restated docx V2-2 'Siri Shortcuts'). Competitive rationale: the PRD positions Last Logged against Notes entries and calendar reminders (docx 2.1); an importer makes that replacement literal. Whether specific competitors offer a CSV export is unverified; build the generic CSV path first and add per-app mappings only after checking each export. Size: M. Success metric: >= 20% of new installs import at least one tracker; importers' D30 retention >= 1.3x non-importers."
     },
@@ -563,7 +563,7 @@
         "Unit tests cover dual-trigger urgency on both platforms, including a tracker with no usage reading yet",
         "Typecheck passes"
       ],
-      "priority": 32,
+      "priority": 0.19,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-009). Competitive claim narrowed: the draft's statements about TimeJot's feature set were unverified; the supported claim is that the PRD itself names per-asset tracking as a persona value driver with no feature behind it. Size: L. Success metric: >= 40% of users with a Car Care tracker create a car asset; Car Care tracker D90 retention +10 points."
     },
@@ -580,7 +580,7 @@
         "vitest renders a fixture dataset and asserts the report never contains another user's rows",
         "Typecheck passes"
       ],
-      "priority": 33,
+      "priority": 0.24,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-010); attachment thumbnails removed because photo attachments are docx roadmap V3, not built. HomeZada markets home maintenance records on the web (https://www.homezada.com/); the draft's 'nobody in the one-tap niche offers it' is unverified. Size: M. Success metric: >= 10% of Premium users generate a report per year; installs attributed to report links >= 2% of organic."
     },
@@ -597,7 +597,7 @@
         "Unit tests cover the parser contract with a stubbed model, including relative dates ('last weekend', 'two months ago') and an unmatched name",
         "Typecheck passes"
       ],
-      "priority": 34,
+      "priority": 0.29,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-005). Apple announced the Foundation Models framework for iOS 26 (https://developer.apple.com/documentation/foundationmodels). The draft's claim that nobody in the tracker niche has AI capture is unverified and dropped. Size: L. Success metric: >= 20% of weekly active users log via AI capture; trackers created per new user +30% vs control."
     },
@@ -614,7 +614,7 @@
         "Unit tests on both platforms cover totals, the median forecast and the no-history case",
         "Typecheck passes"
       ],
-      "priority": 35,
+      "priority": 0.33,
       "passes": false,
       "notes": "NEW (replaces the draft's LEAP-007 adaptive reminders, which restated docx V4 Smart Interval Suggestions). Not in prd.json or the docx roadmap. Competitive claim kept modest: no checked competitor page was found offering a maintenance cost forecast, but that is unverified; do not market it as a first. Size: M. Success metric: >= 30% of Premium users record a cost in 60 days; Premium churn among cost recorders -15% vs non-recorders."
     },
@@ -631,7 +631,7 @@
         "vitest proves a token cannot read or log any other tracker, and that a revoked token fails",
         "Typecheck passes"
       ],
-      "priority": 36,
+      "priority": 0.38,
       "passes": false,
       "notes": "NEW (replaces the draft's LEAP-001 Shared Household Log, which restated docx V2-1 almost line for line: households table, 6-character invite code, Realtime, who-logged, and a $5.99/4-member Household Plan). The household plan stays planned in the docx and should get its own prd.json story. Email or SMS reminders to recipients need a separately verified sender identity and are out of scope here; recipients bookmark the page. Size: M. Success metric: >= 10% of active users create a delegation; >= 15% of delegation recipients install Last Logged within 60 days."
     },
@@ -648,7 +648,7 @@
         "Pack titles and descriptions pass a blocklist check and carry a manual unpublish flag before is_public takes effect",
         "Typecheck passes"
       ],
-      "priority": 37,
+      "priority": 0.43,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-011). The cited Tody review complaint about irrelevant default tasks is unverified; the supported rationale is the PRD's own sharing persona. Size: L. Success metric: viral coefficient from pack links >= 0.1; >= 500 public packs in 6 months."
     },
@@ -665,7 +665,7 @@
         "The hub registry entry for lastlogged gets a real domain once one is registered and resolves (it is domain: null today), so SSL, uptime and site audit cover it",
         "Typecheck passes"
       ],
-      "priority": 38,
+      "priority": 0.48,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-012). website/src/pages/use-cases.astro already exists and should link the new pages. The draft's 'lastlogged.com did not resolve' claim was not re-checked here; the hub registry's domain: null is the verified fact. Lighthouse-in-CI criterion dropped as untied to any existing workflow. Size: M. Success metric: 10k monthly organic sessions within 6 months; >= 2,000 consented emails before launch."
     },
@@ -682,7 +682,7 @@
         "GET /benchmarks serves the table with caching; vitest covers the sample-size threshold and that opted-out users' logs are excluded",
         "Typecheck passes"
       ],
-      "priority": 39,
+      "priority": 0.52,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-006). Not planned. Expect no published benchmark until well after launch given the 50-user threshold; that is the honest state, not a bug. Size: L. Success metric: benchmark_opt_in >= 30% of signed-in users; benchmarks live for >= 15 templates within 6 months."
     },
@@ -699,7 +699,7 @@
         "vitest covers response parsing, de-duplication of campaigns and the no-results case using a recorded fixture",
         "Typecheck passes"
       ],
-      "priority": 40,
+      "priority": 0.57,
       "passes": false,
       "notes": "NEW (replaces the draft's LEAP-016 Apple Watch app, which restated docx V5 'Apple Watch Complication'). Not planned. NHTSA recall API: https://www.nhtsa.gov/nhtsa-datasets-and-apis . Appliance recalls (CPSC) are a possible follow-up; verify that API before scoping it. Size: M. Success metric: >= 50% of car assets have make/model/year; recall-alert open rate >= 40%."
     },
@@ -716,7 +716,7 @@
         "vitest proves a token is single-use, expires, and copies only the named asset's rows",
         "Typecheck passes"
       ],
-      "priority": 41,
+      "priority": 0.62,
       "passes": false,
       "notes": "NEW (replaces the draft's LEAP-008 photo and receipt capture, which restated docx V3 'Photo / Receipt Attachments'). Not planned. Depends on LEAP-004 assets. Size: M. Success metric: >= 5% of reports (LEAP-005) lead to a transfer; >= 50% of transfer recipients are new installs."
     },
@@ -733,7 +733,7 @@
         "vitest covers token auth, revocation and rate limiting; an iOS unit test covers the filter-reset detection with a stubbed accessory",
         "Typecheck passes"
       ],
-      "priority": 42,
+      "priority": 0.67,
       "passes": false,
       "notes": "NEW (replaces the draft's LEAP-017 pricing experiments, which restated docx 6.4: RevenueCat A/B tests, the $39.99 launch lifetime, and a cancellation screen that already exists as CancellationView.swift; its trial_started fix moved into LEAP-002). Not planned. HomeKit filter characteristics: https://developer.apple.com/documentation/homekit/hmcharacteristictypefilterlifelevel . Size: M. Success metric: >= 5% of Premium users link a device or webhook; trackers with auto-logging show >= 90% on-time completion."
     },
@@ -750,7 +750,7 @@
         "vitest covers reward-on-renewal-only, self-referral refusal and duplicate redemption",
         "Typecheck passes"
       ],
-      "priority": 43,
+      "priority": 0.71,
       "passes": false,
       "notes": "NEW (replaces the draft's LEAP-015 overdue card and Year in Review; Year in Review is docx V6 and the overdue card moved into LEAP-002). Not planned. Confirm how RevenueCat grants promotional entitlements to a specific app user id before choosing between that and offer codes. Size: M. Success metric: >= 10% of new subscribers arrive via referral within 6 months of launch."
     },
@@ -768,7 +768,7 @@
         "vitest covers the partner join and that the report route refuses non-operator callers",
         "Typecheck passes"
       ],
-      "priority": 44,
+      "priority": 0.76,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-014). Contact email column dropped from partners (it is not needed by any criterion). Whether RevenueCat webhook events expose the offer code used must be checked against current RevenueCat docs before build; if not, attribute by code redemption in-app. Size: M. Success metric: 10 active partners in 6 months; gifted-to-paid conversion at expiry >= 25%."
     },
@@ -783,7 +783,7 @@
         "LEAP-010 how-often pages link to the matching custom product page URL",
         "Typecheck passes"
       ],
-      "priority": 45,
+      "priority": 0.81,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-013) but cut: seasonal In-App Events were removed because docx V10 'Seasonal Contextual Prompts' already plans the seasonal work. Apple docs: https://developer.apple.com/app-store/custom-product-pages/ . The draft's claim that competitors run single product pages is unverified and dropped. Size: S-M. Success metric: conversion rate on category pages >= 1.3x the default page."
     },
@@ -799,7 +799,7 @@
         "website/src/pages/landlords.astro explains the tier with prices read from the same config as index.astro",
         "Typecheck passes"
       ],
-      "priority": 46,
+      "priority": 0.86,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-018). Blocked on the household tables from docx V2-1 being written as a prd.json story and built. Tody's team pricing figures in the draft were unverified and removed. Size: L. Success metric: Pro is >= 5% of paying users with ARPU >= 3x Premium."
     },
@@ -815,7 +815,7 @@
         "The ios-ci workflow builds the macOS destination",
         "Typecheck passes"
       ],
-      "priority": 47,
+      "priority": 0.9,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-019). Not planned. Streaks and Due list Mac and iPad versions on their sites (https://streaks.app/ , https://www.dueapp.com/ ); the claim about Last Time's platform coverage is unverified. Size: M. Success metric: >= 10% of Premium users active on a second Apple device."
     },
@@ -832,7 +832,7 @@
         "vitest covers the redirect, that no user identifiers appear in the outbound URL, and the flag-off path",
         "Typecheck passes"
       ],
-      "priority": 48,
+      "priority": 0.95,
       "passes": false,
       "notes": "Kept from the draft (was LEAP-020). Gate on product-market fit. Depends on template_key from LEAP-011. Size: L. Success metric: click-through >= 3% on eligible overdue items; referral revenue >= 10% of MRR within 12 months of enabling."
     }
