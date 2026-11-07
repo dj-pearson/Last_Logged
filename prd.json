@@ -495,6 +495,346 @@
       "priority": 28,
       "passes": false,
       "notes": ""
+    },
+    {
+      "id": "LEAP-001",
+      "title": "Server-side entitlement truth: link RevenueCat identity to the Supabase user",
+      "description": "As the business, I need every Last Logged purchase tied to the signed-in Supabase account so Premium follows the user across iOS and Android, paid features can be checked server-side, and revenue is visible at all. Verified in the built tree on 2026-11-07: LastLogged/Services/RevenueCatService.swift:45 configures Purchases with appUserID nil, android RevenueCatService.kt identifyUser() (line 92) has no callers, and edge-functions/src/revenuecat-webhook.ts matches on users.auth_id = app_user_id (so it matches no row for anonymous RC ids) and its default branch (line 47-49) returns 'premium' for any unknown event type. Every paid story below depends on this.",
+      "acceptanceCriteria": [
+        "LastLogged/Services/RevenueCatService.swift calls Purchases.shared.logIn(<supabase user id>) after sign-in and logOut() on sign-out, and no longer configures with appUserID nil once a session exists",
+        "android/app/src/main/java/com/pearsonmedia/lastlogged/service/RevenueCatService.kt identifyUser() is called from the auth flow (ui/auth/AuthViewModel.kt) after sign-in, and logOut on sign-out",
+        "edge-functions/src/revenuecat-webhook.ts maps INITIAL_PURCHASE, RENEWAL, UNCANCELLATION, PRODUCT_CHANGE to the entitled tier; CANCELLATION keeps the tier until expiration_at; EXPIRATION sets free; BILLING_ISSUE sets billing_issue_at; an unknown event type is logged and changes nothing (the default branch no longer returns 'premium')",
+        "A new migration in supabase/migrations/ adds users.entitlement_expires_at and users.billing_issue_at, and the webhook writes them",
+        "A new edge route GET /entitlements returns the caller's tier from their users row (auth required)",
+        "vitest cases in edge-functions cover every mapped event, an unknown event that must not grant premium, and a webhook whose app_user_id matches a real users.auth_id row and updates it",
+        "Typecheck passes"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-002). Not planned in prd.json or LastLogged_PRD.docx; it is a correctness fix, but every paid tier below rests on it. Competitive claim removed: the draft said no competitor offers account-portable purchases across iOS and Android, which was unsupported. Size: M. Success metric: reconciliation of RevenueCat active subscribers against users rows shows 0 tier mismatches."
+    },
+    {
+      "id": "LEAP-002",
+      "title": "Overdue-audit onboarding with a 14-day reverse trial and a shareable overdue card",
+      "description": "As a new Last Logged user, I want the first minute to show what I am already overdue on, so the home screen and widget open with real red and yellow items instead of 'never logged', and I get a card I can share. Template intervals in LastLogged/Utilities/CategoryTemplates.swift run from 14 to 365 days, so inside the 7-day trial the PRD's funnel describes (LastLogged_PRD.docx section 6.2) almost no reminder fires and the product never proves itself before the trial ends. A reverse trial (full Premium for 14 days, then choose what to keep) turns the 5-tracker cap into a choice about the user's own data.",
+      "acceptanceCriteria": [
+        "LastLogged/Views/Onboarding/OnboardingView.swift with OnboardingViewModel.swift, and android/app/src/main/java/com/pearsonmedia/lastlogged/ui/onboarding/OnboardingScreen.kt, ask 'When did you last...?' for each selected template with buckets: this month / 1-3 months / 3-6 months / 6-12 months / over a year / never",
+        "Each bucket backdates lastCompletedAt and writes a CompletionLog marked source = onboarding_estimate; 'never' items render a defined 'Unknown' urgency state in LastLogged/Views/Home/HomeView.swift, the Android HomeScreen.kt and both widgets",
+        "During the reverse trial all selected templates are created; at trial end a 'Choose 5 to keep' sheet archives the rest (isArchived = true, never deleted) unless the user subscribes",
+        "The trial is granted from the RevenueCat offering (introductory offer or promotional entitlement); the hardcoded '7-day free trial' strings in LastLogged/Views/Components/PaywallView.swift (lines 136 and 144) and the Android PaywallScreen.kt are replaced by values read from the offering",
+        "Free-tier limits come from one declared config consumed by both RevenueCatService.swift and RevenueCatService.kt, and website/src/pages/index.astro states the same numbers",
+        "Onboarding ends on an 'Overdue on N of M' screen with a share action that renders a 9:16 and 1:1 card (ImageRenderer on iOS, Compose capture on Android) carrying the wordmark and a UTM link; health-category item names are omitted unless the user opts in for that card",
+        "trial_started fires only when the purchased product has an active introductory offer (today AnalyticsService.swift signals it on purchase); onboarding_audit_completed{overdue_count}, share_card_shared{channel} and reverse_trial_ended{kept, subscribed} fire on both platforms",
+        "Unit tests cover bucket-to-date backdating and the keep-5 archive on both platforms",
+        "Typecheck passes"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-003), with the overdue share card folded in from the replaced LEAP-015 and the trial_started fix folded in from the replaced LEAP-017. Not planned: the docx funnel assumes a 7-day trial and a soft paywall (US-022). The draft's '23 templates' count was unverified and is dropped. RevenueCat's State of Subscription Apps reports longer trials converting better; quote the exact figures only after checking https://www.revenuecat.com/state-of-subscription-apps-2025/ . Size: L. Success metric: trial-to-paid >= 35%; median trackers with a real lastCompletedAt after onboarding >= 8."
+    },
+    {
+      "id": "LEAP-003",
+      "title": "Switch in a minute: import from Apple Reminders, CSV and other trackers",
+      "description": "As someone who already tracks this stuff in Apple Reminders, a spreadsheet or another days-since app, I want to bring my history into Last Logged in one step so I start with real dates, not an empty list. The PRD's own moat (docx 2.2: 'data accumulates, switching costs compound') protects every incumbent from Last Logged too; an importer is how a new entrant takes users whose history lives elsewhere. Nothing in prd.json or the docx roadmap imports data; V8 is export only.",
+      "acceptanceCriteria": [
+        "A new LastLogged/Services/ImportService.swift reads completed, repeating EKReminders via EventKit (with the full-access permission prompt) and proposes one TrackerItem per reminder title with lastCompletedAt from completionDate and an interval from the reminder's recurrence rule",
+        "A CSV importer on iOS (fileImporter) and Android (ACTION_OPEN_DOCUMENT) accepts name,date[,category][,notes] rows, groups repeated names into one tracker with one CompletionLog per row, and infers the interval from the median gap when there are 3+ rows",
+        "A preview sheet lists every proposed tracker with its log count before anything is written; nothing is imported without confirmation",
+        "Imported logs carry source = import_reminders | import_csv; duplicates of an existing tracker name are merged, not duplicated",
+        "Imports respect the free cap: beyond 5 trackers the extra items are created archived and the paywall explains how to restore them",
+        "The website gets a /switch page describing the CSV format, and website/src/pages/use-cases.astro links to it",
+        "Unit tests cover CSV parsing (quoted fields, ISO and US dates, bad rows reported by line), interval inference, and merge-by-name on both platforms",
+        "Typecheck passes"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": "NEW (replaces the draft's LEAP-004 App Intents story, which restated docx V2-2 'Siri Shortcuts'). Competitive rationale: the PRD positions Last Logged against Notes entries and calendar reminders (docx 2.1); an importer makes that replacement literal. Whether specific competitors offer a CSV export is unverified; build the generic CSV path first and add per-app mappings only after checking each export. Size: M. Success metric: >= 20% of new installs import at least one tracker; importers' D30 retention >= 1.3x non-importers."
+    },
+    {
+      "id": "LEAP-004",
+      "title": "Assets and mileage-based intervals for cars and appliances",
+      "description": "As a car owner, I want oil changes due at 5,000 miles or 6 months, whichever comes first, and trackers grouped under the car or appliance they belong to. TrackerItem has only reminderIntervalDays today, which cannot express how vehicle maintenance works. The docx names a 'Car / Pet Owner' persona whose value driver is 'per-asset tracking' (section 2.3), yet no story or roadmap item builds assets.",
+      "acceptanceCriteria": [
+        "A versioned schema change in LastLogged/Models/SchemaVersions.swift and a Room migration in android/app/src/main/java/com/pearsonmedia/lastlogged/data/local/AppDatabase.kt (covered by AppDatabaseMigrationTest.kt) add Asset (id, name, type car|appliance|home|pet|other, metadata JSON) and TrackerItem.assetId, usageInterval, usageUnit (miles|km|hours)",
+        "A matching migration in supabase/migrations/ adds assets and the new tracker_items columns with owner RLS; SupabaseService.swift and SupabaseService.kt sync them",
+        "Logging a usage tracker asks for the current reading, prefilled from the last log; urgency = max(time ratio, usage ratio)",
+        "Asset detail screens on iOS and Android list the asset's trackers and full history",
+        "Car Care templates in both CategoryTemplates files gain mileage defaults",
+        "Unit tests cover dual-trigger urgency on both platforms, including a tracker with no usage reading yet",
+        "Typecheck passes"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-009). Competitive claim narrowed: the draft's statements about TimeJot's feature set were unverified; the supported claim is that the PRD itself names per-asset tracking as a persona value driver with no feature behind it. Size: L. Success metric: >= 40% of users with a Car Care tracker create a car asset; Car Care tracker D90 retention +10 points."
+    },
+    {
+      "id": "LEAP-005",
+      "title": "Maintenance history report: one-tap PDF for a sale, a warranty claim or insurance",
+      "description": "As someone selling a house or car, or filing a warranty or insurance claim, I want a clean dated maintenance record. That artifact gets handed to buyers, agents and adjusters, carrying the Last Logged name to people who never saw the App Store page, and it proves the value of the history the user has been building.",
+      "acceptanceCriteria": [
+        "A new edge route POST /reports/maintenance in edge-functions/src/ renders a PDF for a chosen asset (LEAP-004), category or date range: items, every completion with notes, usage reading and cost (LEAP-007) where present",
+        "iOS (ShareLink) and Android (share sheet) expose 'Create report' from the asset and category screens",
+        "The PDF footer carries 'Kept with Last Logged' and a website link with UTM parameters once a domain is registered",
+        "Gated to the premium entitlement read from GET /entitlements (LEAP-001); free users can preview page 1",
+        "Generation is rate limited through the shared rate-limit table (supabase/migrations/20260730000001_shared_rate_limits.sql)",
+        "vitest renders a fixture dataset and asserts the report never contains another user's rows",
+        "Typecheck passes"
+      ],
+      "priority": 33,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-010); attachment thumbnails removed because photo attachments are docx roadmap V3, not built. HomeZada markets home maintenance records on the web (https://www.homezada.com/); the draft's 'nobody in the one-tap niche offers it' is unverified. Size: M. Success metric: >= 10% of Premium users generate a report per year; installs attributed to report links >= 2% of organic."
+    },
+    {
+      "id": "LEAP-006",
+      "title": "On-device AI capture with Apple Foundation Models",
+      "description": "As a Last Logged user, I want to type or say 'did the gutters last weekend and changed the furnace filter' and have both logs backdated, and I want a new tracker to arrive with a sensible interval and icon. Apple's Foundation Models framework runs on-device, offline, with no per-call cost, so this adds no COGS. The docx V4 'Smart Interval Suggestions (AI)' is a server-side interval suggester, a different feature.",
+      "acceptanceCriteria": [
+        "A new LastLogged/Services/AICaptureService.swift uses the Foundation Models framework with guided generation to parse free text into [{trackerMatch or newTrackerName, completedAt, notes}] against the user's TrackerItems",
+        "A capture field on LastLogged/Views/Home/HomeView.swift shows a confirm sheet listing parsed logs before anything is written",
+        "LastLogged/Views/Home/AddTrackerView.swift suggests reminderIntervalDays, category and SF Symbol from the model when a name is typed, all editable before save",
+        "Without Apple Intelligence (and on Android) the feature falls back to a deterministic matcher against CategoryTemplates names and says so in the UI; it never fails silently",
+        "No user text leaves the device for this feature; LastLogged/PrivacyInfo.xcprivacy (or the app's privacy manifest) and website/src/pages/privacy.astro say so",
+        "Unit tests cover the parser contract with a stubbed model, including relative dates ('last weekend', 'two months ago') and an unmatched name",
+        "Typecheck passes"
+      ],
+      "priority": 34,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-005). Apple announced the Foundation Models framework for iOS 26 (https://developer.apple.com/documentation/foundationmodels). The draft's claim that nobody in the tracker niche has AI capture is unverified and dropped. Size: L. Success metric: >= 20% of weekly active users log via AI capture; trackers created per new user +30% vs control."
+    },
+    {
+      "id": "LEAP-007",
+      "title": "Maintenance spend ledger and 12-month cost forecast",
+      "description": "As a homeowner or car owner, I want to record what each completion cost and see what I spent this year per asset and category, plus what the next 12 months of due maintenance will likely cost. That turns Last Logged from a reminder list into the household's maintenance budget, a question a days-since counter cannot answer.",
+      "acceptanceCriteria": [
+        "CompletionLog gains cost (decimal, optional) and currency via a versioned change in LastLogged/Models/SchemaVersions.swift, a Room migration with a migration test, and a supabase/migrations/ column on completion_logs",
+        "LastLogged/Views/Home/QuickLogSheet.swift and the Android quick-log flow accept an optional cost; logging stays one tap when it is left blank",
+        "A Spend screen on iOS and Android shows totals by asset (LEAP-004), category and month for the trailing 12 months",
+        "A forecast lists items due in the next 12 months with expected cost = median of that tracker's last 3 costs; items with no cost history are listed as 'no estimate', never $0",
+        "Gated to premium; free users see their current-year total only",
+        "Unit tests on both platforms cover totals, the median forecast and the no-history case",
+        "Typecheck passes"
+      ],
+      "priority": 35,
+      "passes": false,
+      "notes": "NEW (replaces the draft's LEAP-007 adaptive reminders, which restated docx V4 Smart Interval Suggestions). Not in prd.json or the docx roadmap. Competitive claim kept modest: no checked competitor page was found offering a maintenance cost forecast, but that is unverified; do not market it as a first. Size: M. Success metric: >= 30% of Premium users record a cost in 60 days; Premium churn among cost recorders -15% vs non-recorders."
+    },
+    {
+      "id": "LEAP-008",
+      "title": "Delegate a tracker to anyone by link, no install needed",
+      "description": "As a Last Logged user, I want to hand one tracker (the dog's flea pill, a parent's prescription refill) to someone who does not have the app, so they get the reminder and tap 'done' on a web page, and the log lands in my history. It is lighter than the planned household plan (docx V2-1, which needs every member to install and sign in), and every recipient sees what Last Logged does.",
+      "acceptanceCriteria": [
+        "A new migration adds tracker_delegations (id, tracker_item_id, owner_user_id, token_hash, recipient_label, created_at, revoked_at) with owner-only RLS",
+        "POST /delegations and DELETE /delegations/:id edge routes in edge-functions/src/ create and revoke a delegation; tokens are random, stored hashed, and rate limited through the shared rate-limit table",
+        "website renders /d/[token] showing the tracker name, last done and due date, with a 'Mark done' button that calls POST /delegations/:token/complete; the token grants that one tracker and nothing else",
+        "A completion via a delegation writes a CompletionLog with source = delegate and recipient_label, syncs to the owner's devices and reloads the widget",
+        "TrackerDetailView.swift and the Android TrackerDetailScreen.kt create, copy and revoke the link; a revoked token returns 410",
+        "vitest proves a token cannot read or log any other tracker, and that a revoked token fails",
+        "Typecheck passes"
+      ],
+      "priority": 36,
+      "passes": false,
+      "notes": "NEW (replaces the draft's LEAP-001 Shared Household Log, which restated docx V2-1 almost line for line: households table, 6-character invite code, Realtime, who-logged, and a $5.99/4-member Household Plan). The household plan stays planned in the docx and should get its own prd.json story. Email or SMS reminders to recipients need a separately verified sender identity and are out of scope here; recipients bookmark the page. Size: M. Success metric: >= 10% of active users create a delegation; >= 15% of delegation recipients install Last Logged within 60 days."
+    },
+    {
+      "id": "LEAP-009",
+      "title": "Shareable template packs and a public pack library",
+      "description": "As a Last Logged user, I want to share 'my new-homeowner checklist' or 'dog owner basics' as a link that opens in Last Logged (or the store) with items ready to add. The docx names a Gen-Z persona whose value driver is 'viral / social sharing' (section 2.3), but no story implements sharing, and published packs become pages the website can rank.",
+      "acceptanceCriteria": [
+        "A new migration adds template_packs (id, slug, title, description, author_user_id, items JSON, is_public, install_count, created_at) with RLS: authors write, public packs readable by anon",
+        "iOS and Android 'Share as pack' on a category builds a pack and a link /p/{slug} routed by LastLogged/Utilities/DeepLinkRouter.swift and android util/DeepLinks.kt",
+        "Opening a pack shows a preview sheet; adding respects the free cap and keep-5 rules from LEAP-002",
+        "website/src/pages/p/[slug].astro renders public packs with item intervals and store badges, plus a /packs index",
+        "install_count increments through a rate-limited edge route covered by vitest",
+        "Pack titles and descriptions pass a blocklist check and carry a manual unpublish flag before is_public takes effect",
+        "Typecheck passes"
+      ],
+      "priority": 37,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-011). The cited Tody review complaint about irrelevant default tasks is unverified; the supported rationale is the PRD's own sharing persona. Size: L. Success metric: viral coefficient from pack links >= 0.1; >= 500 public packs in 6 months."
+    },
+    {
+      "id": "LEAP-010",
+      "title": "Programmatic 'how often should you...' pages with consented email capture",
+      "description": "As someone searching 'how often should I change my HVAC filter', I want a direct answer with an 'Add to Last Logged' button. The template catalogue is already a dataset of items and intervals; one page per template turns it into a long-tail acquisition channel. website/src/pages/coming-soon.astro collects nothing today.",
+      "acceptanceCriteria": [
+        "website/src/pages/how-often/[template].astro generates one page per template from a JSON export of LastLogged/Utilities/CategoryTemplates.swift: recommended interval, why it matters, FAQ JSON-LD and a deep link that opens the template in Last Logged",
+        "A build check fails if the JSON export and CategoryTemplates.swift disagree on any template name or interval",
+        "sitemap.xml and llms.txt are generated at build by the deploy-website workflow",
+        "coming-soon.astro and index.astro collect an email with explicit consent stored as basis + source + timestamp via an edge route; an unknown basis is refused",
+        "When LEAP-011 stats exist with sample_size >= 50, pages show the population median with its sample size and date",
+        "The hub registry entry for lastlogged gets a real domain once one is registered and resolves (it is domain: null today), so SSL, uptime and site audit cover it",
+        "Typecheck passes"
+      ],
+      "priority": 38,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-012). website/src/pages/use-cases.astro already exists and should link the new pages. The draft's 'lastlogged.com did not resolve' claim was not re-checked here; the hub registry's domain: null is the verified fact. Lighthouse-in-CI criterion dropped as untied to any existing workflow. Size: M. Success metric: 10k monthly organic sessions within 6 months; >= 2,000 consented emails before launch."
+    },
+    {
+      "id": "LEAP-011",
+      "title": "Population interval benchmarks: 'most people do this every 84 days'",
+      "description": "As a Last Logged user, I want to see how my cadence compares with everyone else's from day one, not after a year of my own logs. Per-user interval learning (docx V4) needs 3+ logs, about nine months at a 90-day interval; anonymous, consented population intervals work immediately and give a reason to sign in.",
+      "acceptanceCriteria": [
+        "A new migration adds template_interval_stats (template_key, p25_days, median_days, p75_days, sample_size, computed_at); a weekly job in edge-functions/src/ recomputes it from completion_logs of consenting users only",
+        "Templates in both CategoryTemplates files carry a stable template_key persisted on tracker_items",
+        "users gains benchmark_opt_in default false; the opt-in prompt states exactly what is shared and website/src/pages/privacy.astro is updated",
+        "Stats publish only when sample_size >= 50; below that the UI shows no benchmark",
+        "TrackerDetailView.swift and the Android TrackerDetailScreen.kt show 'You: every X days. Most people: every Y days'; AddTrackerView defaults the interval to the median when one exists",
+        "GET /benchmarks serves the table with caching; vitest covers the sample-size threshold and that opted-out users' logs are excluded",
+        "Typecheck passes"
+      ],
+      "priority": 39,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-006). Not planned. Expect no published benchmark until well after launch given the 50-user threshold; that is the honest state, not a bug. Size: L. Success metric: benchmark_opt_in >= 30% of signed-in users; benchmarks live for >= 15 templates within 6 months."
+    },
+    {
+      "id": "LEAP-012",
+      "title": "Recall and warranty watch for car and appliance assets",
+      "description": "As a car or appliance owner, I want Last Logged to tell me when my vehicle has an open safety recall or a warranty is about to lapse, alongside the maintenance I already track. NHTSA publishes vehicle recalls through a free public API, so recall checks need no paid data source, and they make the asset model (LEAP-004) useful between maintenance events.",
+      "acceptanceCriteria": [
+        "Car assets store make, model and model year in Asset.metadata; appliance assets store purchase date and warranty end date",
+        "A weekly edge job in edge-functions/src/ queries the NHTSA recalls API (api.nhtsa.gov/recalls/recallsByVehicle) per distinct make/model/year, caches results, and records new campaigns per asset in a new asset_recalls table with owner RLS",
+        "A new recall sends one push via the existing apns.ts / fcm.ts senders and appears on the asset screen with the NHTSA campaign number and a link to the official notice",
+        "Warranty end dates schedule a reminder 30 days before expiry through NotificationService on both platforms",
+        "Recall checks never send the user's identity to NHTSA; only make/model/year are queried",
+        "vitest covers response parsing, de-duplication of campaigns and the no-results case using a recorded fixture",
+        "Typecheck passes"
+      ],
+      "priority": 40,
+      "passes": false,
+      "notes": "NEW (replaces the draft's LEAP-016 Apple Watch app, which restated docx V5 'Apple Watch Complication'). Not planned. NHTSA recall API: https://www.nhtsa.gov/nhtsa-datasets-and-apis . Appliance recalls (CPSC) are a possible follow-up; verify that API before scoping it. Size: M. Success metric: >= 50% of car assets have make/model/year; recall-alert open rate >= 40%."
+    },
+    {
+      "id": "LEAP-013",
+      "title": "Transferable asset history: hand a house's or car's record to the next owner",
+      "description": "As someone selling a house or car, I want to transfer that asset's full maintenance history to the buyer's Last Logged account, so the record follows the asset the way a vehicle history report does. The buyer starts with years of data and a reason to install, and the seller's report (LEAP-005) has somewhere to go.",
+      "acceptanceCriteria": [
+        "A new migration adds asset_transfers (id, asset_id, from_user_id, token_hash, expires_at, accepted_by_user_id, accepted_at) with RLS limited to the two parties",
+        "POST /assets/:id/transfer creates a 14-day single-use token; POST /transfers/:token/accept copies the asset, its trackers and completion logs to the recipient, rate limited through the shared rate-limit table",
+        "The sender chooses copy (keeps their own history) or move (archives it on their side); notes are included only when the sender ticks a box",
+        "A transfer link opens Last Logged via DeepLinkRouter.swift / DeepLinks.kt or the store page, and shows a preview before accepting",
+        "Accepted logs keep their original dates and carry source = transfer",
+        "vitest proves a token is single-use, expires, and copies only the named asset's rows",
+        "Typecheck passes"
+      ],
+      "priority": 41,
+      "passes": false,
+      "notes": "NEW (replaces the draft's LEAP-008 photo and receipt capture, which restated docx V3 'Photo / Receipt Attachments'). Not planned. Depends on LEAP-004 assets. Size: M. Success metric: >= 5% of reports (LEAP-005) lead to a transfer; >= 50% of transfer recipients are new installs."
+    },
+    {
+      "id": "LEAP-014",
+      "title": "Auto-logging from connected devices: HomeKit filter status and a personal webhook",
+      "description": "As a Last Logged user with a smart air purifier or a Home Assistant setup, I want filter changes and similar events logged without touching my phone. HomeKit defines a filter-maintenance service (Filter Change Indication, Filter Life Level), and a per-user webhook lets Home Assistant or any automation log a tracker. The widget is the PRD's primary surface; zero taps beats one.",
+      "acceptanceCriteria": [
+        "A new LastLogged/Services/HomeKitService.swift (with the HomeKit entitlement and usage string) lists accessories exposing the filter maintenance service and lets the user link one to a tracker",
+        "When a linked accessory's Filter Life Level resets upward or Filter Change Indication clears, a CompletionLog with source = homekit is written the next time the app or widget refreshes",
+        "A per-user webhook token (stored hashed, revocable in SettingsView.swift and the Android SettingsScreen.kt) allows POST /hooks/:token/log with a tracker id; requests are rate limited through the shared rate-limit table",
+        "Webhook logs carry source = webhook, sync to all devices and reload the widget",
+        "website gets a short integrations page with a Home Assistant rest_command example",
+        "vitest covers token auth, revocation and rate limiting; an iOS unit test covers the filter-reset detection with a stubbed accessory",
+        "Typecheck passes"
+      ],
+      "priority": 42,
+      "passes": false,
+      "notes": "NEW (replaces the draft's LEAP-017 pricing experiments, which restated docx 6.4: RevenueCat A/B tests, the $39.99 launch lifetime, and a cancellation screen that already exists as CancellationView.swift; its trial_started fix moved into LEAP-002). Not planned. HomeKit filter characteristics: https://developer.apple.com/documentation/homekit/hmcharacteristictypefilterlifelevel . Size: M. Success metric: >= 5% of Premium users link a device or webhook; trackers with auto-logging show >= 90% on-time completion."
+    },
+    {
+      "id": "LEAP-015",
+      "title": "Give a month, get a month: user referral loop",
+      "description": "As a Last Logged subscriber, I want to give a friend a free month and get one myself when they subscribe, so word of mouth is rewarded inside the product. The docx go-to-market (section 7) relies on TikTok and press, with no in-product referral mechanism.",
+      "acceptanceCriteria": [
+        "A new migration adds referrals (id, referrer_user_id, code, created_at) and referral_redemptions (referral_id, referred_user_id, redeemed_at, converted_at, reward_granted_at) with owner RLS",
+        "Each signed-in user gets a code and a share link from SettingsView.swift and the Android SettingsScreen.kt; the link routes through DeepLinkRouter.swift / DeepLinks.kt",
+        "The referred user's free month uses a RevenueCat promotional entitlement or store offer code; the referrer's reward is granted only after the referred user's first paid renewal, recorded from the revenuecat-webhook.ts events of LEAP-001",
+        "Self-referral and repeat redemption on one account are refused; codes are rate limited through the shared rate-limit table",
+        "referral_shared, referral_redeemed and referral_converted analytics events fire on both platforms",
+        "vitest covers reward-on-renewal-only, self-referral refusal and duplicate redemption",
+        "Typecheck passes"
+      ],
+      "priority": 43,
+      "passes": false,
+      "notes": "NEW (replaces the draft's LEAP-015 overdue card and Year in Review; Year in Review is docx V6 and the overdue card moved into LEAP-002). Not planned. Confirm how RevenueCat grants promotional entitlements to a specific app user id before choosing between that and offer codes. Size: M. Success metric: >= 10% of new subscribers arrive via referral within 6 months of launch."
+    },
+    {
+      "id": "LEAP-016",
+      "title": "Partner gifting: realtor and inspector offer codes with a new-homeowner pack",
+      "description": "As a realtor, home inspector or home-warranty company, I want to give buyers a closing gift: a new-homeowner pack plus months of Last Logged Premium. Store offer codes need no new billing backend and can be attributed per partner. The 'First-Time Homeowner' persona in the docx (section 2.3) is reached at exactly that moment.",
+      "acceptanceCriteria": [
+        "A new migration adds partners (id, name, type, code_prefix, created_at) and partner_redemptions (partner_id, user_id, redeemed_at)",
+        "website/src/pages/gift/[partner].astro shows the partner's name, the pack (LEAP-009) and an offer-code redemption link",
+        "iOS presents offer-code redemption in-app; Android uses Play promo codes; first launch after redemption offers the partner pack",
+        "Redemptions are recorded server-side from revenuecat-webhook.ts (LEAP-001) and joined to partners by code prefix",
+        "An operator-only edge route returns per-partner counts, 30/90-day activity and conversion to paid",
+        "DEPLOYMENT.md documents creating a partner and generating codes in App Store Connect and Play Console",
+        "vitest covers the partner join and that the report route refuses non-operator callers",
+        "Typecheck passes"
+      ],
+      "priority": 44,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-014). Contact email column dropped from partners (it is not needed by any criterion). Whether RevenueCat webhook events expose the offer code used must be checked against current RevenueCat docs before build; if not, attribute by code redemption in-app. Size: M. Success metric: 10 active partners in 6 months; gifted-to-paid conversion at expiry >= 25%."
+    },
+    {
+      "id": "LEAP-017",
+      "title": "Category custom product pages tied to deep links",
+      "description": "As someone searching the App Store for 'oil change reminder' or 'flea treatment tracker', I want a product page that shows that use and opens Last Logged on the matching templates. Apple's custom product pages carry their own screenshots, promo text and deep link, at no cost beyond the assets.",
+      "acceptanceCriteria": [
+        "store-listing/ gains one custom product page spec per template category (screenshots list, promo text, keyword focus, deep link)",
+        "LastLogged/Utilities/DeepLinkRouter.swift routes custom-product-page links to LastLogged/Views/Home/TemplatePickerView.swift filtered to that category; a unit test covers each category route",
+        "AnalyticsService.swift records acquisition_source when the app launches from one of these links",
+        "LEAP-010 how-often pages link to the matching custom product page URL",
+        "Typecheck passes"
+      ],
+      "priority": 45,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-013) but cut: seasonal In-App Events were removed because docx V10 'Seasonal Contextual Prompts' already plans the seasonal work. Apple docs: https://developer.apple.com/app-store/custom-product-pages/ . The draft's claim that competitors run single product pages is unverified and dropped. Size: S-M. Success metric: conversion rate on category pages >= 1.3x the default page."
+    },
+    {
+      "id": "LEAP-018",
+      "title": "Multi-property Pro tier for landlords and short-term-rental hosts",
+      "description": "As a small landlord or rental host, I want a separate maintenance schedule per property and a report per unit. It is a higher-priced tier built on assets (LEAP-004), reports (LEAP-005) and the household membership the docx plans as V2-1.",
+      "acceptanceCriteria": [
+        "Asset type 'property' can own other assets and trackers; the home screen gains a property switcher on iOS and Android",
+        "A RevenueCat entitlement 'pro' (pro_monthly / pro_annual) unlocks more than one property, checked server-side via GET /entitlements (LEAP-001)",
+        "A 'logger' member role can create completion_logs for a property but cannot edit or delete trackers; SQL tests enforce it in RLS",
+        "Per-property reports use the LEAP-005 route with a date filter",
+        "website/src/pages/landlords.astro explains the tier with prices read from the same config as index.astro",
+        "Typecheck passes"
+      ],
+      "priority": 46,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-018). Blocked on the household tables from docx V2-1 being written as a prd.json story and built. Tody's team pricing figures in the draft were unverified and removed. Size: L. Success metric: Pro is >= 5% of paying users with ARPU >= 3x Premium."
+    },
+    {
+      "id": "LEAP-019",
+      "title": "iPad and Mac app with a menu bar overdue view",
+      "description": "As someone who plans the household at a desk, I want Last Logged on iPad and Mac with a menu bar item showing what is due. Last Logged ships on iPhone and Android only; a multiplatform SwiftUI target reuses the existing models, services and sync.",
+      "acceptanceCriteria": [
+        "LastLogged.xcodeproj gains an iPadOS layout (NavigationSplitView by category) and a native macOS destination sharing LastLogged/Models, Services and ViewModels",
+        "A macOS MenuBarExtra lists the 5 most overdue items with one-click log",
+        "Mac and iPad widgets reuse LastLoggedWidget/ timelines",
+        "Sync and entitlements work on Mac with the same Supabase account (LEAP-001)",
+        "The ios-ci workflow builds the macOS destination",
+        "Typecheck passes"
+      ],
+      "priority": 47,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-019). Not planned. Streaks and Due list Mac and iPad versions on their sites (https://streaks.app/ , https://www.dueapp.com/ ); the claim about Last Time's platform coverage is unverified. Size: M. Success metric: >= 10% of Premium users active on a second Apple device."
+    },
+    {
+      "id": "LEAP-020",
+      "title": "'Book a pro' service links with referral revenue (after product-market fit)",
+      "description": "As a Last Logged user whose HVAC service or gutter cleaning turns red, I want a one-tap way to book a local pro, and Last Logged earns a referral fee. The docx cites an $842B home-services market (section 9); a due reminder is a high-intent moment. It stays off by default and clearly labelled so it does not break the docx principle 'no dark patterns'.",
+      "acceptanceCriteria": [
+        "A remote-config flag (default off) enables a 'Book a pro' action on overdue trackers whose template_key is in an allowlist",
+        "A new migration adds service_partners (id, name, template_keys, region, booking_url_template, referral_terms) and service_clicks (user_id, partner_id, tracker_item_id, clicked_at)",
+        "Clicks route through an edge redirect that records attribution and appends partner UTM parameters; no personal data is sent to the partner",
+        "The action is labelled as a partner link and can be hidden permanently in SettingsView.swift and the Android SettingsScreen.kt",
+        "An operator-only edge route reports clicks and attributed bookings per month",
+        "vitest covers the redirect, that no user identifiers appear in the outbound URL, and the flag-off path",
+        "Typecheck passes"
+      ],
+      "priority": 48,
+      "passes": false,
+      "notes": "Kept from the draft (was LEAP-020). Gate on product-market fit. Depends on template_key from LEAP-011. Size: L. Success metric: click-through >= 3% on eligible overdue items; referral revenue >= 10% of MRR within 12 months of enabling."
     }
   ]
 }
