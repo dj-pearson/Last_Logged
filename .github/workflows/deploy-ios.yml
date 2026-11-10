@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   release:
-    uses: Pearson-Media/ios-release/.github/workflows/ios-release.yml@main
+    uses: Pearson-Media/ios-release/.github/workflows/ios-release.yml@v1
     with:
       working-directory: .
       project: LastLogged.xcodeproj
